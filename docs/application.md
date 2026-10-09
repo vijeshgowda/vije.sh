@@ -1,10 +1,10 @@
 # vije.sh: Application
 
-Status: planning. This doc covers the stack, structure, hosting, auth and working conventions.
+Status: building (phase 0 and 1 scaffold landed). This doc covers the stack, structure, hosting, auth and working conventions.
 The database is specified in [database.md](database.md). The visual design is specified separately
 (the chosen design variation, its spec and its HTML are added later as `docs/design.md`).
 
-Last updated: 5 Oct 2026.
+Last updated: 9 Oct 2026.
 
 ---
 
@@ -16,7 +16,9 @@ A personal website at **vije.sh**:
 2. **Blog** (`/blog`): written only by me.
 3. **Forum** (`/forum`): members sign in with OAuth and discuss. This is a real forum, not a comments section.
 
-About, Blog and Forum are separate routes with their own URLs.
+About, Blog and Forum are separate routes with their own URLs. The chosen design (V18.1.1,
+[design.md](design.md)) adds four more pages: `/work`, `/lab`, `/photo` and `/live` (public data
+feeds), seven in total, each a real server-rendered route.
 
 ### Goals
 - Fast: the landing and blog pages are static HTML served from the CDN.
@@ -143,7 +145,7 @@ GitHub Actions schedule as a backup, or move the backend later (for example to G
 |---|---|---|
 | Framework | Next.js App Router (latest stable), React, TypeScript `strict` | Server Components by default; `"use client"` only for islands |
 | Styling | Tailwind CSS v4 + CSS Modules | Design tokens as CSS variables in `src/styles/tokens.css`, mapped into Tailwind with `@theme` |
-| Fonts | `next/font/local` (self-hosted `woff2`, Latin subset) | Families come from the design doc |
+| Fonts | `next/font/google` (downloaded at build, self-hosted, Latin subset): Space Grotesk, JetBrains Mono | No requests to Google from the browser |
 | Database | `pg` (node-postgres), `import * as pg from "pg"` | Connects through the Supabase transaction pooler ([database.md](database.md#8-app-access-pg)) |
 | Validation | `zod` | Every form input and route parameter |
 | Auth | `@supabase/ssr` + `@supabase/supabase-js` (auth only) | Cookie-based sessions with PKCE |
@@ -225,7 +227,7 @@ GitHub Actions schedule as a backup, or move the backend later (for example to G
 │   ├── db/bootstrap.sql         # Supabase stand-ins for the test database (section 13.2)
 │   ├── helpers/                 # factories, test sign-in, fixtures
 │   └── e2e/                     # Playwright feature tests (*.spec.ts)
-├── vitest.config.ts             # projects: unit, component, integration
+├── vitest.config.mts            # projects: unit, component, integration
 ├── playwright.config.ts
 ├── .env.example
 └── .env.test.example
@@ -256,9 +258,16 @@ src/features/forum/
 
 ## 7. Rendering and caching
 
+**Cache Components is on** (`cacheComponents: true`, the Next.js 16 default): routes are
+prerendered into a static shell; data comes from `'use cache'` functions (with `cacheLife` /
+`cacheTag`) or sits under `<Suspense>`. Read the bundled docs in `node_modules/next/dist/docs/`.
+
 | Route | Mode | Revalidated by |
 |---|---|---|
-| `/` | Static | Build; tag `blog` (for "latest posts") |
+| `/` | Static | Build; tag `blog` (for "latest posts"); default-pin feeds by their `cacheLife` |
+| `/work`, `/lab`, `/photo` | Static | Build |
+| `/live` | Static (ISR) | Each feed's `cacheLife` (shortest: 5 min) |
+| `/api/feeds/[key]` | Static per feed (`generateStaticParams`, ISR) | Feed `cacheLife`; tags `feeds`, `feed:<key>` |
 | `/blog` | Static | Build (git posts) + tag `blog` (notes) |
 | `/blog/[slug]` | Static (`generateStaticParams`) | Build (git posts); tag `post:<slug>` (notes) |
 | `/rss.xml`, `/sitemap.xml` | Static | Tag `blog` |
@@ -646,7 +655,7 @@ each provider on the preview deploy before a release.
   - Security-critical files: 95% of lines and branches. These are `src/lib/authz.ts`,
     `src/lib/rate-limit.ts`, `src/lib/turnstile.ts`, `src/lib/markdown.ts`,
     `src/features/*/limits.ts`, `src/features/*/schemas.ts` and `src/features/*/actions.ts`.
-- The limits only ever go up. When coverage rises, raise them in `vitest.config.ts` in the same PR.
+- The limits only ever go up. When coverage rises, raise them in `vitest.config.mts` in the same PR.
 - Excluded from coverage: `src/app/**/{page,layout}.tsx` (covered by feature tests), `*.d.ts` and
   config files.
 - Feature-test coverage isn't merged into these numbers, because collecting it from Next.js builds
@@ -687,10 +696,12 @@ npm run db:test:setup   # bootstrap + migrations + seed on the test database
 - **Headers** (`next.config.ts`): HSTS, `X-Content-Type-Options: nosniff`,
   `Referrer-Policy: strict-origin-when-cross-origin`, `Permissions-Policy`, and
   `frame-ancestors 'none'`.
-- **CSP:** a nonce-based script CSP needs dynamic rendering. So dynamic routes (`/login`,
-  `/welcome`, `/admin`) get a nonce CSP from `proxy.ts` (`/welcome` also allows
-  `challenges.cloudflare.com` for Turnstile), and static pages get a baseline CSP that allows
-  `'self'` and `img.vije.sh`. The inline theme script is allowed by its SHA-256 hash.
+- **CSP:** static and partially prerendered pages can't carry a nonce, and Next.js inlines its RSC
+  payload as scripts, so the baseline CSP (`src/lib/security-headers.ts`, set in `next.config.ts`)
+  uses `script-src 'self' 'unsafe-inline'`, plus `connect-src` for the two browser-side feeds,
+  `img-src` for `img.vije.sh`, `object-src 'none'` and `frame-ancestors 'none'`. Dynamic routes
+  (`/login`, `/welcome`, `/admin`) can tighten this with a nonce CSP from `proxy.ts` later
+  (`/welcome` also needs `challenges.cloudflare.com` for Turnstile).
 - **Redirects:** only same-origin relative `next` paths are allowed.
 - **Secrets:** stored only in Vercel environment variables; `.env*` files are gitignored except
   `.env.example`.

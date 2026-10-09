@@ -5,9 +5,12 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 import { fmtDate, noteId } from "./format";
 import {
   CONTENT_DIR,
+  getPost,
   latestNotes,
+  listedNotes,
   listedPosts,
   parsePost,
+  publishedPosts,
   readPosts,
   showDrafts,
   toNoteRows,
@@ -144,6 +147,31 @@ describe("readPosts", () => {
 
   it("the repo's own posts are valid", () => {
     expect(() => readPosts(CONTENT_DIR)).not.toThrow();
+  });
+
+  it("getPost finds listed, unlisted and (outside production) draft posts with neighbours", () => {
+    const dir = tmp({
+      "a/index.md": md(FM.replace("2026-10-05", "2026-01-01")),
+      "b/index.md": md(FM.replace("2026-10-05", "2026-02-01")),
+      "c/index.md": md(FM.replace("2026-10-05", "2026-03-01")),
+      "u/index.md": md(`${FM}\nvisibility: unlisted`),
+      "d/index.md": md(`${FM}\ndraft: true`),
+    });
+    vi.stubEnv("VERCEL_ENV", "production");
+    const b = getPost("b", dir);
+    expect(b).toMatchObject({ id: "AN-002", newer: { slug: "c" }, older: { slug: "a" } });
+    expect(getPost("a", dir)?.older).toBeUndefined();
+    expect(getPost("u", dir)).toMatchObject({ id: null, post: { slug: "u" } });
+    expect(getPost("d", dir)).toBeNull();
+    expect(getPost("missing", dir)).toBeNull();
+    expect(
+      publishedPosts(dir)
+        .map((p) => p.slug)
+        .sort(),
+    ).toEqual(["a", "b", "c", "u"]);
+    expect(listedNotes(dir).map((n) => n.slug)).toEqual(["c", "b", "a"]);
+    vi.stubEnv("VERCEL_ENV", "preview");
+    expect(getPost("d", dir)).toMatchObject({ id: "AN-004", newer: undefined });
   });
 });
 

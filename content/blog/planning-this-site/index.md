@@ -19,6 +19,8 @@ have no free plan at all. Static hosting with a serverless backend is the option
 A cream and ink design, Cloudflare for hosting, Supabase for accounts and data, and a forum I build
 myself so it matches the rest of the site.
 
+![Browser to static site to Postgres](./stack.svg "Static pages first; the database only for accounts and the forum.")
+
 > Free is only free until the terms change, so keep everything portable.
 
 Next up is writing here, one post at a time.

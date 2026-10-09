@@ -1,0 +1,269 @@
+/* Application note from V18.1.1 (.post, .anhead, .abstract, .body, .pager, .prog) */
+.prog {
+  position: fixed;
+  left: 0;
+  top: 0;
+  height: 3px;
+  width: 0;
+  background: var(--red);
+  z-index: 30;
+}
+.back {
+  display: inline-block;
+  font: 400 0.75rem var(--font-mono);
+  color: var(--mute);
+  text-decoration: none;
+  margin: 2rem 0 1.25rem;
+}
+.back:hover {
+  color: var(--red-t);
+}
+.post {
+  max-width: 42rem;
+  padding-bottom: 3rem;
+}
+.post h1 {
+  font-size: clamp(2.1rem, 5.5vw, 3.3rem);
+  letter-spacing: -0.04em;
+  line-height: 1.04;
+  margin: 0.6rem 0 1.25rem;
+  overflow-wrap: anywhere;
+}
+.pn {
+  font: 500 0.72rem var(--font-mono);
+  color: var(--red-t);
+  letter-spacing: 0.08em;
+  margin: 0;
+  text-transform: uppercase;
+}
+.draft {
+  margin-left: 0.6rem;
+  padding: 0.05rem 0.4rem;
+  border: 1px solid currentColor;
+}
+
+.anhead {
+  border: 1px solid var(--ink);
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(7rem, 1fr));
+  background: var(--card);
+  box-shadow: var(--sh1);
+  margin: 0;
+}
+.anhead div {
+  padding: 0.55rem 0.8rem;
+  border-right: 1px solid var(--line);
+  font: 500 0.76rem var(--font-mono);
+}
+.anhead div:last-child {
+  border-right: 0;
+}
+.anhead dt {
+  font-size: 0.6rem;
+  color: var(--mute);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  font-weight: 400;
+}
+.anhead dd {
+  margin: 0;
+}
+
+.abstract {
+  border-left: 4px solid var(--red);
+  padding: 0.8rem 1.1rem;
+  background: var(--faint);
+  margin: 1.5rem 0 1rem;
+  box-shadow: var(--sh1);
+}
+.abstract p {
+  margin: 0.2rem 0 0;
+  font-size: 1.05rem;
+}
+.abstract .label {
+  margin: 0;
+  font: 500 0.62rem var(--font-mono);
+  color: var(--red-t);
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+/* Markdown body: the prototype's paragraphs, numbered h2s and pull quotes, plus the rest of Markdown */
+.body {
+  counter-reset: h2;
+  overflow-wrap: break-word;
+}
+.body p,
+.body ul,
+.body ol {
+  font-size: 1.07rem;
+  line-height: 1.75;
+  margin: 0 0 1.1rem;
+}
+.body ul,
+.body ol {
+  padding-left: 1.4rem;
+}
+.body li + li {
+  margin-top: 0.3rem;
+}
+.body li::marker {
+  color: var(--red-t);
+}
+.body h2,
+.body h3 {
+  scroll-margin-top: 5rem;
+  letter-spacing: -0.01em;
+}
+.body h2 {
+  font-size: 1.3rem;
+  margin: 2.2rem 0 0.5rem;
+  display: flex;
+  gap: 0.6rem;
+  align-items: baseline;
+}
+.body h2::before {
+  counter-increment: h2;
+  content: counter(h2) ".";
+  font: 500 0.82rem var(--font-mono);
+  color: var(--red-t);
+}
+.body h3 {
+  font-size: 1.1rem;
+  margin: 1.8rem 0 0.4rem;
+}
+.body a {
+  color: var(--red-t);
+  text-underline-offset: 3px;
+}
+.body blockquote {
+  margin: 1.75rem 0;
+  padding: 0.1rem 0 0.1rem 1.2rem;
+  border-left: 3px solid var(--red);
+}
+.body blockquote p {
+  font-size: 1.25rem;
+  font-weight: 500;
+  line-height: 1.45;
+  letter-spacing: -0.01em;
+}
+.body hr {
+  border: 0;
+  border-top: 1px solid var(--line2);
+  margin: 2.2rem 0;
+}
+
+.body code {
+  font-family: var(--font-mono);
+  font-size: 0.88em;
+}
+.body :not(pre) > code {
+  background: var(--faint);
+  border: 1px solid var(--line);
+  padding: 0.05rem 0.3rem;
+}
+.body pre {
+  margin: 1.5rem 0;
+  padding: 1rem 1.1rem;
+  overflow-x: auto;
+  background: var(--card);
+  border: 1px solid var(--line2);
+  box-shadow: var(--sh1);
+  font-size: 0.9rem;
+  line-height: 1.6;
+}
+.body pre code {
+  font-size: inherit;
+}
+/* Shiki writes both themes' colours as variables; the site theme picks one. */
+.body pre span {
+  color: var(--shiki-light, inherit);
+}
+:global([data-theme="dark"]) .body pre span {
+  color: var(--shiki-dark, inherit);
+}
+
+.body img {
+  display: block;
+  max-width: 100%;
+  height: auto;
+  margin: 1.5rem 0;
+  border: 1px solid var(--line);
+  box-shadow: var(--sh1);
+}
+.body figure {
+  margin: 1.75rem 0;
+}
+.body figure img {
+  margin: 0;
+}
+.body figcaption {
+  font: 400 0.72rem var(--font-mono);
+  color: var(--mute);
+  padding: 0.5rem 0;
+  border-bottom: 1px solid var(--line);
+}
+
+.body table {
+  display: block;
+  max-width: 100%;
+  overflow-x: auto;
+  border-collapse: collapse;
+  margin: 1.5rem 0;
+  font-size: 0.95rem;
+}
+.body th,
+.body td {
+  border-bottom: 1px solid var(--line);
+  padding: 0.45rem 0.8rem 0.45rem 0;
+  text-align: left;
+  vertical-align: top;
+}
+.body th {
+  font: 500 0.68rem var(--font-mono);
+  color: var(--mute);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  border-bottom-color: var(--ink);
+}
+
+.pager {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1rem;
+  margin-top: 3rem;
+}
+.pager a {
+  border: 1px solid var(--line2);
+  padding: 1rem;
+  text-decoration: none;
+  font-weight: 500;
+  background: var(--card);
+  box-shadow: var(--sh1);
+}
+.pager a:hover {
+  border-color: var(--red);
+  box-shadow: var(--sh2);
+}
+.pager small {
+  display: block;
+  font: 400 0.68rem var(--font-mono);
+  color: var(--mute);
+  margin-bottom: 0.2rem;
+}
+.pager .nx {
+  text-align: right;
+  grid-column: 2;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .pager a {
+    transition:
+      box-shadow 0.25s,
+      transform 0.25s,
+      border-color 0.25s;
+  }
+  .pager a:hover {
+    transform: translateY(-2px);
+  }
+}

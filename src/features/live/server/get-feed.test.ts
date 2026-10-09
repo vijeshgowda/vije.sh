@@ -1,10 +1,15 @@
-import { afterEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 vi.mock("next/cache", () => ({ cacheLife: vi.fn(), cacheTag: vi.fn() }));
 
 const { cacheLife } = await import("next/cache");
 const { LOADERS } = await import("./loaders");
 const { getFeed, getFeeds } = await import("./get-feed");
+
+// CI runs with FEEDS_OFFLINE=1; these tests opt back in unless they test offline mode
+beforeEach(() => {
+  vi.stubEnv("FEEDS_OFFLINE", "");
+});
 
 afterEach(() => {
   vi.restoreAllMocks();

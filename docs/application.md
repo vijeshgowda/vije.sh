@@ -469,10 +469,15 @@ The folder name is the slug. Reading time is computed. `draft: true` lets an age
 new post that you can read on the preview URL before it goes live.
 
 ### 9.3 Images
-Images sit next to `index.md` and are referenced relatively (`![Ship](./ship.webp)`), so they preview
-correctly in editors and on GitHub. Before each build, `scripts/copy-blog-assets.ts` copies them to
-`public/blog/<slug>/`, and a small rehype plugin rewrites `./ship.webp` to `/blog/<slug>/ship.webp`
-with width and height filled in. Keep images to WebP or SVG at 1600 px wide or less.
+Images sit next to `index.md` (subfolders are fine) and are referenced relatively
+(`![Ship](./ship.webp)`), so they preview correctly in editors and on GitHub. `npm run dev` and
+`npm run build` first run `scripts/copy-blog-assets.ts`, which copies them to `public/blog/<slug>/`
+(gitignored; restart `dev` after adding an image). The rehype plugin in
+`src/features/blog/rehype-post.ts` rewrites `./ship.webp` to `/blog/<slug>/ship.webp`, fills in
+width and height, and lazy-loads it. An image alone on its line with a title
+(`![Ship](./ship.webp "Caption")`) becomes a figure with that caption. The build fails if an image is
+missing, sits outside the post folder, or comes from another site (the CSP only allows this origin
+and `img.vije.sh`). Keep images to WebP, PNG, JPEG or SVG at 1600 px wide or less.
 
 ### 9.4 Merging the two sources
 - `src/features/blog/posts.ts` reads `content/blog/*/index.{md,mdx}` at build time for

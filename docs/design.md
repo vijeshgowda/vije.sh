@@ -41,7 +41,7 @@ self-hosted by `next/font`. Light is the default and ignores the OS; dark is opt
 | Work: rack, timing diagram, KPIs (`pWork`, `timingSVG`) | `src/features/work` | Done ("now" marker cached daily) |
 | Lab: memory calculator, bit register (`pLab`) | `src/features/lab` | Done |
 | Photo: procedural gallery, viewfinder, lightbox (`pPhoto`) | `src/features/photo` | To do |
-| Blog index and post (`pBlog`, `pPost`) | `src/features/blog` | To do (application.md section 9) |
+| Blog index and post (`pBlog`, `pPost`) | `src/features/blog`, `src/lib/markdown.ts` | Done for git posts (Markdown + images, application.md section 9); DB notes to do |
 | Forum (`pForum`, `pThread`) | `src/features/forum` | To do (needs auth) |
 | Jump-to palette, Ctrl K (`palItems`, `goTo`) | `src/features/palette` | To do |
 | Scroll reveals (`reveal`), card spotlight (`spotlight`), number scramble | `src/components/motion` | To do |

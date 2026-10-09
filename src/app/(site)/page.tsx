@@ -1,6 +1,8 @@
 import { Suspense } from "react";
 import Link from "next/link";
 import { Lede, RunFoot, RunHead, Section } from "@/components/ui/Datasheet";
+import { NoteList } from "@/features/blog/components/NoteList";
+import { latestNotes } from "@/features/blog/posts";
 import { DEFAULT_PINS, FEEDS, isServerFeedKey } from "@/features/live/catalog";
 import { PinnedFeeds } from "@/features/live/components/PinnedFeeds";
 import { getFeeds } from "@/features/live/server/get-feed";
@@ -44,7 +46,14 @@ export default function OverviewPage() {
       <Section id="peripherals" no={4} title="Peripherals" note="Outside work">
         <Peripherals />
       </Section>
-      {/* 5 Latest application notes: added by the blog feature */}
+      <Section
+        id="notes"
+        no={5}
+        title="Latest application notes"
+        note={<Link href="/blog">All notes &rarr;</Link>}
+      >
+        <NoteList notes={latestNotes(3)} />
+      </Section>
       <Section
         id="ratings"
         no={6}

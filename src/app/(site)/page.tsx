@@ -1,6 +1,6 @@
 import { Suspense } from "react";
 import Link from "next/link";
-import { RunFoot, RunHead, Section } from "@/components/ui/Datasheet";
+import { Lede, RunFoot, RunHead, Section } from "@/components/ui/Datasheet";
 import { DEFAULT_PINS, FEEDS, isServerFeedKey } from "@/features/live/catalog";
 import { PinnedFeeds } from "@/features/live/components/PinnedFeeds";
 import { getFeeds } from "@/features/live/server/get-feed";
@@ -25,17 +25,10 @@ export default function OverviewPage() {
         <Features />
       </Section>
       <Section id="cluster" no={2} title="Cluster" note="kubectl get pods -w">
-        <p
-          style={{
-            maxWidth: "40rem",
-            color: "var(--mute)",
-            margin: "0 0 1.25rem",
-            fontSize: "1.05rem",
-          }}
-        >
+        <Lede>
           Software engineer by title, sysadmin by habit. This cluster heals itself: click a pod to
           kill it, drain a node or scale the deployment, and watch it reconcile.
-        </p>
+        </Lede>
         <Cluster />
       </Section>
       <Section

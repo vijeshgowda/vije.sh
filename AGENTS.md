@@ -81,7 +81,29 @@ hot spots: change them in small, separate commits and say so in the PR.
 - Small PRs, one feature each. Don't edit migrations that have been applied.
 - Shell is fish on the owner's machine: avoid bash-only syntax in scripts and docs.
 
-## AI commit attribution
+## Subagents
+
+- Keep planning, architecture, implementation decisions, test design and debugging with the main
+  agent. Delegate only easy, bounded tasks with explicit inputs and a small result; do not offload
+  work that needs broad context, substantial judgement or a large report.
+- Prefer a subagent for running already-chosen tests, lint, typecheck or builds when the main
+  agent only needs the outcome rather than the tool output. Other useful tasks include checking
+  an explicit list of files for a known pattern or verifying a mechanical checklist.
+- Use `gpt-5.6-luna` (GPT Luna) for subagent calls. If unavailable, report that limitation rather
+  than silently choosing another model.
+- Give each subagent the working directory, exact command or file scope, constraints, expected
+  result and stopping condition. Test runners must not edit files, fix failures, install packages
+  or broaden the suite unless explicitly authorised.
+- Request the exact command and PASS/FAIL on completion, with test counts if available. On
+  failure, require the failing test/check names and concise actionable errors; distinguish
+  blocked, incomplete or skipped checks from a pass. Do not return full passing logs.
+- Delegate only when it saves meaningful context or allows independent work in parallel; run
+  quick checks directly when delegation costs more than it saves. Avoid duplicate runs and
+  concurrent commands that write the same build/test artifacts.
+- Wait for completion before claiming validation or opening a PR. The main agent interprets
+  failures, makes fixes and remains responsible for the final result.
+
+## AI commit and PR attribution
 
 - When explicitly asked to create a commit, include AI attribution in the commit message.
   This policy does not itself authorise committing, pushing, or rewriting existing commits.
@@ -90,7 +112,9 @@ hot spots: change them in small, separate commits and say so in the PR.
 - Choose the co-author by the actual model provider, not the tool or account running it:
   - Anthropic models (Claude), including Claude used through Copilot:
     `Co-authored-by: Claude <noreply@anthropic.com>`
-  - All other models:
+  - OpenAI models (GPT/Codex), including those used through Copilot:
+    `Co-authored-by: Codex <noreply@openai.com>`
+  - Other providers:
     `Co-authored-by: Copilot <copilot@github.com>`
 - Add `Model: <exact model name>` alongside the co-author trailer. Use the model name exposed
   by the session or explicitly supplied by the owner, including its version when available.
@@ -102,13 +126,16 @@ hot spots: change them in small, separate commits and say so in the PR.
 - Preserve these trailers when preparing squash or merge commit messages. GitHub account
   linking and contributor display depend on GitHub's handling of the co-author email; these
   trailers do not authenticate as the co-author or guarantee a contributor avatar.
+- Include the same provider-based co-author and exact model attribution in the PR body, without
+  replacing or reordering the repository PR template. When several models contribute, identify
+  each model's role; do not attribute changes to a model that only ran validation.
 
-Example for a non-Anthropic model (replace the placeholder with the actual model name):
+Example for an OpenAI model (replace the placeholder with the actual model name):
 
 ```text
 fix(live): handle missing timestamps
 
-Co-authored-by: Copilot <copilot@github.com>
+Co-authored-by: Codex <noreply@openai.com>
 Model: <exact model name>
 ```
 

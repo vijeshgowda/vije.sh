@@ -12,6 +12,9 @@
 /.next/
 /out/
 
+# blog images, copied from content/blog by scripts/copy-blog-assets.ts
+/public/blog/
+
 # production
 /build
 

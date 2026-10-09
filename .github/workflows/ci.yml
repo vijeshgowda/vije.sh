@@ -2,6 +2,7 @@ name: CI
 
 on:
   pull_request:
+    types: [opened, synchronize, reopened, edited]
   push:
     branches: [main]
 
@@ -14,6 +15,19 @@ permissions:
 
 jobs:
   check:
+    if: >-
+      ${{ !(
+        (github.event_name == 'pull_request' && (
+          startsWith(github.event.pull_request.title, 'chore:') ||
+          startsWith(github.event.pull_request.title, 'chore(') ||
+          startsWith(github.event.pull_request.title, 'chore!:')
+        )) ||
+        (github.event_name == 'push' && (
+          startsWith(github.event.head_commit.message, 'chore:') ||
+          startsWith(github.event.head_commit.message, 'chore(') ||
+          startsWith(github.event.head_commit.message, 'chore!:')
+        ))
+      ) }}
     runs-on: ubuntu-latest
     timeout-minutes: 25
     services:

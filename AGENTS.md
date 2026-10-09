@@ -81,6 +81,37 @@ hot spots: change them in small, separate commits and say so in the PR.
 - Small PRs, one feature each. Don't edit migrations that have been applied.
 - Shell is fish on the owner's machine: avoid bash-only syntax in scripts and docs.
 
+## AI commit attribution
+
+- When explicitly asked to create a commit, include AI attribution in the commit message.
+  This policy does not itself authorise committing, pushing, or rewriting existing commits.
+- Keep the owner's Git author, committer, credentials, and signing configuration unchanged.
+  Attribute the assisting model using Git trailers, not `--author` or Git identity changes.
+- Choose the co-author by the actual model provider, not the tool or account running it:
+  - Anthropic models (Claude), including Claude used through Copilot:
+    `Co-authored-by: Claude <noreply@anthropic.com>`
+  - All other models:
+    `Co-authored-by: Copilot <copilot@github.com>`
+- Add `Model: <exact model name>` alongside the co-author trailer. Use the model name exposed
+  by the session or explicitly supplied by the owner, including its version when available.
+  Never infer a model from the tool name or invent a model identity. If the model name or
+  provider is unavailable, ask the owner before committing.
+- Put trailers at the end of the commit message, separated from its body by a blank line.
+  Include attribution only for models that contributed to that commit; for multiple models,
+  list each distinct co-author once and each contributing model in its own `Model:` trailer.
+- Preserve these trailers when preparing squash or merge commit messages. GitHub account
+  linking and contributor display depend on GitHub's handling of the co-author email; these
+  trailers do not authenticate as the co-author or guarantee a contributor avatar.
+
+Example for a non-Anthropic model (replace the placeholder with the actual model name):
+
+```text
+fix(live): handle missing timestamps
+
+Co-authored-by: Copilot <copilot@github.com>
+Model: <exact model name>
+```
+
 ## Workflow and current state
 
 - Branch from `main` as `feat/<feature>` (or `fix/...`, `docs/...`), commit, push, open a PR with

@@ -1,5 +1,7 @@
 import type { Metadata } from "next";
-import { StubPage } from "@/components/ui/StubPage";
+import { PageIntro, RunFoot, RunHead, Section } from "@/components/ui/Datasheet";
+import { NoteList } from "@/features/blog/components/NoteList";
+import { listedNotes } from "@/features/blog/posts";
 
 export const metadata: Metadata = {
   title: "Blog",
@@ -7,11 +9,23 @@ export const metadata: Metadata = {
   alternates: { canonical: "/blog" },
 };
 
-// Owner: src/features/blog (git posts + DB notes, one Markdown pipeline). Spec: docs/application.md §9
 export default function BlogPage() {
+  const notes = listedNotes();
   return (
-    <StubPage page={5} label="Application notes" kicker="Section 10" title="Application notes">
-      Notes on backend systems, security, small models and games, newest first.
-    </StubPage>
+    <>
+      <RunHead label="Application notes" />
+      <PageIntro kicker="Section 10" title="Application notes">
+        Notes on backend systems, security, small models and games, newest first.
+      </PageIntro>
+      <Section
+        id="index"
+        no={10}
+        title="Index"
+        note={`${notes.length} note${notes.length === 1 ? "" : "s"}`}
+      >
+        <NoteList notes={notes} />
+      </Section>
+      <RunFoot page={5} />
+    </>
   );
 }

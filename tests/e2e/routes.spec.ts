@@ -7,6 +7,7 @@ const ROUTES = [
   { path: "/lab", h1: "Lab" },
   { path: "/photo", h1: "Contact sheet" },
   { path: "/blog", h1: "Application notes" },
+  { path: "/blog/planning-this-site", h1: "Planning this site" },
   { path: "/forum", h1: "The bus" },
   { path: "/live", h1: "Live feeds" },
 ];

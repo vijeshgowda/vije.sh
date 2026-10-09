@@ -1,0 +1,17 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="640" height="160" viewBox="0 0 640 160" font-family="ui-monospace, monospace" font-size="14">
+  <rect width="640" height="160" fill="#f8f3ea"/>
+  <g fill="none" stroke="#111214" stroke-width="1.5">
+    <rect x="20" y="50" width="160" height="60"/>
+    <rect x="240" y="50" width="160" height="60"/>
+    <rect x="460" y="50" width="160" height="60"/>
+  </g>
+  <g fill="none" stroke="#e30613" stroke-width="2">
+    <path d="M180 80H232M400 80H452"/>
+    <path d="M226 74l8 6-8 6M446 74l8 6-8 6"/>
+  </g>
+  <g fill="#111214" text-anchor="middle">
+    <text x="100" y="85">Browser</text>
+    <text x="320" y="85">Static site</text>
+    <text x="540" y="85">Postgres</text>
+  </g>
+</svg>

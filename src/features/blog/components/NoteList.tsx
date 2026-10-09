@@ -11,7 +11,6 @@ export function NoteList({ notes }: { notes: NoteRow[] }) {
     <ol className={s.an}>
       {notes.map((n) => (
         <li key={n.slug}>
-          {/* /blog/[slug] lands with the blog index and post pages (docs/design.md) */}
           <Link href={`/blog/${encodeURIComponent(n.slug)}` as Route}>
             <span className={s.id}>{n.id}</span>
             <span className={s.t}>

@@ -65,15 +65,39 @@ export const career = [
     to: "now",
     role: "Senior Software Engineer",
     org: "Meridian Systems",
+    note: "Own the service platform and API gateway layer used by every product team. Led the move to two-layer access control.",
     sample: true,
   },
-  { from: "2020", to: "2023", role: "Software Engineer", org: "Harbor Labs", sample: true },
-  { from: "2018", to: "2020", role: "Software Engineer", org: "Kite Analytics", sample: true },
+  {
+    from: "2020",
+    to: "2023",
+    role: "Software Engineer",
+    org: "Harbor Labs",
+    note: "Built event-driven pipelines on Pub/Sub that process large file batches. Shipped shared developer tooling.",
+    sample: true,
+  },
+  {
+    from: "2018",
+    to: "2020",
+    role: "Software Engineer",
+    org: "Kite Analytics",
+    note: "Full-stack React and Node.js features, including ML-powered recommendations.",
+    sample: true,
+  },
   {
     from: "2017",
     to: "2018",
     role: "MSc, Advanced Computer Science",
     org: "University",
+    note: "Specialised in machine learning and AI.",
     sample: true,
   },
+] as const;
+
+/** Career KPIs (docs/design/shared-content.md); sample figures: replace before launch */
+export const kpis = [
+  { value: "8", caption: "years building production systems", sample: false },
+  { value: "MSc", caption: "advanced computer science, ML and AI", sample: false },
+  { value: "38%", caption: "lower p95 latency on the core API", sample: true },
+  { value: "40+", caption: "services moved to one access model", sample: true },
 ] as const;

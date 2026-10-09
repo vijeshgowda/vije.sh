@@ -1,0 +1,59 @@
+.card {
+  border: 1px solid var(--line);
+  background: var(--card);
+  box-shadow: var(--sh1);
+  padding: 1.25rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.55rem;
+  min-width: 0;
+  position: relative;
+  overflow: hidden;
+  transition:
+    transform 0.35s var(--ease-out),
+    box-shadow 0.35s,
+    border-color 0.35s;
+}
+.card::after {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  height: 3px;
+  width: 0;
+  background: var(--red);
+  transition: width 0.45s cubic-bezier(0.6, 0, 0.2, 1);
+}
+.card:hover {
+  box-shadow: var(--sh3);
+  border-color: var(--line2);
+  z-index: 2;
+}
+.card:hover::after {
+  width: 100%;
+}
+.lift:hover {
+  transform: translateY(-4px);
+}
+.head {
+  display: flex;
+  justify-content: space-between;
+  gap: 0.5rem;
+  font: 500 0.68rem var(--font-mono);
+  color: var(--mute);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+.head > :first-child {
+  color: var(--red-t);
+}
+.title {
+  margin: 0.15rem 0 0;
+  font-size: 1.15rem;
+  letter-spacing: -0.01em;
+}
+.card p {
+  margin: 0;
+  color: var(--mute);
+  font-size: 0.92rem;
+}

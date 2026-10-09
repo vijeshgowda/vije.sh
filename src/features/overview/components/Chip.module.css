@@ -1,0 +1,161 @@
+/* VKG-04 pinout, from V18.1.1 (docs/design/18.1.1-datasheet.html, "chip") */
+.chip {
+  width: 100%;
+  max-width: min(clamp(400px, 30vw, 600px), calc(100svh - 26rem));
+  min-width: 300px;
+  display: block;
+  margin: 0 auto;
+  transform: rotateX(var(--rx, 0deg)) rotateY(var(--ry, 0deg));
+  transition: transform 0.5s var(--ease-out);
+}
+.body {
+  fill: var(--chip);
+  stroke: var(--line2);
+  filter: drop-shadow(var(--sx, 0px) var(--sy, 6px) 8px rgb(var(--sc) / 0.45))
+    drop-shadow(calc(var(--sx, 0px) * 2) calc(var(--sy, 6px) * 2.4) 18px rgb(var(--sc) / 0.25));
+}
+.pad,
+.via {
+  fill: var(--bg);
+  stroke: var(--line2);
+  stroke-width: 2;
+  filter: drop-shadow(0 1px 1px rgb(var(--sc) / 0.3));
+}
+.stub {
+  fill: var(--pin);
+}
+.ct {
+  fill: var(--chip-t);
+  font-family: var(--font-mono);
+  text-anchor: middle;
+}
+.tr,
+.trd {
+  fill: none;
+  stroke: var(--line2);
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+.net {
+  font: 400 8px var(--font-mono);
+  fill: var(--mute);
+}
+.l {
+  font: 500 11px var(--font-mono);
+  fill: var(--ink);
+  letter-spacing: 0.04em;
+}
+.pnum {
+  font: 500 8px var(--font-mono);
+  fill: var(--chip-t);
+  opacity: 0.7;
+}
+.hit {
+  fill: transparent;
+}
+.pin:focus {
+  outline: none;
+}
+.pin:hover .tr,
+.pin:focus-visible .tr,
+.pin.on .tr {
+  stroke: var(--red);
+}
+.pin:hover .pad,
+.pin:focus-visible .pad,
+.pin.on .pad {
+  stroke: var(--red);
+  fill: var(--red);
+}
+.pin:hover .l,
+.pin.on .l {
+  fill: var(--red-t);
+}
+.pin:focus-visible .hit {
+  stroke: var(--red);
+  stroke-width: 1.5;
+  stroke-dasharray: 3 3;
+}
+.pkt {
+  fill: var(--red);
+  pointer-events: none;
+}
+.led,
+.p1 {
+  fill: var(--red);
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .pin:hover .tr,
+  .pin:focus-visible .tr {
+    stroke-dasharray: 0.06 0.04;
+    animation: flow 0.6s linear infinite;
+  }
+  .led {
+    animation: hb 1.8s infinite;
+  }
+  /* intro: package fades in, traces draw, pads and labels appear */
+  .intro .stub {
+    animation: fade 0.3s 0.35s both;
+  }
+  .intro .body,
+  .intro .ct,
+  .intro .p1 {
+    animation: fade 0.5s 0.2s both;
+  }
+  .intro .tr,
+  .intro .trd {
+    stroke-dasharray: 1;
+    stroke-dashoffset: 1;
+    animation: drawin 0.8s ease forwards;
+    animation-delay: calc(0.6s + var(--d, 0s));
+  }
+  .intro .pad,
+  .intro .via,
+  .intro .net,
+  .intro .l {
+    animation: fade 0.4s both;
+    animation-delay: calc(1.3s + var(--d, 0s));
+  }
+  .intro .led {
+    animation: fade 0.3s 2.2s both;
+  }
+}
+
+@media (max-width: 62rem) {
+  .chip {
+    transform: none;
+  }
+}
+@media (max-width: 48rem) {
+  .chip {
+    max-width: 340px;
+  }
+}
+
+@keyframes flow {
+  to {
+    stroke-dashoffset: -0.1;
+  }
+}
+@keyframes drawin {
+  to {
+    stroke-dashoffset: 0;
+  }
+}
+@keyframes fade {
+  from {
+    opacity: 0;
+  }
+}
+@keyframes hb {
+  0%,
+  45%,
+  100% {
+    opacity: 1;
+  }
+  22% {
+    opacity: 0.25;
+  }
+}

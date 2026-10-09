@@ -1,0 +1,16 @@
+.skip {
+  position: absolute;
+  left: -999px;
+  top: 1rem;
+  z-index: 60;
+  background: var(--bg);
+  padding: 0.5rem 1rem;
+  border: 1px solid var(--ink);
+}
+.skip:focus {
+  left: 1rem;
+}
+.headerSlot {
+  height: calc(var(--header-h) + 1px);
+  border-bottom: 1px solid var(--line);
+}

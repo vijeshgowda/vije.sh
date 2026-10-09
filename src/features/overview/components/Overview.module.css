@@ -1,0 +1,338 @@
+/* Overview sections from V18.1.1: features, cluster, peripherals + RTC, ratings */
+.feat {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 2.5rem;
+}
+.sq {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+.sq li {
+  padding: 0.6rem 0 0.6rem 1.4rem;
+  border-bottom: 1px solid var(--line);
+  position: relative;
+}
+.sq li::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 1.1rem;
+  width: 0.45rem;
+  height: 0.45rem;
+  background: var(--red);
+}
+.mini {
+  font: 500 0.7rem var(--font-mono);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--mute);
+  margin: 0 0 0.3rem;
+}
+.lede {
+  max-width: 40rem;
+  color: var(--mute);
+  margin: 0 0 1.25rem;
+  font-size: 1.05rem;
+}
+
+/* cards */
+.cards {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 1.25rem;
+}
+.wide {
+  grid-column: span 2;
+}
+.rtc {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 1rem 1.5rem;
+  align-items: center;
+}
+.clock {
+  font: 700 clamp(2.4rem, 5vw, 3.6rem) / 1 var(--font-mono);
+  letter-spacing: -0.04em;
+  font-variant-numeric: tabular-nums;
+}
+.ss {
+  color: var(--red-t);
+}
+.date {
+  font: 400 0.74rem var(--font-mono);
+  color: var(--mute);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  margin-top: 0.35rem;
+  min-height: 1.2em;
+}
+.xtal {
+  width: 150px;
+  height: 56px;
+  display: block;
+  border: 1px solid var(--line);
+  background: var(--bg);
+  box-shadow: inset 0 1px 4px rgb(var(--sc) / 0.12);
+}
+.xtal path {
+  fill: none;
+  stroke: var(--red);
+  stroke-width: 1.6;
+}
+.xtal .gr {
+  stroke: var(--line);
+  stroke-width: 1;
+}
+.xcap {
+  font: 400 0.62rem var(--font-mono);
+  color: var(--mute);
+  text-align: center;
+  margin-top: 0.3rem;
+}
+.regs {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  border: 1px solid var(--line);
+  margin-top: 0.4rem;
+}
+.regs div {
+  padding: 0.5rem 0.7rem;
+  border-right: 1px solid var(--line);
+  font: 500 0.8rem var(--font-mono);
+  font-variant-numeric: tabular-nums;
+}
+.regs div:last-child {
+  border-right: 0;
+}
+.regs small {
+  display: block;
+  font-size: 0.58rem;
+  color: var(--mute);
+  letter-spacing: 0.08em;
+  font-weight: 400;
+}
+
+/* ratings table */
+.tw {
+  overflow-x: auto;
+  overflow-y: hidden;
+  background: var(--card);
+  border: 1px solid var(--line);
+  box-shadow: var(--sh1);
+}
+.tbl {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.9rem;
+  min-width: 38rem;
+}
+.tbl th {
+  font: 500 0.66rem var(--font-mono);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--mute);
+  text-align: left;
+  border-bottom: 1px solid var(--ink);
+  padding: 0.6rem 0.75rem;
+  white-space: nowrap;
+}
+.tbl td {
+  padding: 0.6rem 0.75rem;
+  border-bottom: 1px solid var(--line);
+  vertical-align: top;
+}
+.tbl tbody tr:hover {
+  background: var(--faint);
+}
+.n {
+  font-family: var(--font-mono);
+  font-size: 0.8rem;
+  white-space: nowrap;
+}
+.n.r {
+  color: var(--red-t);
+  font-weight: 700;
+}
+.fn {
+  font: 400 0.7rem var(--font-mono);
+  color: var(--mute);
+  margin: 0.8rem 0 0;
+}
+
+/* cluster */
+.k8s {
+  border: 1px solid var(--ink);
+  box-shadow: var(--sh2);
+  background: var(--bg);
+}
+.kctl {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.6rem;
+  align-items: center;
+  padding: 0.75rem;
+  border-bottom: 1px solid var(--ink);
+  background: var(--faint);
+}
+.kctl > span {
+  margin-right: auto;
+  font: 500 0.78rem var(--font-mono);
+}
+.kscale {
+  display: flex;
+  align-items: center;
+  border: 1px solid var(--ink);
+}
+.kscale > button {
+  border: 0;
+  min-width: 2.5rem;
+}
+.kscale output {
+  font: 700 0.85rem var(--font-mono);
+  min-width: 2rem;
+  text-align: center;
+}
+.nodes {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+}
+.node {
+  border-right: 1px solid var(--line);
+  padding: 0.9rem;
+  transition: background-color 0.3s;
+}
+.node:last-child {
+  border-right: 0;
+}
+.node header {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font: 400 0.72rem var(--font-mono);
+  margin-bottom: 0.7rem;
+}
+.nst {
+  margin-left: auto;
+  color: var(--mute);
+}
+.nled {
+  width: 0.5rem;
+  height: 0.5rem;
+  border-radius: 50%;
+  background: var(--ink);
+}
+.cordon {
+  background: repeating-linear-gradient(45deg, transparent 0 7px, var(--faint) 7px 14px);
+}
+.cordon .nst {
+  color: var(--red-t);
+}
+.cordon .nled {
+  background: var(--red);
+}
+.pods {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, 2.4rem);
+  gap: 0.4rem;
+  min-height: 2.4rem;
+  align-content: start;
+}
+.pod {
+  aspect-ratio: 1;
+  border: 1.5px solid var(--ink);
+  background: var(--ink);
+  color: var(--bg);
+  font: 500 0.58rem var(--font-mono);
+  display: grid;
+  place-items: center;
+  padding: 0;
+  transition:
+    background-color 0.2s,
+    border-color 0.2s,
+    opacity 0.4s,
+    transform 0.4s,
+    box-shadow 0.2s;
+  box-shadow: 0 2px 4px rgb(var(--sc) / 0.25);
+}
+.pod:hover {
+  background: var(--red);
+  border-color: var(--red);
+  color: #fff;
+  transform: translateY(-2px);
+  box-shadow: var(--shr);
+}
+.pending {
+  background: transparent;
+  color: var(--ink);
+  border-style: dashed;
+}
+.crash {
+  background: var(--red);
+  border-color: var(--red);
+  color: #fff;
+}
+.term {
+  opacity: 0.15;
+  transform: scale(0.6);
+}
+.kst {
+  padding: 0.6rem 0.75rem;
+  border-top: 1px solid var(--line);
+  margin: 0;
+  color: var(--mute);
+  font: 400 0.72rem var(--font-mono);
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .pod:not(.crash) {
+    animation: podin 0.35s var(--ease-out);
+  }
+  .crash {
+    animation: blink 0.3s steps(1) 4;
+  }
+  .clock .col {
+    animation: blink 1s steps(1) infinite;
+  }
+}
+
+@media (max-width: 62rem) {
+  .cards {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+@media (max-width: 48rem) {
+  .feat,
+  .cards {
+    grid-template-columns: 1fr;
+  }
+  .apps {
+    display: none;
+  }
+  .wide {
+    grid-column: auto;
+  }
+  .rtc {
+    grid-template-columns: 1fr;
+  }
+  .nodes {
+    grid-template-columns: 1fr;
+  }
+  .node {
+    border-right: 0;
+    border-bottom: 1px solid var(--line);
+  }
+}
+
+@keyframes podin {
+  from {
+    transform: scale(0.3);
+    opacity: 0;
+  }
+}
+@keyframes blink {
+  50% {
+    opacity: 0;
+  }
+}

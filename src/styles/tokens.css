@@ -1,0 +1,68 @@
+/*
+ * Design tokens from the chosen design, V18.1.1 "Datasheet, usable" (docs/design.md).
+ * Light is the default; dark is opt-in via <html data-theme="dark"> (never follows the system).
+ * Change values here only; Tailwind utilities (bg-paper, text-ink, shadow-1...) map onto them in
+ * src/app/globals.css.
+ */
+:root {
+  --bg: #f4eee3;
+  --ink: #111214;
+  --mute: #5a5a5e;
+  --line: #ddd5c7;
+  --line2: #b5ad9f;
+  --faint: #ece5d8;
+  --red: #e30613;
+  --red-t: #c4050f; /* small red text, AA on --bg */
+  --pin: #a9acb2;
+  --chip: #141518;
+  --chip-t: #f4f4f2;
+  --card: #f8f3ea;
+  --ok: #3c9a5f;
+  --warn: #c99a2e;
+  color-scheme: light;
+
+  /* elevation: a tight contact shadow plus a soft ambient one; same light source (above) */
+  --sc: 70 48 24;
+  --sh1:
+    0 1px 1px rgb(var(--sc) / 0.07), 0 2px 5px -1px rgb(var(--sc) / 0.08),
+    0 6px 14px -8px rgb(var(--sc) / 0.14);
+  --sh2:
+    0 1px 2px rgb(var(--sc) / 0.08), 0 4px 10px -3px rgb(var(--sc) / 0.1),
+    0 16px 30px -12px rgb(var(--sc) / 0.24);
+  --sh3:
+    0 2px 4px rgb(var(--sc) / 0.08), 0 10px 20px -8px rgb(var(--sc) / 0.14),
+    0 32px 60px -20px rgb(var(--sc) / 0.36);
+  --shr: 0 2px 4px rgb(227 6 19 / 0.18), 0 10px 22px -8px rgb(227 6 19 / 0.5);
+
+  --wrap-max: 112rem;
+  --wrap-pad: clamp(1.5rem, 4vw, 5rem);
+  --header-h: 3.5rem;
+  --ease-out: cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+
+[data-theme="dark"] {
+  --bg: #0c0d0f;
+  --ink: #efefec;
+  --mute: #a0a3aa;
+  --line: #26282d;
+  --line2: #3b3e45;
+  --faint: #141518;
+  --red-t: #ff4b55;
+  --pin: #6b6e75;
+  --chip: #1d1f24;
+  --card: #15161a;
+  color-scheme: dark;
+
+  /* black shadows vanish on a black page, so dark adds a 1px top highlight and a lighter surface */
+  --sc: 0 0 0;
+  --sh1:
+    inset 0 1px 0 rgb(255 255 255 / 0.04), 0 1px 2px rgb(0 0 0 / 0.6),
+    0 4px 12px -4px rgb(0 0 0 / 0.6);
+  --sh2:
+    inset 0 1px 0 rgb(255 255 255 / 0.05), 0 2px 4px rgb(0 0 0 / 0.55),
+    0 16px 32px -10px rgb(0 0 0 / 0.85);
+  --sh3:
+    inset 0 1px 0 rgb(255 255 255 / 0.06), 0 4px 8px rgb(0 0 0 / 0.55),
+    0 30px 60px -16px rgb(0 0 0 / 0.95), 0 0 0 1px rgb(255 255 255 / 0.03);
+  --shr: 0 2px 4px rgb(255 40 50 / 0.2), 0 10px 26px -6px rgb(255 40 50 / 0.45);
+}

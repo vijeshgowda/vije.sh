@@ -1,0 +1,34 @@
+.sw {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  background: none;
+  border: 0;
+  color: var(--ink);
+  font: 500 0.75rem var(--font-mono);
+  padding: 0.5rem 0;
+  white-space: nowrap;
+}
+.track {
+  width: 2.2rem;
+  height: 1.2rem;
+  border: 1px solid var(--ink);
+  border-radius: 1rem;
+  position: relative;
+}
+.knob {
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  width: 0.85rem;
+  height: 0.85rem;
+  border-radius: 50%;
+  background: var(--ink);
+  transition:
+    transform 0.2s,
+    background-color 0.2s;
+}
+.sw[aria-pressed="true"] .knob {
+  transform: translateX(1rem);
+  background: var(--red);
+}

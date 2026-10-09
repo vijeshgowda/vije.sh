@@ -1,0 +1,37 @@
+.foot {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 1rem;
+  flex-wrap: wrap;
+  padding-top: 1.5rem;
+  padding-bottom: 3rem;
+  border-top: 2px solid var(--ink);
+  margin-top: 3rem;
+}
+.foot b {
+  font-size: 1.1rem;
+  letter-spacing: -0.02em;
+}
+.meta {
+  font: 400 0.72rem var(--font-mono);
+  color: var(--mute);
+}
+.fnav {
+  flex-basis: 100%;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.25rem 1.4rem;
+  padding-bottom: 1.1rem;
+  margin-bottom: 0.2rem;
+  border-bottom: 1px solid var(--line);
+  font: 500 0.78rem var(--font-mono);
+}
+.fnav a {
+  text-decoration: none;
+  color: var(--mute);
+  padding: 0.3rem 0;
+}
+.fnav a:hover {
+  color: var(--red-t);
+}

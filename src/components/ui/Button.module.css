@@ -1,0 +1,62 @@
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  padding: 0.8rem 1.3rem;
+  border: 1px solid var(--ink);
+  background: var(--bg);
+  color: var(--ink);
+  font: 500 0.8rem var(--font-mono);
+  text-decoration: none;
+  min-height: 2.75rem;
+  box-shadow: var(--sh1);
+  transition:
+    background-color 0.15s,
+    color 0.15s,
+    border-color 0.15s,
+    transform 0.15s,
+    box-shadow 0.15s,
+    filter 0.15s;
+}
+.btn:hover {
+  background: var(--ink);
+  color: var(--bg);
+  transform: translateY(-1px);
+  box-shadow: var(--sh2);
+}
+.btn:active {
+  transform: translateY(1px);
+  box-shadow: none;
+}
+.btn:disabled {
+  opacity: 0.5;
+}
+/* cut corner drawn by the gradient, not clip-path: clip-path also clips the drop-shadow */
+.red {
+  background: linear-gradient(225deg, transparent 7px, var(--red) 7.5px) border-box;
+  border-color: transparent;
+  color: #fff;
+  box-shadow: none;
+  filter: drop-shadow(0 1px 1px rgb(227 6 19 / 0.3)) drop-shadow(0 6px 10px rgb(227 6 19 / 0.3));
+}
+.red:hover {
+  background: linear-gradient(225deg, transparent 7px, var(--ink) 7.5px) border-box;
+  color: var(--bg);
+  box-shadow: none;
+  filter: drop-shadow(0 1px 1px rgb(var(--sc) / 0.3)) drop-shadow(0 10px 14px rgb(var(--sc) / 0.3));
+}
+.red:active {
+  filter: drop-shadow(0 1px 1px rgb(227 6 19 / 0.3));
+}
+.sm {
+  padding: 0.45rem 0.9rem;
+  font-size: 0.74rem;
+  min-height: 2.4rem;
+}
+/* toggle buttons (aria-pressed) turn red when on */
+.btn[aria-pressed="true"] {
+  background: var(--red);
+  border-color: var(--red);
+  color: #fff;
+}

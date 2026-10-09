@@ -1,6 +1,6 @@
 # vije.sh
 
-Personal site, blog and forum of Vijesh, designed as the datasheet of a chip (VKG-04).
+My personal site, blog and forum, designed as the datasheet of a chip (VKG-04).
 Next.js 16 (App Router, Cache Components) on Vercel, Supabase Postgres + Auth, Tailwind v4.
 
 ## Run it

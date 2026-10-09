@@ -4,7 +4,7 @@ import { expect, expectAccessible, test } from "./fixtures";
 const ROUTES = [
   { path: "/", h1: "vije.sh" },
   { path: "/work", h1: "Deployments" },
-  { path: "/lab", h1: "Memory lab" },
+  { path: "/lab", h1: "Lab" },
   { path: "/photo", h1: "Contact sheet" },
   { path: "/blog", h1: "Application notes" },
   { path: "/forum", h1: "The bus" },

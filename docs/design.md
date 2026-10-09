@@ -39,7 +39,7 @@ self-hosted by `next/font`. Light is the default and ignores the OS; dark is opt
 | Live telemetry + Live page, 19 feeds, globe, pins, filters | `src/features/live/**` | Done (server-cached, see below) |
 | Latest application notes (overview section 5) | `src/features/blog` | To do (blog feature) |
 | Work: rack, timing diagram, KPIs (`pWork`, `timingSVG`) | `src/features/work` | To do |
-| Lab: memory calculator, bit register (`pLab`) | `src/features/lab` | To do |
+| Lab: memory calculator, bit register (`pLab`) | `src/features/lab` | Done |
 | Photo: procedural gallery, viewfinder, lightbox (`pPhoto`) | `src/features/photo` | To do |
 | Blog index and post (`pBlog`, `pPost`) | `src/features/blog` | To do (application.md section 9) |
 | Forum (`pForum`, `pThread`) | `src/features/forum` | To do (needs auth) |

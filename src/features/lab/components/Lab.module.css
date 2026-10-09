@@ -1,0 +1,184 @@
+/* Lab from V18.1.1 (prototype .lab, .eq, .bits, .reg, .bars, .fits) */
+.lab {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 3rem;
+}
+.eq {
+  font: 500 1.25rem var(--font-mono);
+  padding: 1rem 1.2rem;
+  border: 1px solid var(--ink);
+  border-left: 4px solid var(--red);
+  background: var(--card);
+  box-shadow: var(--sh2);
+}
+.eq sub {
+  font-size: 0.6em;
+  color: var(--mute);
+}
+.rng {
+  display: flex;
+  justify-content: space-between;
+  font: 400 0.78rem var(--font-mono);
+  margin: 1.6rem 0 0.4rem;
+}
+.rngGap {
+  margin-top: 1.4rem;
+}
+.range {
+  width: 100%;
+  accent-color: var(--red);
+}
+.bits {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+  margin: 0.6rem 0 1.6rem;
+}
+.bits button {
+  font: 500 0.78rem var(--font-mono);
+  padding: 0.45rem 0.8rem;
+  min-height: 2.6rem;
+  border: 1px solid var(--ink);
+  background: none;
+  color: var(--ink);
+}
+.bits button[aria-pressed="true"] {
+  background: var(--ink);
+  color: var(--bg);
+}
+.big {
+  font-size: clamp(3.2rem, 8vw, 5.2rem);
+  font-weight: 700;
+  letter-spacing: -0.05em;
+  line-height: 1;
+}
+.big span {
+  display: inline-block;
+  color: var(--red);
+}
+.big small {
+  font-size: 1.2rem;
+  color: var(--mute);
+  margin-left: 0.3rem;
+  letter-spacing: 0;
+}
+.note {
+  color: var(--mute);
+}
+.mini {
+  font: 500 0.7rem var(--font-mono);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--mute);
+  margin: 0 0 0.3rem;
+}
+.miniGap {
+  margin-top: 1.6rem;
+}
+.reg {
+  display: grid;
+  grid-template-columns: repeat(16, 1fr);
+  border: 1px solid var(--ink);
+  margin: 1.4rem 0 0.3rem;
+  box-shadow: var(--sh1);
+}
+.reg i {
+  height: 1.6rem;
+  border-right: 1px solid var(--line);
+  background: linear-gradient(90deg, var(--red) calc(var(--f, 0) * 100%), transparent 0);
+}
+.reg i:last-child {
+  border-right: 0;
+}
+.reglbl {
+  display: flex;
+  justify-content: space-between;
+  font: 400 0.62rem var(--font-mono);
+  color: var(--mute);
+}
+.bars {
+  display: grid;
+  gap: 0.5rem;
+  margin-top: 0.5rem;
+}
+.bar {
+  display: grid;
+  grid-template-columns: 3.4rem 1fr 4.8rem;
+  align-items: center;
+  gap: 0.75rem;
+  font: 400 0.74rem var(--font-mono);
+}
+.tr {
+  height: 0.9rem;
+  background: var(--faint);
+  border: 1px solid var(--line);
+}
+.tr i {
+  display: block;
+  height: 100%;
+  background: var(--ink);
+}
+.on {
+  font-weight: 700;
+  color: var(--red-t);
+}
+.on .tr i {
+  background: var(--red);
+}
+.v {
+  text-align: right;
+}
+.fits {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+  margin: 1rem 0 0;
+  padding: 0;
+  list-style: none;
+}
+.fits li {
+  font: 400 0.7rem var(--font-mono);
+  padding: 0.3rem 0.55rem;
+  border: 1px solid var(--line);
+  color: var(--mute);
+  text-decoration: line-through;
+}
+.fits li.ok {
+  border-color: var(--ink);
+  color: var(--ink);
+  text-decoration: none;
+}
+.fits li.ok::before {
+  content: "\25A0  " / "";
+  color: var(--red);
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .bump {
+    animation: pop 0.35s ease;
+  }
+  .reg i.flip {
+    animation: flip 0.4s ease;
+  }
+}
+
+@media (max-width: 62rem) {
+  .lab {
+    grid-template-columns: 1fr;
+  }
+}
+
+@keyframes pop {
+  40% {
+    transform: scale(1.45);
+  }
+  70% {
+    transform: scale(0.9);
+  }
+}
+@keyframes flip {
+  50% {
+    transform: scaleY(0.2);
+  }
+}

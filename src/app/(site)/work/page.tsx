@@ -1,5 +1,10 @@
 import type { Metadata } from "next";
-import { StubPage } from "@/components/ui/StubPage";
+import { PageIntro, RunFoot, RunHead, Section } from "@/components/ui/Datasheet";
+import { work } from "@/content/profile";
+import { CareerTiming } from "@/features/work/components/CareerTiming";
+import { Kpis, Rack } from "@/features/work/components/Rack";
+import { careerNow } from "@/features/work/server/now";
+import { yearFraction } from "@/features/work/timing";
 
 export const metadata: Metadata = {
   title: "Work",
@@ -7,11 +12,28 @@ export const metadata: Metadata = {
   alternates: { canonical: "/work" },
 };
 
-// Owner: src/features/work (rack, timing diagram, career KPIs). Spec: docs/design.md
-export default function WorkPage() {
+export default async function WorkPage() {
+  const nowYear = yearFraction(await careerNow());
   return (
-    <StubPage page={2} label="Work" kicker="Section 7" title="Deployments">
-      Selected work as a server rack, and a career timing diagram.
-    </StubPage>
+    <>
+      <RunHead label="Work" />
+      <PageIntro kicker={"Section 6 \u2013 7"} title="Deployments">
+        Systems I have built and run. Every unit in the rack is a project: pull one out to read its
+        spec.
+      </PageIntro>
+      <Kpis />
+      <Section id="rack" no={6} title="Rack A" note={`${work.length}U populated`}>
+        <Rack />
+      </Section>
+      <Section
+        id="timing"
+        no={7}
+        title="Timing characteristics"
+        note={<>t in years &middot; hover a row</>}
+      >
+        <CareerTiming nowYear={nowYear} />
+      </Section>
+      <RunFoot page={2} />
+    </>
   );
 }

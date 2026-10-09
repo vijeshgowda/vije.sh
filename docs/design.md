@@ -37,7 +37,7 @@ self-hosted by `next/font`. Light is the default and ignores the OS; dark is opt
 | Firmware flash + tagline patch | `src/features/overview/components/Firmware.tsx` | Done |
 | Skills ticker, Features, Cluster (`mountCluster`), Peripherals + RTC (`mountRtc`), Ratings | `src/features/overview/components/*` | Done |
 | Live telemetry + Live page, 19 feeds, globe, pins, filters | `src/features/live/**` | Done (server-cached, see below) |
-| Latest application notes (overview section 5) | `src/features/blog` | To do (blog feature) |
+| Latest application notes (overview section 5) | `src/features/blog/posts.ts`, `components/NoteList.tsx` | Done (git posts; DB notes join with the notes feature) |
 | Work: rack, timing diagram, KPIs (`pWork`, `timingSVG`) | `src/features/work` | To do |
 | Lab: memory calculator, bit register (`pLab`) | `src/features/lab` | Done |
 | Photo: procedural gallery, viewfinder, lightbox (`pPhoto`) | `src/features/photo` | To do |

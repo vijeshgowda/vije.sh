@@ -6,6 +6,8 @@ const nextConfig: NextConfig = {
   partialPrefetching: true,
   poweredByHeader: false,
   typedRoutes: true,
+  // Pages that list git posts re-render at runtime when their feeds revalidate; ship the posts too.
+  outputFileTracingIncludes: { "/": ["./content/blog/*/index.{md,mdx}"] },
   turbopack: {
     rules: {
       // Tailwind for global CSS only; `as: "*.css"` would turn CSS Modules into plain CSS.

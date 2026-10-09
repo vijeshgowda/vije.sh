@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
-import { StubPage } from "@/components/ui/StubPage";
+import { PageIntro, RunFoot, RunHead, Section } from "@/components/ui/Datasheet";
+import { MemoryLab } from "@/features/lab/components/MemoryLab";
 
 export const metadata: Metadata = {
   title: "Lab",
@@ -7,11 +8,18 @@ export const metadata: Metadata = {
   alternates: { canonical: "/lab" },
 };
 
-// Owner: src/features/lab (memory calculator, bit register). Spec: docs/design.md
 export default function LabPage() {
   return (
-    <StubPage page={3} label="Lab" kicker="Section 8" title="Memory lab">
-      How much memory a model needs at each bit width.
-    </StubPage>
+    <>
+      <RunHead label="Lab" />
+      <PageIntro kicker="Section 8" title="Lab">
+        How much memory does a model need? Fewer bits per weight, smaller model. Pick a size and a
+        bit width.
+      </PageIntro>
+      <Section id="sizing" no={8} title="Memory sizing" note="Raw weights only">
+        <MemoryLab />
+      </Section>
+      <RunFoot page={3} />
+    </>
   );
 }

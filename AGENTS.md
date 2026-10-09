@@ -80,3 +80,14 @@ hot spots: change them in small, separate commits and say so in the PR.
   module that uses them (module animation names are scoped).
 - Small PRs, one feature each. Don't edit migrations that have been applied.
 - Shell is fish on the owner's machine: avoid bash-only syntax in scripts and docs.
+
+## Workflow and current state
+
+- Branch from `main` as `feat/<feature>` (or `fix/...`, `docs/...`), commit, push, open a PR with
+  `gh pr create`. CI (`.github/workflows/ci.yml`) must pass; the owner reviews and merges.
+- What's built and what's left, per feature folder: the status table in
+  [docs/design.md](docs/design.md). Update that table in the PR that ports a piece.
+- Decisions already made (don't reopen without asking): 7 real routes; live feeds cached on the
+  server (`'use cache: remote'` + `/api/feeds/[key]`), only ISS and weather fetched by the browser;
+  Supabase Auth for identity only, roles in `app.user_roles`; `pg` with raw SQL, no ORM; hybrid
+  blog (Markdown in git + DB notes); Vercel Hobby, Cloudflare DNS-only.

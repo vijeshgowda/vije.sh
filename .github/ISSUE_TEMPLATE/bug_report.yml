@@ -1,0 +1,50 @@
+name: Bug report
+description: Report a reproducible problem with the site or repository.
+title: "[Bug]: "
+labels:
+  - bug
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for taking the time to report a problem. Please search open issues first.
+  - type: textarea
+    id: summary
+    attributes:
+      label: What happened?
+      description: Describe the problem and what you expected to happen.
+      placeholder: Tell us what you saw and what you expected instead.
+    validations:
+      required: true
+  - type: textarea
+    id: reproduce
+    attributes:
+      label: How can we reproduce it?
+      description: Give the smallest set of steps, route, or commands that demonstrates the problem.
+      placeholder: |
+        1. Open ...
+        2. Select ...
+        3. See ...
+    validations:
+      required: true
+  - type: input
+    id: environment
+    attributes:
+      label: Environment
+      description: Include browser and version, device, or Node.js version as relevant.
+      placeholder: Firefox 142 on Linux; Node.js 24.8
+  - type: textarea
+    id: evidence
+    attributes:
+      label: Evidence
+      description: Add relevant logs, screenshots, or links. Remove secrets and personal data.
+      render: text
+  - type: checkboxes
+    id: checks
+    attributes:
+      label: Checks
+      options:
+        - label: I searched existing issues and did not find a duplicate.
+          required: true
+        - label: I have removed secrets and private information from this report.
+          required: true

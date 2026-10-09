@@ -1,0 +1,43 @@
+name: Feature request
+description: Suggest an improvement to the site or project.
+title: "[Feature]: "
+labels:
+  - enhancement
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Useful proposals explain the problem first and the proposed solution second.
+  - type: textarea
+    id: problem
+    attributes:
+      label: Problem
+      description: What user problem or limitation would this address?
+      placeholder: As a ..., I want ..., so that ...
+    validations:
+      required: true
+  - type: textarea
+    id: proposal
+    attributes:
+      label: Proposed solution
+      description: Describe the behavior or experience you would like to see.
+      placeholder: Explain the smallest useful version of the change.
+    validations:
+      required: true
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternatives considered
+      description: What other approaches, workarounds, or designs did you consider?
+  - type: textarea
+    id: context
+    attributes:
+      label: Additional context
+      description: Add mockups, examples, links, or other context that would help evaluate the request.
+  - type: checkboxes
+    id: checks
+    attributes:
+      label: Checks
+      options:
+        - label: I searched existing issues and did not find a duplicate.
+          required: true

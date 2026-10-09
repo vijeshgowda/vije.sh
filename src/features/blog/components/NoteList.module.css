@@ -1,0 +1,87 @@
+/* Application-notes list from V18.1.1 (.an) */
+.an {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+.an a {
+  display: grid;
+  grid-template-columns: 5.5rem 1fr auto 7rem;
+  gap: 1.25rem;
+  align-items: baseline;
+  padding: 1rem 0.75rem;
+  border-bottom: 1px solid var(--line);
+  text-decoration: none;
+  position: relative;
+}
+.an a:hover {
+  background: var(--card);
+  box-shadow: var(--sh2);
+  z-index: 1;
+}
+.an a:hover .t {
+  color: var(--red-t);
+}
+.id {
+  font: 500 0.76rem var(--font-mono);
+  color: var(--red-t);
+}
+.t {
+  font-weight: 600;
+  font-size: 1.1rem;
+  letter-spacing: -0.01em;
+}
+.ex {
+  display: block;
+  color: var(--mute);
+  font-size: 0.9rem;
+  font-weight: 400;
+  letter-spacing: 0;
+}
+.c {
+  font: 400 0.68rem var(--font-mono);
+  border: 1px solid var(--line2);
+  padding: 0.1rem 0.45rem;
+  white-space: nowrap;
+}
+.d {
+  font: 400 0.72rem var(--font-mono);
+  color: var(--mute);
+  text-align: right;
+}
+.empty {
+  color: var(--mute);
+  margin: 0;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .an a {
+    transition:
+      background-color 0.2s,
+      box-shadow 0.25s,
+      transform 0.25s;
+  }
+  .an a:hover {
+    transform: translateX(4px);
+  }
+  .t {
+    transition: color 0.2s;
+  }
+}
+
+@media (max-width: 48rem) {
+  .an a {
+    grid-template-columns: 1fr auto;
+    gap: 0.3rem 1rem;
+  }
+  .t {
+    grid-column: 1 / -1;
+    grid-row: 2;
+  }
+  .c {
+    display: none;
+  }
+  .d {
+    grid-row: 1;
+  }
+}

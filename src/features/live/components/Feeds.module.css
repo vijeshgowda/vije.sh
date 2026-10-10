@@ -383,14 +383,14 @@
   gap: 0.75rem;
   align-items: center;
   flex-wrap: wrap;
-  margin-top: 1rem;
+  margin: 1rem 0 0.75rem;
   font: 400 0.72rem var(--font-mono);
 }
 .chips {
   display: flex;
   gap: 0.35rem;
   flex-wrap: wrap;
-  margin: -0.25rem 0 1.25rem;
+  margin: 0 0 1.25rem;
 }
 .chips button {
   font: 400 0.72rem var(--font-mono);

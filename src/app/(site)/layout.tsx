@@ -1,6 +1,9 @@
 import { Suspense } from "react";
+import { BackToTop } from "@/components/layout/BackToTop";
+import { NetStatus } from "@/components/layout/NetStatus";
 import { SiteFooter } from "@/components/layout/SiteFooter";
 import { SiteHeader } from "@/components/layout/SiteHeader";
+import { Toaster } from "@/components/layout/Toaster";
 import styles from "./layout.module.css";
 
 export default function SiteLayout({ children }: LayoutProps<"/">) {
@@ -17,6 +20,9 @@ export default function SiteLayout({ children }: LayoutProps<"/">) {
         {children}
       </main>
       <SiteFooter />
+      <BackToTop />
+      <Toaster />
+      <NetStatus />
       {/* referenced by aria-describedby on every external link */}
       <span id="newtab" hidden>
         Opens in a new tab

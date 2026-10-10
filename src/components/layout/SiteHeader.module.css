@@ -41,6 +41,11 @@
   box-shadow: 0 0 0 3px color-mix(in srgb, var(--red) 20%, transparent);
   animation: hb 1.8s infinite;
 }
+:global(html[data-offline]) .led {
+  background: var(--mute);
+  box-shadow: none;
+  animation: none;
+}
 .navWrap {
   min-width: 0;
   flex: 1;

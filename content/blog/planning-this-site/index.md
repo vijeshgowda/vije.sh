@@ -3,7 +3,7 @@ title: Planning this site
 date: 2026-10-05
 summary: Choosing a stack that stays free, stays online and grows into a forum.
 tags: [Notes]
-draft: true
+draft: false
 ---
 
 I want a personal site that stays free, stays online and can grow into a forum. That rules out most
@@ -22,5 +22,7 @@ myself so it matches the rest of the site.
 ![Browser to static site to Postgres](./stack.svg "Static pages first; the database only for accounts and the forum.")
 
 > Free is only free until the terms change, so keep everything portable.
+
+>> Testing what I can do with Live feeds as well. I want to keep everything I use in one place.
 
 Next up is writing here, one post at a time.

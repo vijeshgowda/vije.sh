@@ -190,11 +190,13 @@ GitHub Actions schedule as a backup, or move the backend later (for example to G
 │   │   │   ├── forum/page.tsx               # /forum
 │   │   │   ├── forum/[category]/page.tsx
 │   │   │   ├── forum/[category]/[thread]/page.tsx
-│   │   │   └── u/[handle]/page.tsx          # member profile
-│   │   ├── login/page.tsx                   # our own sign-in UI
-│   │   ├── welcome/page.tsx                 # onboarding: handle + Turnstile
+│   │   │   ├── u/[handle]/page.tsx          # member profile
+│   │   │   ├── login/page.tsx               # our own sign-in UI (static + island)
+│   │   │   ├── welcome/page.tsx             # onboarding: handle + Turnstile (own CSP)
+│   │   │   └── guidelines/page.tsx          # community guidelines, accepted on /welcome
 │   │   ├── auth/callback/route.ts           # OAuth code exchange
 │   │   ├── auth/signout/route.ts
+│   │   ├── api/me/route.ts                  # signed-in user for client islands (no-store)
 │   │   ├── admin/                           # dynamic, admin only, noindex
 │   │   ├── api/cron/keepalive/route.ts
 │   │   ├── rss.xml/route.ts
@@ -638,7 +640,7 @@ Only mock what leaves the app; the database is always real.
 | Boundary | Unit / integration | Feature tests |
 |---|---|---|
 | Supabase Auth | `getCurrentUser()` mocked with `vi.mock` | Test sign-in (13.4) |
-| Turnstile | `verifyTurnstile()` mocked | Cloudflare's test keys, which always pass: site key `1x00000000000000000000AA`, secret `1x0000000000000000000000000000000AA` |
+| Turnstile | `verifyTurnstile()` mocked | Cloudflare's test keys, which always pass: site key `1x00000000000000000000AA`, secret `1x0000000000000000000000000000000AA`. With the test secret, `verifyTurnstile()` answers locally (Cloudflare would accept any token); e2e stubs the widget script |
 | R2 | S3 client mocked | Upload tests stub the action |
 | Resend | Mocked | Never called |
 | Postgres | Real (test database) | Real (test database) |

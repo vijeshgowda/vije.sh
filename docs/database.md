@@ -3,7 +3,7 @@
 Status: planning. This doc covers the Postgres schema, migrations, access rules and query conventions.
 The app side is in [application.md](application.md).
 
-Last updated: 5 Oct 2026.
+Last updated: 10 Oct 2026.
 
 ---
 
@@ -74,11 +74,16 @@ password):
 ```sql
 create role app_rw login password '<generated, 32+ chars>';
 grant usage on schema app to app_rw;
+grant usage on schema extensions to app_rw;   -- handles use extensions.citext
 grant select, insert, update, delete on all tables in schema app to app_rw;
 grant usage, select on all sequences in schema app to app_rw;
 alter default privileges in schema app grant select, insert, update, delete on tables to app_rw;
 alter default privileges in schema app grant usage, select on sequences to app_rw;
 ```
+
+Generate the password locally (`openssl rand -hex 32`) and keep it in a password manager. If
+`app_rw` already exists, don't run `create role` again. The `extensions` grant matters: the local
+tests connect as a superuser, so they can't catch it missing.
 
 `app_rw` can't run DDL; migrations run as `postgres`. The shared pooler (Supavisor) accepts custom
 roles; the username is `<role>.<project-ref>`:
@@ -111,9 +116,16 @@ Roles are kept **in a separate table** from profiles.
 - Files: `supabase/migrations/NNNN_short_name.sql`, numbered in order (`0001_init.sql`,
   `0002_add_reactions.sql`, ...).
 - Written by hand. **Never edit a migration that has been applied**; add a new one.
-- Apply (preferred): `npx supabase link --project-ref <ref>` once, then `npx supabase db push`.
+- Apply (preferred): pass the project's **session pooler** URL (port 5432, user
+  `postgres.<project-ref>`) each time, so the CLI is never linked to the wrong project:
+  ```fish
+  npx supabase db push --db-url '<session-pooler-url>'
+  ```
   This runs the files that haven't been applied yet and records them in
-  `supabase_migrations.schema_migrations`. No Docker needed. `npm run db:migrate` wraps this.
+  `supabase_migrations.schema_migrations`. No Docker needed. Check the host and project ref before
+  confirming. Never run migrations through the transaction pooler (6543).
+- Apply (linked): `npx supabase link --project-ref <ref>` once, then `npm run db:migrate`
+  (`npx supabase db push`). Easy to point at the wrong project once both exist.
 - Apply by hand: pasting a file into the SQL editor works, but then mark it as applied:
   `npx supabase migration repair --status applied NNNN`.
 - Order: **dev project first**, check the preview deploy, then **prod**.
@@ -556,8 +568,9 @@ If drift becomes a problem, adopt **sqlc** with the `sqlc-gen-typescript` plugin
 ### Keep-alive
 Supabase Free pauses a project after **7 days** without activity. A Vercel Cron job
 (`vercel.json` → `/api/cron/keepalive`, daily) authenticates with `CRON_SECRET` and runs
-`select count(*) from app.posts`. Run it on both the dev and prod projects (the dev project gets
-its own GitHub Actions schedule, because previews have no cron jobs).
+`select count(*) from app.posts`. Vercel Cron only runs on production, so the dev project is
+pinged by a GitHub Actions schedule instead (`.github/workflows/dev-db-keepalive.yml`, repo secret
+`DEV_DATABASE_URL`).
 
 ### Backups
 The free tier has no downloadable backups. A nightly GitHub Action:

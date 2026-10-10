@@ -78,7 +78,7 @@ export function Firmware({
       <span className={s.fwbar} aria-hidden="true">
         <i ref={barRef} />
       </span>
-      <Button size="sm" disabled={busy} onClick={flash}>
+      <Button id="flash" size="sm" disabled={busy} onClick={flash}>
         Flash v30.1.{v + 1}
       </Button>
     </div>

@@ -1,6 +1,9 @@
 import { render, screen } from "@testing-library/react";
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import { SiteFooter } from "../layout/SiteFooter";
+
+// the footer mounts the jump-to palette, which needs the App Router
+vi.mock("next/navigation", () => ({ useRouter: () => ({ push: vi.fn() }) }));
 import { Button, ButtonLink } from "./Button";
 import { Card } from "./Card";
 import { Lede, PageIntro, RunFoot, RunHead, Section } from "./Datasheet";

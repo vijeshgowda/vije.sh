@@ -47,7 +47,7 @@ self-hosted by `next/font`. Light is the default and ignores the OS; dark is opt
 | Forum (`pForum`, `pThread`) | `src/features/forum` | To do (needs auth) |
 | Jump-to palette, Ctrl K (`palItems`, `goTo`) | `src/features/palette` | To do |
 | Scroll reveals (`reveal`), card spotlight (`spotlight`), number scramble | `src/components/motion` | To do |
-| Back to top, toasts, offline LED | `src/components/layout` | To do |
+| Back to top, toasts, offline LED | `src/components/layout` (`BackToTop`, `Toaster` + `toast()`, `NetStatus`) | Done |
 | "launch" easter egg (typed word + footer button, rocket) | `src/features/launch` | To do |
 
 ## Live feeds in production

@@ -1,0 +1,33 @@
+.top {
+  position: fixed;
+  right: 1.2rem;
+  bottom: 1.2rem;
+  z-index: 15;
+  display: flex;
+  gap: 0.4rem;
+  align-items: center;
+  padding: 0.55rem 0.8rem;
+  border: 1px solid var(--ink);
+  background: var(--bg);
+  color: var(--ink);
+  font: 500 0.72rem var(--font-mono);
+  cursor: pointer;
+  box-shadow: var(--sh2);
+}
+.top:hover {
+  box-shadow: var(--sh3);
+}
+.top[hidden] {
+  display: none;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .top {
+    transition:
+      transform 0.2s,
+      box-shadow 0.2s;
+  }
+  .top:hover {
+    transform: translateY(-2px);
+  }
+}

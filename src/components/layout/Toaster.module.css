@@ -1,0 +1,31 @@
+.toast {
+  position: fixed;
+  left: 50%;
+  bottom: 1.2rem;
+  z-index: 40;
+  margin: 0;
+  max-width: calc(100% - 2rem);
+  padding: 0.6rem 1rem;
+  background: var(--ink);
+  color: var(--bg);
+  font: 500 0.75rem var(--font-mono);
+  box-shadow: var(--sh3);
+  transform: translate(-50%, 1rem);
+  opacity: 0;
+  pointer-events: none;
+}
+.toast[data-on] {
+  opacity: 1;
+  transform: translate(-50%, 0);
+}
+.toast:empty {
+  visibility: hidden;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .toast {
+    transition:
+      opacity 0.2s,
+      transform 0.25s;
+  }
+}

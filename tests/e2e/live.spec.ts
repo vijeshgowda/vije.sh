@@ -11,6 +11,20 @@ test("every feed shows a status, offline feeds offer a retry", async ({ page }) 
   await expect(page.locator('[data-feed="moon"]').getByText("COMPUTED")).toBeVisible();
 });
 
+for (const width of [390, 1280]) {
+  test(`reset button clears the filter chips at ${width}px`, async ({ page }) => {
+    await page.setViewportSize({ width, height: 844 });
+    await page.goto("/live");
+    const reset = await page.getByRole("button", { name: "Reset to LF-01 to LF-03" }).boundingBox();
+    const chip = await page
+      .getByRole("group", { name: "Filter feeds" })
+      .getByRole("button")
+      .first()
+      .boundingBox();
+    expect(reset!.y + reset!.height).toBeLessThanOrEqual(chip!.y);
+  });
+}
+
 test("category filter and pins drive the overview", async ({ page }) => {
   await page.goto("/live");
   const filters = page.getByRole("group", { name: "Filter feeds" });

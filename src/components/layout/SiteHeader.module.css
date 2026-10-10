@@ -41,6 +41,11 @@
   box-shadow: 0 0 0 3px color-mix(in srgb, var(--red) 20%, transparent);
   animation: hb 1.8s infinite;
 }
+:global(html[data-offline]) .led {
+  background: var(--mute);
+  box-shadow: none;
+  animation: none;
+}
 .navWrap {
   min-width: 0;
   flex: 1;
@@ -124,13 +129,19 @@
   clip-path: inset(50%);
   white-space: nowrap;
 }
+.top:is([data-fit="dense"], [data-fit="compact"]) .jump {
+  padding: 0 0.6rem;
+}
+.top:is([data-fit="dense"], [data-fit="compact"]) .jump :is([data-label], kbd) {
+  display: none;
+}
 
 /* compact: links move into a dropdown behind a labelled menu button */
 .top[data-fit="compact"] .in {
   position: relative;
   gap: 0.6rem;
 }
-.top[data-fit="compact"] .theme {
+.top[data-fit="compact"] .jump {
   margin-left: auto;
 }
 .top[data-fit="compact"] .menuBtn {

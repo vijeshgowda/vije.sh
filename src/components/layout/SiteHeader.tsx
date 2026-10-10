@@ -5,6 +5,7 @@ import { usePathname } from "next/navigation";
 import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
 import { PAGES, SITE, pageBySegment } from "@/config/site";
 import { ThemeToggle } from "@/components/theme/ThemeToggle";
+import { PaletteButton } from "@/features/palette/components/PaletteButton";
 import styles from "./SiteHeader.module.css";
 
 type Fit = "full" | "dense" | "compact";
@@ -113,7 +114,8 @@ export function SiteHeader() {
             ))}
           </ul>
         </nav>
-        <ThemeToggle className={styles.theme} />
+        <PaletteButton variant="header" className={styles.jump} />
+        <ThemeToggle />
         <button
           ref={menuRef}
           type="button"

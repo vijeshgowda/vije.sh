@@ -8,7 +8,8 @@ export default function NotFound() {
       <main id="main" className="wrap" tabIndex={-1}>
         <RunHead label="Fault" />
         <PageIntro kicker="Error 0x404" title="Bus fault">
-          No device answered at this address. Try the <Link href="/">overview</Link>.
+          No device answered at this address. Try the <Link href="/">overview</Link>, or type{" "}
+          <kbd>launch</kbd> and let off some steam.
         </PageIntro>
       </main>
       <SiteFooter />

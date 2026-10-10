@@ -1,0 +1,53 @@
+.launch {
+  position: fixed;
+  inset: 0;
+  z-index: 100;
+  overflow: hidden;
+  pointer-events: none;
+}
+.count {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 34%;
+  text-align: center;
+  font: 700 clamp(3rem, 11vw, 7.5rem) / 1 var(--font-mono);
+  letter-spacing: -0.05em;
+  color: var(--red);
+}
+.rocket {
+  position: absolute;
+  left: 50%;
+  bottom: -24px;
+  width: 64px;
+  transform: translateX(-50%);
+}
+.flame {
+  transform-box: view-box;
+  transform-origin: 30px 132px;
+  opacity: 0;
+}
+.go .flame {
+  opacity: 1;
+}
+.puff {
+  position: absolute;
+  bottom: -30px;
+  left: 50%;
+  width: 70px;
+  height: 70px;
+  margin-left: -35px;
+  border-radius: 50%;
+  background: var(--line2);
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .go .flame {
+    animation: flk 0.07s infinite alternate;
+  }
+}
+@keyframes flk {
+  to {
+    transform: scale(0.9, 1.3);
+  }
+}

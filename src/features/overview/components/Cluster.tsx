@@ -175,7 +175,7 @@ export function Cluster() {
             +
           </Button>
         </div>
-        <Button size="sm" onClick={() => ctl.current?.killRandom()}>
+        <Button id="k8s-chaos" size="sm" onClick={() => ctl.current?.killRandom()}>
           Chaos: kill a pod
         </Button>
         <Button size="sm" aria-pressed={drained} onClick={toggleDrain}>

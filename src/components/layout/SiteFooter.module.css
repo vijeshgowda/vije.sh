@@ -35,3 +35,15 @@
 .fnav a:hover {
   color: var(--red-t);
 }
+.row {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+}
+/* typing needs a keyboard */
+@media (max-width: 48rem) {
+  .hint {
+    display: none;
+  }
+}

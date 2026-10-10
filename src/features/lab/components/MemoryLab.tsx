@@ -1,6 +1,7 @@
 "use client";
 
 import { type CSSProperties, useState } from "react";
+import { Reveal } from "@/components/motion/Reveal";
 import { uart } from "@/lib/uart";
 import { labPrefs } from "../prefs";
 import {
@@ -99,7 +100,7 @@ export function MemoryLab() {
           <span>bit 15</span>
         </div>
         <p className={`${s.mini} ${s.miniGap}`}>Same model at every bit width</p>
-        <div className={s.bars}>
+        <Reveal className={s.bars}>
           {BITS.map((b) => (
             <div key={b} className={`${s.bar} ${b === st.b ? s.on : ""}`}>
               <span>{b}-bit</span>
@@ -109,7 +110,7 @@ export function MemoryLab() {
               <span className={s.v}>{formatGb(gigabytes(st.p, b))} GB</span>
             </div>
           ))}
-        </div>
+        </Reveal>
         <p className={`${s.mini} ${s.miniGap}`} id="lab-fits">
           Fits in
         </p>

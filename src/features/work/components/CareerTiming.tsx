@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { Reveal } from "@/components/motion/Reveal";
 import { career } from "@/content/profile";
 import { timingLayout } from "../timing";
 import s from "./Work.module.css";
@@ -64,7 +65,7 @@ export function CareerTiming({ nowYear }: { nowYear: number }) {
               </th>
             </tr>
           </thead>
-          <tbody>
+          <Reveal as="tbody">
             {career.map((c, i) => (
               <tr
                 key={c.org}
@@ -82,11 +83,15 @@ export function CareerTiming({ nowYear }: { nowYear: number }) {
                   <br />
                   <span className={s.note}>{c.note}</span>
                 </td>
-                <td className={s.n}>{c.from}</td>
-                <td className={c.to === "now" ? `${s.n} ${s.r}` : s.n}>{c.to}</td>
+                <td className={s.n} data-scramble>
+                  {c.from}
+                </td>
+                <td className={c.to === "now" ? `${s.n} ${s.r}` : s.n} data-scramble>
+                  {c.to}
+                </td>
               </tr>
             ))}
-          </tbody>
+          </Reveal>
         </table>
       </div>
       <p className={s.fn}>Career entries and starred figures are placeholders until launch.</p>

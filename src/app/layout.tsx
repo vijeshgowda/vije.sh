@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from "next";
 import { JetBrains_Mono, Space_Grotesk } from "next/font/google";
 import { SITE } from "@/config/site";
+import { Spotlight } from "@/components/motion/Spotlight";
 import { THEME_INIT_SCRIPT } from "@/components/theme/theme-script";
 import "./globals.css";
 
@@ -38,7 +39,10 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
         {/* Applies the saved theme before first paint; light is the default and ignores the OS. */}
         <script dangerouslySetInnerHTML={{ __html: THEME_INIT_SCRIPT }} />
       </head>
-      <body>{children}</body>
+      <body>
+        {children}
+        <Spotlight />
+      </body>
     </html>
   );
 }

@@ -14,6 +14,23 @@
     box-shadow 0.35s,
     border-color 0.35s;
 }
+/* spotlight: <Spotlight /> sets --mx / --my from the pointer */
+.card::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: radial-gradient(
+    260px circle at var(--mx, 50%) var(--my, 50%),
+    color-mix(in srgb, var(--red) 9%, transparent),
+    transparent 70%
+  );
+  opacity: 0;
+  transition: opacity 0.3s;
+}
+.card:hover::before {
+  opacity: 1;
+}
 .card::after {
   content: "";
   position: absolute;

@@ -1,5 +1,6 @@
 import Link from "next/link";
 import type { Route } from "next";
+import { Reveal } from "@/components/motion/Reveal";
 import { fmtDate } from "../format";
 import type { NoteRow } from "../posts";
 import s from "./NoteList.module.css";
@@ -8,7 +9,7 @@ import s from "./NoteList.module.css";
 export function NoteList({ notes }: { notes: NoteRow[] }) {
   if (notes.length === 0) return <p className={s.empty}>No application notes published yet.</p>;
   return (
-    <ol className={s.an}>
+    <Reveal as="ol" className={s.an}>
       {notes.map((n) => (
         <li key={n.slug}>
           <Link href={`/blog/${encodeURIComponent(n.slug)}` as Route}>
@@ -24,6 +25,6 @@ export function NoteList({ notes }: { notes: NoteRow[] }) {
           </Link>
         </li>
       ))}
-    </ol>
+    </Reveal>
   );
 }

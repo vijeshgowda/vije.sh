@@ -1,4 +1,5 @@
 import type { ReactNode } from "react";
+import { Reveal } from "@/components/motion/Reveal";
 import { PAGES, SITE } from "@/config/site";
 import styles from "./Datasheet.module.css";
 
@@ -67,13 +68,13 @@ export function Section({
 }) {
   return (
     <section className={styles.sec} id={id} aria-labelledby={`${id}-h`}>
-      <div className={styles.sh}>
+      <Reveal self rule className={styles.sh}>
         <h2 id={`${id}-h`}>
           <span className={styles.no}>{no}</span>
           {title}
         </h2>
         {note && <span className={styles.note}>{note}</span>}
-      </div>
+      </Reveal>
       {children}
     </section>
   );

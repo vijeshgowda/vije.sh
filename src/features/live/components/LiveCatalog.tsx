@@ -1,5 +1,6 @@
 "use client";
 
+import { Reveal } from "@/components/motion/Reveal";
 import { Button } from "@/components/ui/Button";
 import {
   CATEGORIES,
@@ -56,7 +57,7 @@ export function LiveCatalog({ initial }: { initial: Initial }) {
       <p className="vh" role="status">
         {visible} of {FEEDS.length} feeds shown
       </p>
-      <div className={s.feeds}>
+      <Reveal className={s.feeds}>
         {FEEDS.map((f) => (
           <FeedCard
             key={f.key}
@@ -68,7 +69,7 @@ export function LiveCatalog({ initial }: { initial: Initial }) {
             onTogglePin={() => toggle(f.key)}
           />
         ))}
-      </div>
+      </Reveal>
     </>
   );
 }

@@ -1,5 +1,6 @@
 "use client";
 
+import { Reveal } from "@/components/motion/Reveal";
 import { FEEDS, type ServerFeedKey } from "../catalog";
 import type { FeedResult } from "../types";
 import { pins } from "../client/prefs";
@@ -14,10 +15,10 @@ export function PinnedFeeds({ initial }: { initial: Initial }) {
   const keys = FEEDS.map((f) => f.key).filter((k) => picked.includes(k));
   if (!keys.length) return <p className={s.fmsg}>No feeds pinned. Pick some on the Live page.</p>;
   return (
-    <div className={s.feeds}>
+    <Reveal className={s.feeds}>
       {keys.map((k) => (
         <FeedCard key={k} feedKey={k} initial={initial[k as ServerFeedKey]} />
       ))}
-    </div>
+    </Reveal>
   );
 }

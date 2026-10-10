@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import { useReveal } from "@/components/motion/Reveal";
 import { Button } from "@/components/ui/Button";
 import { uart } from "@/lib/uart";
 import s from "./Overview.module.css";
@@ -127,6 +128,7 @@ export function Cluster() {
   const [drained, setDrained] = useState(false);
   const root = useRef<HTMLDivElement>(null);
   const ctl = useRef<Controller | null>(null);
+  useReveal(root, { self: true });
 
   useEffect(() => {
     const c = createController((pods, restarts) => setView({ pods, restarts }));

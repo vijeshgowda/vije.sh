@@ -1,0 +1,49 @@
+.slot {
+  display: inline-block;
+  min-width: 4.5rem;
+}
+.link {
+  display: inline-flex;
+  align-items: center;
+  min-height: 2.6rem;
+  padding: 0 0.2rem;
+  font: 500 0.75rem var(--font-mono);
+  color: var(--ink);
+  white-space: nowrap;
+  cursor: pointer;
+  list-style: none;
+}
+.link::-webkit-details-marker {
+  display: none;
+}
+.link:hover {
+  color: var(--red-t);
+}
+.menu {
+  position: relative;
+}
+.pop {
+  position: absolute;
+  right: 0;
+  top: 100%;
+  z-index: 20;
+  min-width: 9rem;
+  padding: 0.4rem;
+  border: 1px solid var(--ink);
+  background: var(--bg);
+  box-shadow: var(--sh2);
+}
+.pop button {
+  width: 100%;
+  min-height: 2.4rem;
+  padding: 0 0.6rem;
+  text-align: left;
+  font: 500 0.75rem var(--font-mono);
+  color: var(--ink);
+  background: none;
+  border: 0;
+  cursor: pointer;
+}
+.pop button:hover {
+  background: var(--faint);
+}

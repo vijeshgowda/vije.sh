@@ -36,7 +36,7 @@ export const NPM_PACKAGES = ["react", "next", "express", "typescript", "vite"] a
 
 type Loaders = { [K in ServerFeedKey]: () => Promise<FeedDataMap[K]> };
 
-/** One upstream loader per server feed. Endpoints and limits: docs/design/live-data.md */
+/** One upstream loader per server feed. Endpoints and limits: .local/variations/docs/live-data.md */
 export const LOADERS: Loaders = {
   man: async () =>
     P.parseLaunches(

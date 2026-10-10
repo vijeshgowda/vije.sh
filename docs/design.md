@@ -1,19 +1,21 @@
 # vije.sh: Design
 
 The production design is **V18.1.1 "Datasheet, usable"**: the site as the datasheet of a chip,
-VKG-04. Everything needed to build any page is in [`docs/design/`](design/):
+VKG-04. Prototypes and their specs live in gitignored `.local/variations/`, not in tracked
+documentation. These local references are not included in fresh clones; this document records
+the production design and implementation status.
 
 | File | What it is |
 | --- | --- |
-| [18.1.1-datasheet.html](design/18.1.1-datasheet.html) | The working prototype (one file; open it in a browser, it loads `shared/content.js`). **The source of truth for look and behaviour.** |
-| [18.1-datasheet.md](design/18.1-datasheet.md) | Spec of the base design: tokens, page structure, components, interactions, algorithms |
-| [18.1.1-datasheet.md](design/18.1.1-datasheet.md) | What 18.1.1 changes on top of 18.1: one shadow scale, self-fitting header, Ctrl K palette, 19 feeds |
-| [live-data.md](design/live-data.md) | Every live-feed endpoint, rate limit and cache time |
-| [shared-content.md](design/shared-content.md) | Sample copy (bio, career, work, posts, forum threads) |
+| `.local/variations/18.1.1-datasheet.html` | The working prototype (one file; open it in a browser, it loads `shared/content.js`). **The source of truth for look and behaviour.** |
+| `.local/variations/docs/18.1-datasheet.md` | Spec of the base design: tokens, page structure, components, interactions, algorithms |
+| `.local/variations/docs/18.1.1-datasheet.md` | What 18.1.1 changes on top of 18.1: one shadow scale, self-fitting header, Ctrl K palette, 19 feeds |
+| `.local/variations/docs/live-data.md` | Every live-feed endpoint, rate limit and cache time |
+| `.local/variations/docs/shared-content.md` | Sample copy (bio, career, work, posts, forum threads) |
 
 The prototype is a single-page hash-routed file with `v1811-` storage keys; the app uses real routes
 (`/work`, not `#/work`) and the `vj:` storage prefix. Paths inside the spec files (`../...`) refer
-to the old prototype folder.
+to the local prototype folder.
 
 ## Tokens
 

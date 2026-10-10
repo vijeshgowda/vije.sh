@@ -1,6 +1,6 @@
 /**
  * Feed catalogue: metadata only, safe to import from client and server code.
- * Data sources and limits: docs/design/live-data.md. Server loaders live in ./server/sources.
+ * Data sources and limits: .local/variations/docs/live-data.md. Server loaders live in ./server/sources.
  */
 
 export type FeedCategory = "space" | "earth" | "dev" | "ai" | "ops";

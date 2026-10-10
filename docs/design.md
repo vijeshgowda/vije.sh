@@ -46,7 +46,7 @@ self-hosted by `next/font`. Light is the default and ignores the OS; dark is opt
 | Blog index and post (`pBlog`, `pPost`) | `src/features/blog`, `src/lib/markdown.ts` | Done for git posts (Markdown + images, application.md section 9); DB notes to do |
 | Forum (`pForum`, `pThread`) | `src/features/forum` | To do (needs auth) |
 | Jump-to palette, Ctrl K (`palItems`, `goTo`) | `src/features/palette` (header "Jump to" + footer "Search", mounted by `SiteFooter`) | Done (forum threads join with the forum feature) |
-| Scroll reveals (`reveal`), card spotlight (`spotlight`), number scramble | `src/components/motion` | To do |
+| Scroll reveals (`reveal`), card spotlight (`spotlight`), number scramble | `src/components/motion` (`Reveal` / `useReveal`, `Spotlight`, `scramble`) | Done (only content below the fold on mount is hidden; `data-scramble` marks numbers) |
 | Back to top, toasts, offline LED | `src/components/layout` (`BackToTop`, `Toaster` + `toast()`, `NetStatus`) | Done |
 | "launch" easter egg (typed word + footer button, rocket) | `src/features/launch` (`launch()`, `<Launch />` in the footer) | Done |
 

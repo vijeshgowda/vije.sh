@@ -1,3 +1,4 @@
+import { Reveal } from "@/components/motion/Reveal";
 import { kpis, work } from "@/content/profile";
 import { RackUnit } from "./RackUnit";
 import s from "./Work.module.css";
@@ -20,10 +21,10 @@ export function Kpis() {
 
 export function Rack() {
   return (
-    <div className={s.rack}>
+    <Reveal className={s.rack}>
       {work.map((w, i) => (
         <RackUnit key={w.code} index={i} {...w} />
       ))}
-    </div>
+    </Reveal>
   );
 }

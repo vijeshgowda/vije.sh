@@ -1,3 +1,4 @@
+import { Reveal } from "@/components/motion/Reveal";
 import { Card } from "@/components/ui/Card";
 import { identity, outside } from "@/content/profile";
 import { Rtc } from "./Rtc";
@@ -6,7 +7,7 @@ import s from "./Overview.module.css";
 export function Features() {
   return (
     <div className={s.feat}>
-      <ul className={s.sq}>
+      <Reveal as="ul" className={s.sq}>
         <li>
           Software engineer first: {identity.stats[0]} of distributed backend systems, security and
           tooling
@@ -16,16 +17,16 @@ export function Features() {
         <li>Native support for {identity.stats.slice(2).join(", ")}</li>
         <li>Custom firmware and hardware: microcontrollers, sensors, robots</li>
         <li>Integrated camera, motorcycle and one very good dog</li>
-      </ul>
+      </Reveal>
       <div className={s.apps}>
         <p className={s.mini}>Typical applications</p>
-        <ul className={s.sq}>
+        <Reveal as="ul" className={s.sq}>
           <li>Platform engineering and API gateways</li>
           <li>Clusters that heal themselves</li>
           <li>Access control you can audit</li>
           <li>Local AI on modest hardware</li>
           <li>Things that blink, beep or launch</li>
-        </ul>
+        </Reveal>
       </div>
     </div>
   );
@@ -40,14 +41,14 @@ const CODES = [
 
 export function Peripherals() {
   return (
-    <div className={s.cards}>
+    <Reveal className={s.cards}>
       {outside.map((o, i) => (
         <Card key={o.title} code={CODES[i]![0]} meta={CODES[i]![1]} title={o.title}>
           <p>{o.text}</p>
         </Card>
       ))}
       <Rtc />
-    </div>
+    </Reveal>
   );
 }
 
@@ -124,18 +125,24 @@ export function Ratings() {
               ))}
             </tr>
           </thead>
-          <tbody>
+          <Reveal as="tbody">
             {RATINGS.map(([p, sym, min, typ, max, unit, red]) => (
               <tr key={p}>
                 <td>{p}</td>
                 <td>{sym}</td>
-                <td className={s.n}>{min}</td>
-                <td className={s.n}>{typ}</td>
-                <td className={`${s.n} ${red ? s.r : ""}`}>{max}</td>
+                <td className={s.n} data-scramble>
+                  {min}
+                </td>
+                <td className={s.n} data-scramble>
+                  {typ}
+                </td>
+                <td className={`${s.n} ${red ? s.r : ""}`} data-scramble>
+                  {max}
+                </td>
                 <td className={s.n}>{unit}</td>
               </tr>
             ))}
-          </tbody>
+          </Reveal>
         </table>
       </div>
       <p className={s.fn}>

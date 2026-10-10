@@ -19,7 +19,11 @@ export function Card({
   lift?: boolean;
 }) {
   return (
-    <article className={`${styles.card} ${lift ? styles.lift : ""} ${className}`} {...rest}>
+    <article
+      className={`${styles.card} ${lift ? styles.lift : ""} ${className}`}
+      data-spotlight
+      {...rest}
+    >
       <header className={styles.head}>
         <span>{code}</span>
         {meta !== undefined && <span>{meta}</span>}

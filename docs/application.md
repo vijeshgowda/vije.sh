@@ -4,7 +4,7 @@ Status: building (phase 0 and 1 scaffold landed). This doc covers the stack, str
 The database is specified in [database.md](database.md). The visual design is specified separately
 (the chosen design variation, its spec and its HTML are added later as `docs/design.md`).
 
-Last updated: 9 Oct 2026.
+Last updated: 10 Oct 2026.
 
 ---
 
@@ -551,11 +551,13 @@ Counted in the database from recent rows (no extra service needed). Rules live i
 | Environment | App | Database and auth |
 |---|---|---|
 | Local | `npm run dev` | Supabase project **vije-sh-dev** (free tier allows 2 projects; no Docker needed) |
+| Tests (local and CI) | Vitest, Playwright | Local Postgres 17 and test sign-in (`AUTH_MODE=test`); never a Supabase project |
 | Preview (PRs) | Vercel preview URL | **vije-sh-dev** |
 | Production | `vije.sh` | Supabase project **vije-sh-prod** |
 
-Each OAuth provider app lists the callback URLs for both Supabase projects. Supabase's allowed
-redirect URLs include `http://localhost:3000/**`, the Vercel preview pattern and `https://vije.sh/**`.
+Nothing in Supabase is emulated locally: `npm run dev` uses the real dev project with real OAuth.
+Each OAuth provider app lists the callback URL of its Supabase project. Supabase's allowed redirect
+URLs are set per project (section 12.5, step 3). The setup steps are in section 12.5.
 
 ### 12.2 Environment variables (`.env.example`)
 | Name | Scope | Notes |
@@ -572,8 +574,10 @@ redirect URLs include `http://localhost:3000/**`, the Vercel preview pattern and
 | `CRON_SECRET` | server | Vercel sends it as a Bearer token |
 | `NEXT_PUBLIC_SITE_URL` | public | `https://vije.sh` |
 | `RESEND_API_KEY` | server | Later |
+| `AUTH_MODE`, `TEST_AUTH_SECRET` | server | **`.env.test` only.** `AUTH_MODE=test` swaps OAuth for a signed test cookie (13.4); refused on Vercel |
 
-`src/lib/env.ts` validates these with zod at startup; a missing variable fails the build.
+`src/lib/env.ts` validates these with zod in groups: a feature fails fast with a clear message when
+the variables it needs are missing. Which Vercel environment gets which value is in section 12.5.
 
 ### 12.3 Scripts
 ```
@@ -597,6 +601,128 @@ A Postgres service container runs alongside the job (section 13.2).
 
 Branch protection on `main`: CI must pass; no force-pushes.
 
+A second workflow (`.github/workflows/dev-db-keepalive.yml`) runs `select 1` against the dev
+project twice a week, because Vercel Cron only runs on production and the dev project would
+otherwise pause after 7 idle days. It needs the repo secret `DEV_DATABASE_URL` (the dev
+`app_rw` transaction-pooler URL) and does nothing when the secret is missing.
+
+### 12.5 Setting up Supabase and Vercel (runbook)
+
+Do the **dev project completely first**; repeat for production only once dev works. Never paste
+secrets into docs, issues or chat.
+
+**1. Supabase projects** (`vije-sh-dev`, `vije-sh-prod`, same region as the Vercel Functions
+region, see Vercel → Project → Settings → Functions). For each project, record:
+
+| Item | Where |
+|---|---|
+| Project ref | Project Settings → General (also part of the project URL) |
+| Project URL, publishable key, secret key | Project Settings → API (secret key is server-only) |
+| CA certificate | Project Settings → Database → SSL Configuration: enable **Enforce SSL**, download the certificate (save as `dev-ca.crt` / `prod-ca.crt` outside the repo) |
+| Transaction pooler, port **6543** | **Connect** button: the app's connection |
+| Session pooler, port **5432**, user `postgres.<ref>` | **Connect** button: migrations only |
+
+- Under Project Settings → API → Exposed schemas, `app` must **not** be listed.
+- Authentication → JWT Keys: the active signing key should be asymmetric (ECC P-256 preferred), so
+  `getClaims()` verifies locally. Don't rotate an existing key casually: it can end active sessions.
+- Don't use the direct database connection (IPv6 only on the free plan).
+
+**2. Database** (dev, inspect, then prod)
+
+1. Apply the migrations through the session pooler, passing the URL each time so the CLI can't be
+   linked to the wrong project. Check the host and ref before confirming:
+   ```fish
+   npx supabase db push --db-url '<session-pooler-url>'
+   ```
+2. In the SQL editor, create the `app_rw` role once with a password generated locally
+   (`openssl rand -hex 32`), using the statements in
+   [database.md section 3](database.md#3-access-and-roles). Don't forget
+   `grant usage on schema extensions`: handles use `citext`, and the local tests run as a
+   superuser, so they can't catch a missing grant.
+3. Run `supabase/seed.sql` in the SQL editor (safe to run twice).
+4. Build the app's URL from the **transaction pooler**:
+   `postgresql://app_rw.<project-ref>:<password>@<transaction-pooler-host>:6543/postgres`
+   (URL-encode the password if it contains `@ : / #`). Never give the app the session-pooler
+   `postgres` URL.
+
+**3. Auth URL configuration** (Authentication → URL Configuration, per project)
+
+| Project | Site URL | Redirect URLs |
+|---|---|---|
+| dev | `http://localhost:3000` | `http://localhost:3000/**`, `https://*-<vercel-team-slug>.vercel.app/**` |
+| prod | `https://vije.sh` | `https://vije.sh/**` |
+
+No broad wildcards such as `https://**`. Keep "Allow new users to sign up" on in production only
+until the first admin exists (section 8.4), then turn it off until the forum opens.
+
+**4. OAuth providers** (Authentication → Providers). Every provider app uses its Supabase
+project's callback `https://<project-ref>.supabase.co/auth/v1/callback`; the site's own
+`/auth/callback` is the `redirectTo` that Supabase sends the browser back to.
+
+| Provider | Create it in | Notes |
+|---|---|---|
+| GitHub | Settings → Developer settings → OAuth Apps | One callback per app: create `vije.sh (dev)` and `vije.sh` |
+| Google | Google Cloud Console → Google Auth Platform | External audience, publish **In production**; scopes `openid`, `email`, `profile`; one web client with both callbacks, or one each |
+| Microsoft | Entra admin center → App registrations | Any organisational directory + personal accounts; both callbacks as Web redirect URIs; in Supabase provider `azure`, tenant `common`; add the email-verification optional claim (Supabase's Azure guide). Client secrets expire: set a reminder |
+| Discord | Developer Portal → OAuth2 | Callback under Redirects |
+| GitLab | User settings → Applications | Confidential, scope `read_user` |
+
+The providers shown on `/login` are listed in `src/features/auth/providers.ts`; enable a provider
+in both Supabase projects before adding it there.
+
+**5. Turnstile and cron secret.** Cloudflare → Turnstile → Add site: a **Managed** widget for
+`vije.sh`, real keys in Production only. Everywhere else use Cloudflare's always-pass test keys
+(section 13.3). Generate `CRON_SECRET` locally with `openssl rand -hex 32` and store it in Vercel
+Production only.
+
+**6. Vercel environment variables** (Project → Settings → Environment Variables). Add them by
+hand; don't use the Vercel Supabase integration (different variable names, and it may connect as
+`postgres` instead of `app_rw`).
+
+| Variable | Production | Preview | Development |
+|---|---|---|---|
+| `DATABASE_URL` | prod `app_rw` transaction pooler | dev `app_rw` transaction pooler | dev `app_rw` transaction pooler |
+| `DATABASE_CA_CERT` | prod PEM | dev PEM | dev PEM |
+| `NEXT_PUBLIC_SUPABASE_URL` | prod Project URL | dev Project URL | dev Project URL |
+| `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` | prod key | dev key | dev key |
+| `SUPABASE_SECRET_KEY` | prod key | dev key | dev key (only for account deletion) |
+| `NEXT_PUBLIC_TURNSTILE_SITE_KEY` | real site key | test site key | test site key |
+| `TURNSTILE_SECRET_KEY` | real secret | test secret | test secret |
+| `CRON_SECRET` | generated | unset | unset |
+| `NEXT_PUBLIC_SITE_URL` | `https://vije.sh` | unset | `http://localhost:3000` |
+
+- Mark Production and Preview secrets **Sensitive** (Development values can't be, by design: they
+  are pulled to your machine).
+- The multi-line CA certificate is easiest from the CLI:
+  ```fish
+  npx vercel env add DATABASE_CA_CERT production < prod-ca.crt
+  npx vercel env add DATABASE_CA_CERT preview < dev-ca.crt
+  npx vercel env add DATABASE_CA_CERT development < dev-ca.crt
+  ```
+- `NEXT_PUBLIC_*` values are built into the browser bundle: redeploy after changing them.
+
+**7. Local machine**
+
+1. `npx vercel link`, then `npx vercel env pull .env.local`. The pulled values must point at the
+   **dev** project. `.env*` files are gitignored (except the two examples).
+2. Install PostgreSQL 17 with its contrib package, create a superuser role and a `vije_test`
+   database (the bootstrap creates roles and installs `citext`, so it needs a superuser).
+3. `cp .env.test.example .env.test` and fill in `TEST_DATABASE_URL` (must be `localhost`) and
+   `TEST_AUTH_SECRET` (32+ random characters).
+4. `npm run db:test:setup`, then `npm run test:int`.
+
+**Tests never use `.env.local`.** Integration tests read only `TEST_DATABASE_URL` and refuse
+non-local hosts. Playwright passes the database, auth and Turnstile variables explicitly to
+`next build` / `next start` from `.env.test` (set variables take precedence over `.env.local`),
+so e2e runs against the local test database and can never reach either Supabase project.
+
+**8. Check it works**
+
+- `curl -H "Authorization: Bearer <CRON_SECRET>" https://vije.sh/api/cron/keepalive` returns
+  `{"ok":true,"categories":5}`: TLS, pooler, `app_rw` grants and seed in one call.
+- On a preview deploy, sign in with each enabled provider; each lands on `/welcome` via the dev
+  project.
+
 ---
 
 ## 13. Testing
@@ -618,8 +744,9 @@ covered by feature tests. Logic lives in plain functions that unit tests can rea
 
 ### 13.2 Test database
 - **CI:** a GitHub Actions service container running `postgres:<same major version as Supabase>`.
-- **Local:** `docker run --rm -p 54329:5432 -e POSTGRES_PASSWORD=test postgres:17`, or a native
-  Postgres. Set `TEST_DATABASE_URL` in `.env.test`.
+- **Local:** a native PostgreSQL 17 with contrib (section 12.5, step 7), or
+  `docker run --rm -p 54329:5432 -e POSTGRES_PASSWORD=test postgres:17`. Set `TEST_DATABASE_URL`
+  in `.env.test`.
 - `tests/db/bootstrap.sql` creates the Supabase pieces the migrations depend on: the roles `anon`
   and `authenticated`, the schema `extensions`, and a minimal `auth.users (id uuid primary key,
   email text)`.

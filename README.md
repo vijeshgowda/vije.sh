@@ -23,12 +23,6 @@
 
 <img src="docs/assets/divider.svg" alt="" width="100%">
 
-## The idea
-
-Most personal sites are a list of links. This one is a **datasheet**: a single part, **VKG-04**, with a pinout, a feature table, a running head and foot on every page, and a UART console that logs what the site is doing. The aesthetic is cream paper, ink black and one signal red.
-
-The design is documented as **V18.1.1 "Datasheet, usable"**. See [`docs/design.md`](docs/design.md) for tokens, components and what has been ported from the original prototype.
-
 ## Pages
 
 | Code | Page | What it is |
@@ -40,16 +34,6 @@ The design is documented as **V18.1.1 "Datasheet, usable"**. See [`docs/design.m
 | **P5** | [Blog](https://vije.sh/blog) | Application notes, newest first |
 | **P6** | [Forum](https://vije.sh/forum) | The community bus |
 | **P7** | [Live](https://vije.sh/live) | Public data feeds: space, Earth, dev, AI |
-
-## Highlights
-
-- **Self-fitting header.** It measures itself and moves from full labels to dense spacing to a labelled menu button. No breakpoints, so it holds at any width, zoom or font.
-- **Animated chip pinout.** Traces draw in, data packets travel along them, and the chip tilts toward the pointer on devices that support it.
-- **19 live feeds** from free public APIs, grouped into Space, Earth, Dev, AI and Ops. Responses are cached on the server, so one upstream request serves every visitor and rate limits hold. Any feed can be pinned to the overview.
-- **Interactive globe** that tracks the ISS and plots launches and earthquakes.
-- **Git-based blog.** Posts live in [`content/blog`](content/blog) as plain files.
-- **Light by default, dark on request.** The theme never follows the OS, and it is applied before first paint.
-- **Tested.** Unit, component, integration and Playwright end-to-end tests, with axe accessibility checks on a production build.
 
 ## Stack
 

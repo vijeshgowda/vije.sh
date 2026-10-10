@@ -1,5 +1,7 @@
 import Link from "next/link";
 import { PAGES, SITE } from "@/config/site";
+import { Launch } from "@/features/launch/components/Launch";
+import { LaunchButton } from "@/features/launch/components/LaunchButton";
 import styles from "./SiteFooter.module.css";
 
 export function SiteFooter() {
@@ -18,6 +20,13 @@ export function SiteFooter() {
           {SITE.part} &middot; {SITE.rev} &middot; built from the bootloader up
         </span>
       </div>
+      <div className={styles.row}>
+        <span className={`${styles.meta} ${styles.hint}`}>
+          or type <kbd>launch</kbd> anywhere
+        </span>
+        <LaunchButton />
+      </div>
+      <Launch />
     </footer>
   );
 }

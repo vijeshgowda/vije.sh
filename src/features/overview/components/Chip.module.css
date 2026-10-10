@@ -1,4 +1,4 @@
-/* VKG-04 pinout, from V18.1.1 (docs/design/18.1.1-datasheet.html, "chip") */
+/* VKG-04 pinout, from V18.1.1 (.local/variations/18.1.1-datasheet.html, "chip") */
 .chip {
   width: 100%;
   max-width: min(clamp(400px, 30vw, 600px), calc(100svh - 26rem));

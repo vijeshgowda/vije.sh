@@ -1,5 +1,5 @@
 /**
- * Profile content shown across pages (docs/design/shared-content.md). Items marked sample are
+ * Profile content shown across pages (docs/design.md). Items marked sample are
  * placeholders to replace before launch.
  */
 export const identity = {
@@ -94,7 +94,7 @@ export const career = [
   },
 ] as const;
 
-/** Career KPIs (docs/design/shared-content.md); sample figures: replace before launch */
+/** Career KPIs (docs/design.md); sample figures: replace before launch */
 export const kpis = [
   { value: "8", caption: "years building production systems", sample: false },
   { value: "MSc", caption: "advanced computer science, ML and AI", sample: false },

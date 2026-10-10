@@ -19,8 +19,9 @@ Several agents work in parallel on separate branches; keep changes inside your f
 - [docs/application.md](docs/application.md): stack, structure, auth, caching, testing rules.
 - [docs/database.md](docs/database.md): schema, migrations, `pg` conventions.
 - [docs/design.md](docs/design.md): the chosen design (V18.1.1), what's ported, what's left. The
-  prototype [docs/design/18.1.1-datasheet.html](docs/design/18.1.1-datasheet.html) is the source of
-  truth for look and behaviour: port from it, don't redesign.
+  prototype `.local/variations/18.1.1-datasheet.html` is the source of truth for look and
+  behaviour: port from it, don't redesign. Prototypes and their specs stay in gitignored
+  `.local/`, not in tracked documentation; they are not included in fresh clones.
 
 ## Commands
 

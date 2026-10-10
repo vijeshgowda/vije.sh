@@ -1,4 +1,4 @@
-/* Live feed cards, ported from V18.1.1 (docs/design/18.1.1-datasheet.html, "live feeds") */
+/* Live feed cards, ported from V18.1.1 (.local/variations/18.1.1-datasheet.html, "live feeds") */
 .feeds {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));

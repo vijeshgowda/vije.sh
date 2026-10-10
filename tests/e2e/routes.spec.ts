@@ -10,6 +10,9 @@ const ROUTES = [
   { path: "/blog/planning-this-site", h1: "Planning this site" },
   { path: "/forum", h1: "The bus" },
   { path: "/live", h1: "Live feeds" },
+  { path: "/login", h1: "Sign in" },
+  { path: "/welcome", h1: "Welcome" },
+  { path: "/guidelines", h1: "Community guidelines" },
 ];
 
 for (const r of ROUTES) {

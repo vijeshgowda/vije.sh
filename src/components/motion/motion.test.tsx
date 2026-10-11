@@ -170,12 +170,13 @@ describe("<Reveal>", () => {
 });
 
 describe("<Spotlight>", () => {
-  it("feeds the pointer position to [data-spotlight] elements", () => {
+  it("moves the card's glow to the pointer", () => {
     mockMedia((q) => q.includes("pointer"));
     render(
       <>
         <Spotlight />
         <article data-spotlight data-testid="card">
+          <span data-spot data-testid="spot" />
           <p>inside</p>
         </article>
       </>,
@@ -187,21 +188,25 @@ describe("<Spotlight>", () => {
         .getByText("inside")
         .dispatchEvent(new MouseEvent("pointermove", { bubbles: true, clientX: 50, clientY: 130 }));
     });
-    expect(card.style.getPropertyValue("--mx")).toBe("40px");
-    expect(card.style.getPropertyValue("--my")).toBe("30px");
+    expect(screen.getByTestId("spot").style.transform).toBe("translate(40px, 30px)");
+    // nothing inherited is set on the card, so its subtree never restyles
+    expect(card.getAttribute("style")).toBeNull();
   });
 
   it("stays off for coarse pointers", () => {
     render(
       <>
         <Spotlight />
-        <article data-spotlight data-testid="card" />
+        <article data-spotlight data-testid="card">
+          <span data-spot data-testid="spot" />
+        </article>
       </>,
     );
-    const card = screen.getByTestId("card");
     act(() => {
-      card.dispatchEvent(new MouseEvent("pointermove", { bubbles: true, clientX: 5 }));
+      screen
+        .getByTestId("card")
+        .dispatchEvent(new MouseEvent("pointermove", { bubbles: true, clientX: 5 }));
     });
-    expect(card.style.getPropertyValue("--mx")).toBe("");
+    expect(screen.getByTestId("spot").style.transform).toBe("");
   });
 });

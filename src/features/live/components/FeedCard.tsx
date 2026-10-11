@@ -5,7 +5,7 @@ import { Card } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
 import { storage } from "@/lib/storage";
 import { ago } from "../format";
-import { FEED_BY_KEY, type FeedKey, type ServerFeedKey } from "../catalog";
+import { FEED_BY_KEY, type FeedKey, type FeedMeta, type ServerFeedKey } from "../catalog";
 import type { FeedResult } from "../types";
 import { useNow } from "../client/use-now";
 import { BODIES } from "./bodies";
@@ -122,6 +122,7 @@ function useServerFeed(
 
 function Frame({
   feedKey,
+  size,
   status,
   onRefresh,
   picker,
@@ -132,6 +133,7 @@ function Frame({
   children,
 }: {
   feedKey: FeedKey;
+  size?: FeedMeta["size"] | null;
   status: FeedStatus;
   onRefresh?: () => void;
   picker?: boolean;
@@ -142,6 +144,7 @@ function Frame({
   children: ReactNode;
 }) {
   const f = FEED_BY_KEY[feedKey];
+  const span = size === undefined ? f.size : size;
   const now = useNow(30_000);
   const [spin, setSpin] = useState(false);
   return (
@@ -150,7 +153,7 @@ function Frame({
       id={`feed-${f.key}`}
       lift={false}
       hidden={hidden}
-      className={`${s.feed} ${f.size ? s[f.size] : ""} ${picker && pinned ? s.picked : ""}`}
+      className={`${s.feed} ${span ? s[span] : ""} ${picker && pinned ? s.picked : ""}`}
       data-feed={f.key}
       aria-labelledby={`fh-${f.key}`}
       code={f.code}
@@ -194,6 +197,8 @@ function Frame({
 export interface FeedCardProps {
   feedKey: FeedKey;
   initial?: FeedResult;
+  /** Grid span for this page; null = one column, undefined = the catalogue's span */
+  size?: FeedMeta["size"] | null;
   picker?: boolean;
   hidden?: boolean;
   pinned?: boolean;
@@ -237,7 +242,7 @@ function ClientFeedCard({ feedKey, initial: _initial, ...rest }: FeedCardProps) 
   const [status, setStatus] = useState<FeedStatus>({ kind: "standby" });
   const body =
     feedKey === "iss" ? (
-      <IssFeed onStatus={setStatus} />
+      <IssFeed onStatus={setStatus} wide={rest.size === "w2"} />
     ) : feedKey === "wx" ? (
       <WeatherFeed onStatus={setStatus} cardRef={ref} />
     ) : (

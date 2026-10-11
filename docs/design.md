@@ -59,3 +59,11 @@ origin instead: each feed is a `'use cache: remote'` loader (`src/features/live/
 cache period serves every visitor and the rate limits hold. Only the ISS position (LF-01, every 5 s)
 and the visitor's weather (LF-13) are fetched by the browser; the Moon (LF-14) is computed. Set
 `GITHUB_TOKEN` (no scopes) in Vercel to lift the GitHub limit from 60 to 5,000 an hour.
+
+The Live page departs from the prototype's grid on purpose (issue #19): LF-01 spans two columns
+with a bigger globe (50m coastlines, finer dot grid and graticule) and a side column for readouts,
+the picked earthquake, layer toggles and view controls; the launch manifest sits beside it in one
+column, earthquakes (LF-16) fill the second row and Hacker News takes LF-16's old place
+(`LIVE_ORDER` / `liveSize()` in `src/features/live/catalog.ts`). The overview keeps the
+prototype's layout. Earthquake markers use their own `--quake` token so they never read as the
+red ISS.

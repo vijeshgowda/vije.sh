@@ -54,6 +54,43 @@ test("picking an earthquake shows its details beside the globe", async ({ page }
   await expect(panel).toHaveCount(0);
 });
 
+test("the Live page leads with a big globe, the manifest beside it and quakes below", async ({
+  page,
+}, info) => {
+  test.skip(info.project.name === "mobile", "desktop grid");
+  await page.setViewportSize({ width: 1280, height: 900 });
+  await page.goto("/live");
+  const box = (k: string) => page.locator(`[data-feed="${k}"]`).boundingBox();
+  const [iss, man, eq, crew] = await Promise.all(["iss", "man", "eq", "crew"].map(box));
+  expect(iss!.width).toBeGreaterThan(man!.width * 1.8);
+  expect(Math.abs(iss!.y - man!.y)).toBeLessThan(2);
+  expect(eq!.y).toBeGreaterThan(iss!.y + iss!.height);
+  expect(eq!.width).toBeGreaterThan(iss!.width);
+  expect(crew!.y).toBeGreaterThan(eq!.y);
+});
+
+test("globe layers and view controls", async ({ page }) => {
+  await page.route("**/api/feeds/eq", (route) => route.fulfill({ json: QUAKES }));
+  await page.goto("/live");
+  const iss = page.locator('[data-feed="iss"]');
+  const layers = iss.getByRole("group", { name: "Layers" });
+  const quakes = layers.getByRole("button", { name: "Earthquakes (LF-16)" });
+  await expect(quakes).toHaveAttribute("aria-pressed", "true");
+  await quakes.click();
+  await expect(quakes).toHaveAttribute("aria-pressed", "false");
+  const pause = iss.getByRole("button", { name: "Pause rotation" });
+  await pause.click();
+  await expect(pause).toHaveAttribute("aria-pressed", "true");
+  await iss.getByRole("button", { name: "Reset view" }).click();
+
+  // picking a quake from the list turns its layer back on
+  await page
+    .locator('[data-feed="eq"]')
+    .getByRole("button", { name: /Kermadec.*Show on the globe/ })
+    .click();
+  await expect(quakes).toHaveAttribute("aria-pressed", "true");
+});
+
 test("every feed shows a status, offline feeds offer a retry", async ({ page }) => {
   await page.goto("/live");
   const cards = page.locator("[data-feed]");

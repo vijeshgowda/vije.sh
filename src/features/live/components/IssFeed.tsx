@@ -1,10 +1,12 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, useSyncExternalStore } from "react";
 import { Button } from "@/components/ui/Button";
-import { latLon } from "../format";
+import { ago, fmtDay, latLon } from "../format";
 import { createGlobe, loadLand, type Globe, type IssPosition } from "../client/globe";
 import { ensureQuakes, globeBus } from "../client/globe-bus";
+import { useNow } from "../client/use-now";
+import { Ago, Ext } from "./bodies/parts";
 import type { FeedStatus } from "./FeedCard";
 import s from "./Feeds.module.css";
 
@@ -32,23 +34,32 @@ export function IssFeed({ onStatus }: { onStatus: (s: FeedStatus) => void }) {
   useEffect(() => {
     const wrap = wrapRef.current;
     if (!wrap) return;
-    const g = createGlobe(wrap, { reduceMotion });
+    const g = createGlobe(wrap, {
+      reduceMotion,
+      onPickQuake: (quake) => globeBus.set({ quakePick: { quake, focus: false } }),
+    });
     globeRef.current = g;
     let alive = true;
     void loadLand().then((a) => alive && a && g.redraw());
+    globeBus.set({ globes: globeBus.get().globes + 1 });
 
-    const apply = (o: ReturnType<typeof globeBus.get>, focusChanged: boolean) => {
+    type Overlay = ReturnType<typeof globeBus.get>;
+    const apply = (o: Overlay, prev: Overlay) => {
       g.setPads(o.pads);
       g.setQuakes(o.quakes);
-      g.highlight(o.highlight.index, focusChanged && o.highlight.focus);
-      if (focusChanged && o.highlight.focus) setFollow(false);
+      const padFocus = o.highlight !== prev.highlight && o.highlight.focus;
+      const quakeFocus = o.quakePick !== prev.quakePick && !!o.quakePick?.focus;
+      g.highlight(o.highlight.index, padFocus);
+      g.markQuakes(o.quakeHover, o.quakePick?.quake ?? null, quakeFocus);
+      if (padFocus || quakeFocus) setFollow(false);
+      if (quakeFocus)
+        wrap.scrollIntoView({ block: "nearest", behavior: reduceMotion() ? "auto" : "smooth" });
     };
-    apply(globeBus.get(), false);
-    let lastHi = globeBus.get().highlight;
+    let prev = globeBus.get();
+    apply(prev, prev);
     const unsub = globeBus.subscribe((o) => {
-      const changed = o.highlight !== lastHi;
-      lastHi = o.highlight;
-      apply(o, changed);
+      apply(o, prev);
+      prev = o;
     });
     // after sibling effects, so an LF-16 card on the same page publishes first
     const qt = setTimeout(() => void ensureQuakes(), 0);
@@ -88,6 +99,7 @@ export function IssFeed({ onStatus }: { onStatus: (s: FeedStatus) => void }) {
       clearInterval(i1);
       clearInterval(i2);
       unsub();
+      globeBus.set({ globes: globeBus.get().globes - 1 });
       g.destroy();
       globeRef.current = null;
     };
@@ -125,6 +137,60 @@ export function IssFeed({ onStatus }: { onStatus: (s: FeedStatus) => void }) {
           {r ? Math.round(r.velocity).toLocaleString("en-GB") : "\u2014"}
         </div>
       </div>
+      <QuakePanel />
     </>
+  );
+}
+
+/** Chosen earthquake and the quake layer's own freshness (USGS, cached 15 min; not live like the ISS). */
+function QuakePanel() {
+  const o = useSyncExternalStore(globeBus.subscribe, globeBus.get, globeBus.get);
+  const now = useNow(30_000);
+  const q = o.quakePick?.quake;
+  return (
+    <div className={s.gq}>
+      <div aria-live="polite">
+        {q && (
+          <section className={s.gqd} aria-label="Selected earthquake">
+            <b className={s.gqm}>M{q.mag.toFixed(1)}</b>
+            <span>
+              <b>{q.place}</b>
+              <small>
+                depth {Math.round(q.depth)} km &middot;{" "}
+                {fmtDay(q.time, {
+                  day: "numeric",
+                  month: "short",
+                  hour: "2-digit",
+                  minute: "2-digit",
+                  timeZone: "UTC",
+                })}{" "}
+                UTC &middot; <Ago t={q.time} now={now} />
+              </small>
+            </span>
+            <span className={s.gqa}>
+              {q.url && <Ext href={q.url}>USGS event</Ext>}
+              <button
+                type="button"
+                className={s.frf}
+                aria-label="Close earthquake details"
+                onClick={() => globeBus.set({ quakePick: null })}
+              >
+                &times;
+              </button>
+            </span>
+          </section>
+        )}
+      </div>
+      {o.quakeMeta && (
+        <p className={s.gleg}>
+          <i className={s.qdot} aria-hidden="true" />
+          <span>
+            Earthquakes M4.5+ &middot; {o.quakeMeta.total} in 24 h &middot; USGS, updated{" "}
+            {now === null ? "recently" : ago(o.quakeMeta.at, now)}
+            {!o.quakePick && <> &middot; select a marker for details</>}
+          </span>
+        </p>
+      )}
+    </div>
   );
 }

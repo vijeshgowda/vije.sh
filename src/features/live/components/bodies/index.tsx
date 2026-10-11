@@ -10,7 +10,9 @@ import { Advisories, StatusBoard } from "./ops";
 import { CrewList, Launches, News, SpaceWeatherChart, XRayChart } from "./space";
 
 /** Body renderer for each server feed. Add a feed: loader + parser, catalog entry, and a body here. */
-export const BODIES: { [K in ServerFeedKey]: ComponentType<{ data: FeedDataMap[K] }> } = {
+export const BODIES: {
+  [K in ServerFeedKey]: ComponentType<{ data: FeedDataMap[K]; at: number }>;
+} = {
   man: Launches,
   hn: Stories,
   show: Stories,

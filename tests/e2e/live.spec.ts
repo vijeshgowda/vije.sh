@@ -124,6 +124,29 @@ test("globe layers and view controls", async ({ page }) => {
   await expect(quakes).toHaveAttribute("aria-pressed", "true");
 });
 
+test("the globe redraws its map only while it turns", async ({ page }) => {
+  await page.goto("/live");
+  const iss = page.locator('[data-feed="iss"]');
+  const map = iss.locator('canvas[data-layer="map"]');
+  await expect(map).toHaveCount(1);
+  const pixels = () =>
+    map.evaluate((c: HTMLCanvasElement) => {
+      const d = c.getContext("2d")!.getImageData(0, 0, c.width, c.height).data;
+      let h = 0;
+      for (let i = 3; i < d.length; i += 4) h = (h * 31 + d[i]!) | 0;
+      return h;
+    });
+  const changes = async () => {
+    const a = await pixels();
+    await page.waitForTimeout(400);
+    return a !== (await pixels());
+  };
+  await expect.poll(changes).toBe(true);
+  await iss.getByRole("button", { name: "Pause rotation" }).click();
+  await page.waitForTimeout(100);
+  expect(await changes()).toBe(false);
+});
+
 test("every feed shows a status, offline feeds offer a retry", async ({ page }) => {
   await page.goto("/live");
   const cards = page.locator("[data-feed]");

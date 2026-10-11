@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState, useSyncExternalStore } from "react";
 import { Button } from "@/components/ui/Button";
 import { ago, fmtDay, latLon } from "../format";
-import { createGlobe, loadLand, type Globe, type IssPosition, type Layers } from "../client/globe";
+import { createGlobe, type Globe, type IssPosition, type Layers } from "../client/globe";
 import { ensureQuakes, globeBus } from "../client/globe-bus";
 import { useNow } from "../client/use-now";
 import { Ago, Ext } from "./bodies/parts";
@@ -11,7 +11,9 @@ import type { FeedStatus } from "./FeedCard";
 import s from "./Feeds.module.css";
 
 const API = "https://api.wheretheiss.at/v1/satellites/25544";
-const reduceMotion = () => matchMedia("(prefers-reduced-motion: reduce)").matches;
+let motionQuery: MediaQueryList | undefined;
+// one MediaQueryList: the globe asks every animation frame
+const reduceMotion = () => (motionQuery ??= matchMedia("(prefers-reduced-motion: reduce)")).matches;
 
 interface Reading extends IssPosition {
   altitude: number;
@@ -25,7 +27,8 @@ async function getJSON<T>(url: string, ms: number): Promise<T> {
 }
 
 /**
- * LF-01. Polled from the browser (wheretheiss.at allows ~1 request/s per IP); 5 s while visible.
+ * LF-01. Polled from the browser (wheretheiss.at allows ~1 request/s per IP); 5 s while the globe
+ * is on screen.
  * `wide` (Live page): a bigger, more detailed globe with readouts, layers and view controls beside it.
  */
 export function IssFeed({
@@ -45,21 +48,19 @@ export function IssFeed({
   useEffect(() => {
     const wrap = wrapRef.current;
     if (!wrap) return;
+    let alive = true;
+    let visible = true;
+    let lastPoll = 0;
     const g = createGlobe(wrap, {
       reduceMotion,
       detail: wide,
       onPickQuake: (quake) => globeBus.set({ quakePick: { quake, focus: false } }),
+      onVisible: (v) => {
+        visible = v;
+        if (v && Date.now() - lastPoll > 5000) void poll();
+      },
     });
     globeRef.current = g;
-    let alive = true;
-    let fine = false;
-    void loadLand("110m").then((a) => alive && a && !fine && g.setLand(a));
-    if (wide)
-      void loadLand("50m").then((a) => {
-        if (!alive || !a) return;
-        fine = true;
-        g.setLand(a);
-      });
     globeBus.set({ globes: globeBus.get().globes + 1 });
 
     type Overlay = ReturnType<typeof globeBus.get>;
@@ -88,7 +89,8 @@ export function IssFeed({
 
     let fails = 0;
     const poll = async () => {
-      if (document.hidden) return;
+      if (document.hidden || !visible) return;
+      lastPoll = Date.now();
       try {
         const d = await getJSON<Reading>(API, 6000);
         if (!alive) return;

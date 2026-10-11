@@ -1,7 +1,7 @@
 import { act, renderHook } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { DEFAULT_PINS } from "../catalog";
-import { globeBus } from "./globe-bus";
+import { ensureQuakes, globeBus } from "./globe-bus";
 import { liveFilter, pins } from "./prefs";
 import { useNow } from "./use-now";
 
@@ -53,5 +53,23 @@ describe("globeBus", () => {
     globeBus.set({ highlight: { index: 3, focus: false } });
     expect(seen).toEqual([2]);
     expect(globeBus.get().highlight.index).toBe(3);
+  });
+
+  it("loads quakes for the globe only when no card published them", async () => {
+    const q = { mag: 5, place: "X", time: 1, url: null, lon: 0, lat: 0, depth: 1 };
+    const load = vi.fn(async () =>
+      Response.json({ ok: true, key: "eq", at: 1, data: { total: 1, events: [q] } }),
+    );
+    await ensureQuakes(load);
+    expect(load).toHaveBeenCalledWith("/api/feeds/eq");
+    expect(globeBus.get().quakes).toEqual([q]);
+    await ensureQuakes(load);
+    expect(load).toHaveBeenCalledTimes(1);
+    globeBus.set({ quakes: [] });
+    await ensureQuakes(async () => Response.json({ ok: false, key: "eq", at: 1, error: "x" }));
+    await ensureQuakes(async () => {
+      throw new Error("offline");
+    });
+    expect(globeBus.get().quakes).toEqual([]);
   });
 });

@@ -85,6 +85,12 @@ export interface Quake {
   lat: number;
   depth: number;
 }
+export interface QuakeFeed {
+  /** Every M4.5+ event in the last 24 h, even when `events` is cut short */
+  total: number;
+  /** Newest first; the strongest event is always included */
+  events: Quake[];
+}
 export interface NaturalEvent {
   title: string;
   category: string;
@@ -112,7 +118,7 @@ export interface FeedDataMap {
   pap: Paper[];
   npm: Downloads[];
   xr: XRays;
-  eq: Quake[];
+  eq: QuakeFeed;
   eo: NaturalEvent[];
   sec: Advisory[];
   show: Story[];

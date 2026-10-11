@@ -1,4 +1,5 @@
 /** Pure helpers shared by feed parsers (server) and feed bodies (client). */
+import type { Quake } from "./types";
 
 export const p2 = (n: number) => String(n).padStart(2, "0");
 
@@ -113,3 +114,6 @@ export function kpLabel(kp: number): string {
 
 export const fmtDay = (iso: string | number, opts: Intl.DateTimeFormatOptions) =>
   new Date(iso).toLocaleDateString("en-GB", opts);
+
+export const strongest = (qs: readonly Quake[]): Quake | null =>
+  qs.reduce<Quake | null>((a, b) => (!a || b.mag > a.mag ? b : a), null);

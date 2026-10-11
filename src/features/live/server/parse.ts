@@ -2,7 +2,7 @@
  * Parsers: upstream JSON in, the trimmed shape the UI needs out (types.ts). Pure and synchronous so
  * they're unit-tested without the network. Only fields the UI uses are kept, so caches stay small.
  */
-import { safeUrl } from "../format";
+import { safeUrl, strongest } from "../format";
 import type {
   Advisory,
   Article,
@@ -14,6 +14,7 @@ import type {
   NaturalEvent,
   Paper,
   Quake,
+  QuakeFeed,
   Release,
   SpaceWeather,
   Status,
@@ -167,9 +168,10 @@ export function parseXRays(raw: Json): XRays {
   };
 }
 
-export function parseQuakes(raw: Json): Quake[] {
-  return arr(get(raw, "features"))
-    .slice(0, 30)
+const MAX_QUAKES = 100;
+
+export function parseQuakes(raw: Json): QuakeFeed {
+  const all: Quake[] = arr(get(raw, "features"))
     .map((f) => ({
       mag: num(get(f, "properties", "mag")),
       place: str(get(f, "properties", "place"), "Unknown"),
@@ -178,7 +180,12 @@ export function parseQuakes(raw: Json): Quake[] {
       lon: num(get(f, "geometry", "coordinates", 0)),
       lat: num(get(f, "geometry", "coordinates", 1)),
       depth: num(get(f, "geometry", "coordinates", 2)),
-    }));
+    }))
+    .sort((a, b) => b.time - a.time);
+  const events = all.slice(0, MAX_QUAKES);
+  const top = strongest(all);
+  if (top && !events.includes(top)) events.push(top);
+  return { total: all.length, events };
 }
 
 export function parseEvents(raw: Json): NaturalEvent[] {

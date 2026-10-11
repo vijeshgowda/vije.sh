@@ -62,11 +62,6 @@ export const xyz = (lon: number, lat: number): Vec3 => [
   Math.cos(lat * RAD) * Math.sin(lon * RAD),
   Math.sin(lat * RAD),
 ];
-export const toLL = ([x, y, z]: Vec3): LonLat => [
-  Math.atan2(y, x) / RAD,
-  Math.asin(Math.max(-1, Math.min(1, z))) / RAD,
-];
-
 export function slerp(a: Vec3, b: Vec3, t: number): Vec3 {
   const w = Math.acos(Math.max(-1, Math.min(1, a[0] * b[0] + a[1] * b[1] + a[2] * b[2])));
   if (w < 1e-6) return a;
@@ -99,24 +94,112 @@ export interface Layers {
   quakes: boolean;
 }
 
-const HOME = { lon: -40, lat: 22 };
+/** Screen centre and radius (CSS px) and the sines and cosines of the view's centre lon/lat */
+export interface View {
+  cx: number;
+  cy: number;
+  R: number;
+  cl: number;
+  sl: number;
+  sp: number;
+  cp0: number;
+}
 
+interface PathSink {
+  moveTo(x: number, y: number): void;
+  lineTo(x: number, y: number): void;
+}
+
+/**
+ * Projects a polyline of unit vectors orthographically, breaking it at the horizon and skipping
+ * points closer than `minD` px to the last one drawn; the last visible point is always kept.
+ */
+export function traceArc(v: Float32Array, w: View, out: PathSink, minD = 0) {
+  const { cx, cy, R, cl, sl, sp, cp0 } = w;
+  let on = false;
+  let pending = false;
+  let lx = 0;
+  let ly = 0;
+  let px = 0;
+  let py = 0;
+  for (let i = 0; i < v.length; i += 3) {
+    const x = v[i]!;
+    const y = v[i + 1]!;
+    const z = v[i + 2]!;
+    const a = x * cl + y * sl;
+    if (sp * z + cp0 * a < 0) {
+      if (pending) out.lineTo(px, py);
+      on = pending = false;
+      continue;
+    }
+    px = cx + R * (y * cl - x * sl);
+    py = cy - R * (cp0 * z - sp * a);
+    if (!on) out.moveTo(px, py);
+    else if (Math.abs(px - lx) + Math.abs(py - ly) < minD) {
+      pending = true;
+      continue;
+    } else out.lineTo(px, py);
+    on = true;
+    pending = false;
+    lx = px;
+    ly = py;
+  }
+  if (pending) out.lineTo(px, py);
+}
+
+/** 50m coastlines only where the globe is big enough to show them (radius in CSS px) */
+export const landResFor = (radius: number): LandRes => (radius >= 180 ? "50m" : "110m");
+
+const HOME = { lon: -40, lat: 22 };
+/** Auto-spin, degrees per ms */
+const SPIN = 0.004;
+/** Spin and pulses run at about 30 fps; dragging runs at the display rate */
+const FRAME_MS = 30;
+/** Coastline and graticule points closer than this (CSS px) to the last one drawn are skipped */
+const MIN_SEG = 0.9;
+
+/** Meridians and parallels `step` degrees apart, as unit-vector polylines */
+function graticule(step: number): Float32Array[] {
+  const poly = (pts: LonLat[]) => Float32Array.from(pts.flatMap(([lo, la]) => xyz(lo, la)));
+  const out: Float32Array[] = [];
+  for (let lo = -180; lo < 180; lo += step)
+    out.push(poly(Array.from({ length: 61 }, (_, k): LonLat => [lo, -90 + k * 3])));
+  for (let la = -90 + step; la < 90; la += step)
+    out.push(poly(Array.from({ length: 121 }, (_, k): LonLat => [-180 + k * 3, la])));
+  return out;
+}
+
+/**
+ * Three stacked canvases: the disc (redrawn on resize and theme change), the map (redrawn only
+ * when the view or the data changes) and an overlay for the pulses and the ISS (every frame).
+ */
 export function createGlobe(
   wrap: HTMLElement,
   opts: {
     reduceMotion: () => boolean;
     onPickQuake?: (q: Quake) => void;
+    /** called when the globe scrolls into or out of view */
+    onVisible?: (visible: boolean) => void;
     /** big globe: denser dot grid and graticule */
     detail?: boolean;
   },
 ) {
-  const cv = document.createElement("canvas");
-  cv.setAttribute("aria-hidden", "true");
-  wrap.prepend(cv);
-  const ctx = cv.getContext("2d")!;
+  const layer = (name: string) => {
+    const c = document.createElement("canvas");
+    c.setAttribute("aria-hidden", "true");
+    c.dataset.layer = name;
+    return [c, c.getContext("2d")!] as const;
+  };
+  const [discCv, dc] = layer("disc");
+  const [mapCv, ctx] = layer("map");
+  const [fxCv, fc] = layer("fx");
+  wrap.prepend(discCv, mapCv, fxCv);
   const dots = dotGrid(opts.detail ? 3 : 4);
-  const grid = opts.detail ? 15 : 30;
+  const grat = graticule(opts.detail ? 15 : 30);
   let land: Land | null = null;
+  let landAsked: LandRes | null = null;
+  let landHave: LandRes | null = null;
+  let alive = true;
   let W = 0;
   let H = 0;
   let R = 0;
@@ -132,6 +215,8 @@ export function createGlobe(
   let raf = 0;
   let vis = true;
   let last = 0;
+  // the map layer needs a redraw
+  let dirty = true;
   let col = {
     ink: "",
     line: "",
@@ -143,7 +228,7 @@ export function createGlobe(
     sh: "",
   };
   let iss: IssPosition | null = null;
-  let track: LonLat[] = [];
+  let track: Float32Array | null = null;
   let pads: Launch[] = [];
   let hi = -1;
   let quakes: Quake[] = [];
@@ -168,82 +253,61 @@ export function createGlobe(
       sh: `rgb(${v("--sc")} / ${dark ? 0.7 : 0.3})`,
     };
   };
+  const view: View = { cx: 0, cy: 0, R: 0, cl: 1, sl: 0, sp: 0, cp0: 1 };
+  const setView = () => {
+    Object.assign(view, {
+      cx,
+      cy,
+      R,
+      cl: Math.cos(lon0 * RAD),
+      sl: Math.sin(lon0 * RAD),
+      sp: Math.sin(lat0 * RAD),
+      cp0: Math.cos(lat0 * RAD),
+    });
+  };
+  /** Screen x, y and depth (negative on the far side) of a point, for the current view */
   const P = (lon: number, lat: number): Vec3 => {
-    const l = (lon - lon0) * RAD;
-    const p = lat * RAD;
-    const p0 = lat0 * RAD;
-    const cp = Math.cos(p);
+    const [x, y, z] = xyz(lon, lat);
+    const { cl, sl, sp, cp0 } = view;
+    const a = x * cl + y * sl;
     return [
-      cx + R * cp * Math.sin(l),
-      cy - R * (Math.cos(p0) * Math.sin(p) - Math.sin(p0) * cp * Math.cos(l)),
-      Math.sin(p0) * Math.sin(p) + Math.cos(p0) * cp * Math.cos(l),
+      view.cx + view.R * (y * cl - x * sl),
+      view.cy - view.R * (cp0 * z - sp * a),
+      sp * z + cp0 * a,
     ];
   };
-  const line = (pts: LonLat[]) => {
-    let on = false;
-    for (const [lo, la] of pts) {
-      const [x, y, c] = P(lo, la);
-      if (c < 0) {
-        on = false;
-        continue;
-      }
-      if (on) ctx.lineTo(x, y);
-      else ctx.moveTo(x, y);
-      on = true;
-    }
-  };
-  // rotation for the current view, refreshed at the start of each frame (see P for the maths)
-  let cl = 1;
-  let sl = 0;
-  let sp = 0;
-  let cp0 = 1;
-  const lineV = (v: Float32Array) => {
-    let on = false;
-    for (let i = 0; i < v.length; i += 3) {
-      const x = v[i]!;
-      const y = v[i + 1]!;
-      const z = v[i + 2]!;
-      const a = x * cl + y * sl;
-      if (sp * z + cp0 * a < 0) {
-        on = false;
-        continue;
-      }
-      const px = cx + R * (y * cl - x * sl);
-      const py = cy - R * (cp0 * z - sp * a);
-      if (on) ctx.lineTo(px, py);
-      else ctx.moveTo(px, py);
-      on = true;
-    }
-  };
 
-  function draw(t = performance.now()) {
+  function drawDisc() {
+    dc.clearRect(0, 0, W, H);
     if (R <= 0) return;
-    cl = Math.cos(lon0 * RAD);
-    sl = Math.sin(lon0 * RAD);
-    sp = Math.sin(lat0 * RAD);
-    cp0 = Math.cos(lat0 * RAD);
-    ctx.clearRect(0, 0, W, H);
-    const g = ctx.createRadialGradient(cx - R * 0.35, cy - R * 0.4, R * 0.1, cx, cy, R);
+    const g = dc.createRadialGradient(cx - R * 0.35, cy - R * 0.4, R * 0.1, cx, cy, R);
     g.addColorStop(0, col.card);
     g.addColorStop(1, col.faint);
-    ctx.save();
-    ctx.shadowColor = col.sh;
-    ctx.shadowBlur = 24;
-    ctx.shadowOffsetY = 8;
-    ctx.beginPath();
-    ctx.arc(cx, cy, R, 0, 7);
-    ctx.fillStyle = g;
-    ctx.fill();
-    ctx.restore();
-    ctx.strokeStyle = col.ink;
-    ctx.lineWidth = 1.2;
-    ctx.stroke();
+    dc.save();
+    dc.shadowColor = col.sh;
+    dc.shadowBlur = 24;
+    dc.shadowOffsetY = 8;
+    dc.beginPath();
+    dc.arc(cx, cy, R, 0, 7);
+    dc.fillStyle = g;
+    dc.fill();
+    dc.restore();
+    dc.strokeStyle = col.ink;
+    dc.lineWidth = 1.2;
+    dc.stroke();
+  }
+
+  function drawMap() {
+    dirty = false;
+    setView();
+    ctx.clearRect(0, 0, W, H);
+    if (R <= 0) return;
+    const { cl, sl, sp, cp0 } = view;
+    // round joins cost a lot on long paths; bevel avoids the spikes miter leaves on jagged coasts
+    ctx.lineJoin = "bevel";
 
     ctx.beginPath();
-    for (let lo = -180; lo < 180; lo += grid)
-      line(Array.from({ length: 61 }, (_, k): LonLat => [lo, -90 + k * 3]));
-    for (let la = -90 + grid; la < 90; la += grid)
-      line(Array.from({ length: 121 }, (_, k): LonLat => [-180 + k * 3, la]));
+    for (const g of grat) traceArc(g, view, ctx, MIN_SEG);
     ctx.strokeStyle = col.line;
     ctx.lineWidth = opts.detail ? 0.6 : 0.7;
     ctx.stroke();
@@ -274,15 +338,14 @@ export function createGlobe(
 
     if (land) {
       ctx.beginPath();
-      land.forEach(lineV);
+      for (const arc of land) traceArc(arc, view, ctx, MIN_SEG);
       ctx.strokeStyle = col.ink;
       ctx.lineWidth = 1;
-      ctx.lineJoin = "round";
       ctx.stroke();
     }
-    if (show.iss && track.length > 1) {
+    if (show.iss && track) {
       ctx.beginPath();
-      line(track);
+      traceArc(track, view, ctx, MIN_SEG);
       ctx.setLineDash([4, 5]);
       ctx.strokeStyle = col.red;
       ctx.lineWidth = 1.6;
@@ -293,9 +356,8 @@ export function createGlobe(
     for (const q of qs) {
       const [x, y, c] = P(q.lon, q.lat);
       if (c < 0) continue;
-      const r = quakeR(q);
       ctx.beginPath();
-      ctx.arc(x, y, r, 0, 7);
+      ctx.arc(x, y, quakeR(q), 0, 7);
       ctx.fillStyle = col.quake;
       ctx.globalAlpha = 0.16;
       ctx.fill();
@@ -303,14 +365,6 @@ export function createGlobe(
       ctx.strokeStyle = col.quake;
       ctx.lineWidth = 1.5;
       ctx.stroke();
-      if (q === topQuake) {
-        const ph = reduce() ? 0.35 : (t / 2200) % 1;
-        ctx.beginPath();
-        ctx.arc(x, y, r + 3 + ph * 14, 0, 7);
-        ctx.globalAlpha = (1 - ph) * 0.8;
-        ctx.stroke();
-        ctx.globalAlpha = 1;
-      }
       ctx.beginPath();
       ctx.arc(x, y, 2.4, 0, 7);
       ctx.fillStyle = col.quake;
@@ -355,75 +409,143 @@ export function createGlobe(
         ctx.stroke();
       }
     });
+  }
+
+  /** Pulses on the strongest quake and the ISS, plus the ISS marker and label */
+  function drawFx(t: number) {
+    fc.clearRect(0, 0, W, H);
+    if (R <= 0) return;
+    setView();
+    const still = reduce();
+    if (show.quakes && topQuake) {
+      const [x, y, c] = P(topQuake.lon, topQuake.lat);
+      if (c >= 0) {
+        const ph = still ? 0.35 : (t / 2200) % 1;
+        fc.beginPath();
+        fc.arc(x, y, quakeR(topQuake) + 3 + ph * 14, 0, 7);
+        fc.strokeStyle = col.quake;
+        fc.lineWidth = 1.5;
+        fc.globalAlpha = (1 - ph) * 0.8;
+        fc.stroke();
+        fc.globalAlpha = 1;
+      }
+    }
     if (show.iss && iss) {
       const [x, y, c] = P(iss.longitude, iss.latitude);
       if (c >= 0) {
-        const ph = (t / 1600) % 1;
-        ctx.beginPath();
-        ctx.arc(x, y, 5 + ph * 16, 0, 7);
-        ctx.strokeStyle = `rgba(227,6,19,${(1 - ph) * 0.7})`;
-        ctx.lineWidth = 1.5;
-        ctx.stroke();
-        ctx.beginPath();
-        ctx.arc(x, y, 4.5, 0, 7);
-        ctx.fillStyle = col.red;
-        ctx.fill();
-        ctx.font = '700 11px "JetBrains Mono", monospace';
-        ctx.fillStyle = col.ink;
-        ctx.fillText("ISS", x + 9, y - 7);
+        const ph = still ? 0.35 : (t / 1600) % 1;
+        fc.beginPath();
+        fc.arc(x, y, 5 + ph * 16, 0, 7);
+        fc.strokeStyle = `rgba(227,6,19,${(1 - ph) * 0.7})`;
+        fc.lineWidth = 1.5;
+        fc.stroke();
+        fc.beginPath();
+        fc.arc(x, y, 4.5, 0, 7);
+        fc.fillStyle = col.red;
+        fc.fill();
+        fc.font = '700 11px "JetBrains Mono", monospace';
+        fc.fillStyle = col.ink;
+        fc.fillText("ISS", x + 9, y - 7);
       }
     }
   }
 
+  const animating = () => vis && !document.hidden && !reduce();
+  const schedule = () => {
+    if (!raf && vis && !document.hidden) raf = requestAnimationFrame(frame);
+  };
+  const invalidate = () => {
+    dirty = true;
+    schedule();
+  };
+
   function frame(t: number) {
     raf = 0;
-    const dt = Math.min(50, t - (last || t));
-    last = t;
-    if (!drag) {
-      if (follow && iss) {
-        lon0 += (((iss.longitude - lon0 + 540) % 360) - 180) * Math.min(1, dt / 400);
-        lat0 += (Math.max(-60, Math.min(60, iss.latitude)) - lat0) * Math.min(1, dt / 400);
-      } else if (!reduce() && !qPick && !paused) lon0 += dt * 0.004;
-    }
-    draw(t);
-    if (vis && !document.hidden && !reduce()) raf = requestAnimationFrame(frame);
-  }
-  const kick = () => {
-    if (reduce()) draw();
-    else if (!raf) {
-      last = 0;
+    const moving = animating();
+    if (moving && !drag && last && t - last < FRAME_MS) {
       raf = requestAnimationFrame(frame);
+      return;
     }
+    const dt = last ? Math.min(100, t - last) : 0;
+    last = moving ? t : 0;
+    if (!drag && follow && iss) {
+      const dl = ((iss.longitude - lon0 + 540) % 360) - 180;
+      const da = Math.max(-60, Math.min(60, iss.latitude)) - lat0;
+      if (Math.abs(dl) + Math.abs(da) > 0.01) {
+        const k = moving ? Math.min(1, dt / 400) : 1;
+        lon0 += dl * k;
+        lat0 += da * k;
+        dirty = true;
+      }
+    } else if (moving && !drag && !qPick && !paused && dt) {
+      lon0 += dt * SPIN;
+      dirty = true;
+    }
+    if (dirty) drawMap();
+    drawFx(t);
+    if (moving) raf = requestAnimationFrame(frame);
+  }
+
+  const gotLand = (res: LandRes) => (l: Land | null) => {
+    if (!l || !alive || landHave === "50m") return;
+    land = l;
+    landHave = res;
+    invalidate();
+  };
+  const wantLand = () => {
+    const res = landResFor(R);
+    if (landAsked === "50m" || landAsked === res) return;
+    // 110m first: it arrives quickly and shows something while 50m loads
+    if (!landAsked && res === "50m") void loadLand("110m").then(gotLand("110m"));
+    landAsked = res;
+    void loadLand(res).then(gotLand(res));
   };
   const size = () => {
     const r = wrap.getBoundingClientRect();
-    const dpr = Math.min(2, devicePixelRatio || 1);
+    // the big globe is capped at 1.5x: at 2x it draws 78% more pixels for little visible gain
+    const dpr = Math.min(opts.detail ? 1.5 : 2, devicePixelRatio || 1);
     W = r.width;
     H = r.height;
-    cv.width = W * dpr;
-    cv.height = H * dpr;
-    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    for (const [c, x] of [
+      [discCv, dc],
+      [mapCv, ctx],
+      [fxCv, fc],
+    ] as const) {
+      c.width = Math.round(W * dpr);
+      c.height = Math.round(H * dpr);
+      x.setTransform(dpr, 0, 0, dpr, 0, 0);
+    }
     R = Math.min(W, H) / 2 - 34;
     cx = W / 2;
     cy = H / 2 - 6;
     readCol();
-    draw();
+    wantLand();
+    drawDisc();
+    drawMap();
+    drawFx(performance.now());
   };
 
   const ro = new ResizeObserver(size);
   ro.observe(wrap);
   const io = new IntersectionObserver((e) => {
     vis = e[0]?.isIntersecting ?? false;
-    if (vis) kick();
+    opts.onVisible?.(vis);
+    if (vis) {
+      last = 0;
+      schedule();
+    }
   });
   io.observe(wrap);
   const mo = new MutationObserver(() => {
     readCol();
-    draw();
+    drawDisc();
+    invalidate();
   });
   mo.observe(document.documentElement, { attributes: true, attributeFilter: ["data-theme"] });
   const onVis = () => {
-    if (!document.hidden) kick();
+    if (document.hidden) return;
+    last = 0;
+    schedule();
   };
   document.addEventListener("visibilitychange", onVis);
 
@@ -438,9 +560,10 @@ export function createGlobe(
     if (Math.hypot(e.clientX - drag[0], e.clientY - drag[1]) > 4) moved = true;
     lon0 = drag[2] - (e.clientX - drag[0]) * 0.35;
     lat0 = Math.max(-80, Math.min(80, drag[3] + (e.clientY - drag[1]) * 0.35));
-    if (reduce()) draw();
+    invalidate();
   };
   const pickAt = (px: number, py: number) => {
+    setView();
     let best: Quake | null = null;
     let bd = Infinity;
     for (const q of show.quakes ? quakes : []) {
@@ -469,31 +592,34 @@ export function createGlobe(
   return {
     setIss(d: IssPosition) {
       iss = d;
-      if (reduce()) draw();
+      schedule();
     },
     setTrack(pts: IssPosition[]) {
-      const out: LonLat[] = [];
+      const out: number[] = [];
       for (let i = 0; i < pts.length - 1; i++) {
         const a = xyz(pts[i]!.longitude, pts[i]!.latitude);
         const b = xyz(pts[i + 1]!.longitude, pts[i + 1]!.latitude);
-        for (let k = 0; k < 12; k++) out.push(toLL(slerp(a, b, k / 12)));
+        for (let k = 0; k < 12; k++) out.push(...slerp(a, b, k / 12));
       }
       const end = pts[pts.length - 1];
-      if (end) out.push([end.longitude, end.latitude]);
-      track = out;
-      if (reduce()) draw();
+      if (end) out.push(...xyz(end.longitude, end.latitude));
+      track = out.length > 3 ? Float32Array.from(out) : null;
+      invalidate();
     },
     setPads(p: Launch[]) {
+      if (p === pads) return;
       pads = p;
-      draw();
+      invalidate();
     },
     setQuakes(q: Quake[]) {
+      if (q === quakes) return;
       quakes = q;
       topQuake = strongest(q);
-      draw();
+      invalidate();
     },
     /** hover highlights a marker; pick also labels it, stops the spin and, with focus, centres it */
     markQuakes(hover: Quake | null, pick: Quake | null, focus: boolean) {
+      if (hover === qHover && pick === qPick && !focus) return;
       qHover = hover;
       qPick = pick;
       if (focus && pick) {
@@ -501,30 +627,27 @@ export function createGlobe(
         lon0 = pick.lon;
         lat0 = Math.max(-60, Math.min(60, pick.lat));
       }
-      kick();
-      draw();
+      invalidate();
     },
     highlight(i: number, focus: boolean) {
-      hi = i;
       const p = pads[i];
-      if (focus && p && p.lat !== null && p.lon !== null) {
+      const centre = focus && p && p.lat !== null && p.lon !== null;
+      if (i === hi && !centre) return;
+      hi = i;
+      if (centre) {
         follow = false;
-        lon0 = p.lon;
-        lat0 = Math.max(-60, Math.min(60, p.lat));
+        lon0 = p.lon!;
+        lat0 = Math.max(-60, Math.min(60, p.lat!));
       }
-      draw();
+      invalidate();
     },
     follow(on: boolean) {
       follow = on;
-      kick();
-    },
-    setLand(l: Land) {
-      land = l;
-      draw();
+      invalidate();
     },
     setLayers(l: Layers) {
       show = l;
-      draw();
+      invalidate();
     },
     pause(on: boolean) {
       paused = on;
@@ -533,9 +656,10 @@ export function createGlobe(
       follow = false;
       lon0 = HOME.lon;
       lat0 = HOME.lat;
-      draw();
+      invalidate();
     },
     destroy() {
+      alive = false;
       cancelAnimationFrame(raf);
       ro.disconnect();
       io.disconnect();
@@ -545,7 +669,9 @@ export function createGlobe(
       wrap.removeEventListener("pointermove", onMove);
       wrap.removeEventListener("pointerup", onUp);
       wrap.removeEventListener("pointercancel", onUp);
-      cv.remove();
+      discCv.remove();
+      mapCv.remove();
+      fxCv.remove();
     },
   };
 }

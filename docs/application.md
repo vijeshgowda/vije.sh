@@ -134,8 +134,10 @@ Check these before launch; free tiers change often.
 | Resend | About 3,000 emails a month, 100 a day |
 
 **Supabase pausing:** a Vercel Cron job calls `/api/cron/keepalive` once a day. The route checks
-`CRON_SECRET` and runs one cheap query against the database. If that ever stops being enough, use a
-GitHub Actions schedule as a backup, or move the backend later (for example to GKE, as planned).
+`CRON_SECRET` and runs one cheap query against the database. Vercel Cron only runs on production,
+so this keeps only **vije-sh-prod** awake. The dev project is allowed to pause after 7 idle days;
+restore it from the Supabase dashboard when needed (no data is lost). Keeping it awake would mean
+storing a dev database credential outside Vercel, which isn't worth it.
 
 ---
 
@@ -600,11 +602,6 @@ A Postgres service container runs alongside the job (section 13.2).
 8. Later: Lighthouse CI with the budgets in section 7
 
 Branch protection on `main`: CI must pass; no force-pushes.
-
-A second workflow (`.github/workflows/dev-db-keepalive.yml`) runs `select 1` against the dev
-project twice a week, because Vercel Cron only runs on production and the dev project would
-otherwise pause after 7 idle days. It needs the repo secret `DEV_DATABASE_URL` (the dev
-`app_rw` transaction-pooler URL) and does nothing when the secret is missing.
 
 ### 12.5 Setting up Supabase and Vercel (runbook)
 

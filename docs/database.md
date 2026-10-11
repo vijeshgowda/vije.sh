@@ -568,9 +568,8 @@ If drift becomes a problem, adopt **sqlc** with the `sqlc-gen-typescript` plugin
 ### Keep-alive
 Supabase Free pauses a project after **7 days** without activity. A Vercel Cron job
 (`vercel.json` → `/api/cron/keepalive`, daily) authenticates with `CRON_SECRET` and runs
-`select count(*) from app.posts`. Vercel Cron only runs on production, so the dev project is
-pinged by a GitHub Actions schedule instead (`.github/workflows/dev-db-keepalive.yml`, repo secret
-`DEV_DATABASE_URL`).
+`select count(*) from app.categories`. Vercel Cron only runs on production, so only the prod
+project is kept awake; the dev project may pause and is restored from the dashboard when needed.
 
 ### Backups
 The free tier has no downloadable backups. A nightly GitHub Action:

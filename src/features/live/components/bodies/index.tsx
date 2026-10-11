@@ -7,7 +7,7 @@ import { Models, Papers } from "./ai";
 import { Lifecycle, NpmDownloads, Releases, Stories } from "./dev";
 import { Events, Quakes } from "./earth";
 import { Advisories, StatusBoard } from "./ops";
-import { CrewList, Launches, News, SpaceWeatherChart, XRayChart } from "./space";
+import { CrewList, LaunchMonth, Launches, News, SpaceWeatherChart, XRayChart } from "./space";
 
 /** Body renderer for each server feed. Add a feed: loader + parser, catalog entry, and a body here. */
 export const BODIES: {
@@ -29,4 +29,11 @@ export const BODIES: {
   eq: Quakes,
   eo: Events,
   sec: Advisories,
+};
+
+/** Optional summary shown next to a feed's title */
+export const HEADS: {
+  [K in ServerFeedKey]?: ComponentType<{ data: FeedDataMap[K] }>;
+} = {
+  man: LaunchMonth,
 };

@@ -38,13 +38,22 @@ type Loaders = { [K in ServerFeedKey]: () => Promise<FeedDataMap[K]> };
 
 /** One upstream loader per server feed. Endpoints and limits: .local/variations/docs/live-data.md */
 export const LOADERS: Loaders = {
-  man: async () =>
-    P.parseLaunches(
-      await getJSON("https://ll.thespacedevs.com/2.3.0/launches/upcoming/?limit=6&mode=normal", {
+  man: async () => {
+    const now = Date.now();
+    const [start, end] = P.monthRange(now);
+    const LL = "https://ll.thespacedevs.com/2.3.0/launches";
+    // two calls per 30 min cache period, well inside Launch Library's 15 an hour
+    const [upcoming, count] = await Promise.all([
+      getJSON(`${LL}/upcoming/?limit=16&mode=normal`, { timeoutMs: 30_000 }),
+      getJSON(`${LL}/?net__gte=${start}&net__lt=${end}&limit=1&mode=list`, {
         timeoutMs: 30_000,
-      }),
-      Date.now(),
-    ),
+      }).then(P.parseCount, () => null),
+    ]);
+    return {
+      launches: P.parseLaunches(upcoming, now),
+      month: count === null ? null : { start, count },
+    };
+  },
   hn: () => hnList("topstories", 8),
   show: async () =>
     (await hnList("showstories", 6)).map((s) => ({

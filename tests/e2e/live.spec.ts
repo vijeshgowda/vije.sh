@@ -69,6 +69,39 @@ test("the Live page leads with a big globe, the manifest beside it and quakes be
   expect(crew!.y).toBeGreaterThan(eq!.y);
 });
 
+test("the launch manifest counts this month and shows up to 15 launches", async ({ page }) => {
+  const launches = Array.from({ length: 15 }, (_, i) => ({
+    name: `Test launch ${i + 1}`,
+    net: new Date(Date.now() + (i + 1) * 86_400_000).toISOString(),
+    status: "Go",
+    statusName: "Go for Launch",
+    provider: "Test Rockets",
+    location: "Cape Canaveral, FL, USA",
+    lat: 28.5,
+    lon: -80.6,
+    orbit: "LEO",
+  }));
+  await page.route("**/api/feeds/man", (route) =>
+    route.fulfill({
+      json: {
+        ok: true,
+        key: "man",
+        at: Date.now(),
+        data: { launches, month: { start: "2026-10-01T00:00:00.000Z", count: 16 } },
+      },
+    }),
+  );
+  await page.goto("/live");
+  const man = page.locator('[data-feed="man"]');
+  await man.scrollIntoViewIfNeeded();
+  await expect(man.getByRole("heading")).toContainText("16 launches this month");
+  await expect(man.getByRole("listitem")).toHaveCount(5);
+  await man.getByRole("button", { name: "Show 10 more" }).click();
+  await expect(man.getByRole("listitem")).toHaveCount(15);
+  await man.getByRole("button", { name: "Show fewer" }).click();
+  await expect(man.getByRole("listitem")).toHaveCount(5);
+});
+
 test("globe layers and view controls", async ({ page }) => {
   await page.route("**/api/feeds/eq", (route) => route.fulfill({ json: QUAKES }));
   await page.goto("/live");

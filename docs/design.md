@@ -66,4 +66,6 @@ the picked earthquake, layer toggles and view controls; the launch manifest sits
 column, earthquakes (LF-16) fill the second row and Hacker News takes LF-16's old place
 (`LIVE_ORDER` / `liveSize()` in `src/features/live/catalog.ts`). The overview keeps the
 prototype's layout. Earthquake markers use their own `--quake` token so they never read as the
-red ISS.
+red ISS. LF-02 shows how many launches have a target date in the current UTC month next to its
+title (a second Launch Library call, `limit=1`, reading `count`) and lists the nearest 5 of the
+next 15, with "Show 10 more".

@@ -1,12 +1,43 @@
 /* VKG-04 pinout, from V18.1.1 (.local/variations/18.1.1-datasheet.html, "chip") */
-.chip {
+/* not inherited, so the pointer-driven tilt restyles the wrapper and nothing inside it */
+@property --rx {
+  syntax: "<angle>";
+  inherits: false;
+  initial-value: 0deg;
+}
+@property --ry {
+  syntax: "<angle>";
+  inherits: false;
+  initial-value: 0deg;
+}
+.tilt {
+  position: relative;
   width: 100%;
   max-width: min(clamp(400px, 30vw, 600px), calc(100svh - 26rem));
   min-width: 300px;
-  display: block;
   margin: 0 auto;
-  transform: rotateX(var(--rx, 0deg)) rotateY(var(--ry, 0deg));
+  transform: rotateX(var(--rx)) rotateY(var(--ry));
   transition: transform 0.5s var(--ease-out);
+}
+.chip {
+  width: 100%;
+  display: block;
+}
+/* packets: HTML dots over the SVG, moved with transform so the chip never repaints */
+.pk {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+.pk i {
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 1.5%;
+  height: 1.5%;
+  margin: -0.75% 0 0 -0.75%;
+  border-radius: 50%;
+  background: var(--red);
 }
 .body {
   fill: var(--chip);
@@ -77,10 +108,6 @@
   stroke-width: 1.5;
   stroke-dasharray: 3 3;
 }
-.pkt {
-  fill: var(--red);
-  pointer-events: none;
-}
 .led,
 .p1 {
   fill: var(--red);
@@ -124,12 +151,12 @@
 }
 
 @media (max-width: 62rem) {
-  .chip {
+  .tilt {
     transform: none;
   }
 }
 @media (max-width: 48rem) {
-  .chip {
+  .tilt {
     max-width: 340px;
   }
 }

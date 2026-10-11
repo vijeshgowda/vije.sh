@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import type { Route } from "next";
+import { packetFrames, pathPoints } from "../packets";
 import s from "./Chip.module.css";
 
 const LEFT: [Route, string][] = [
@@ -18,39 +19,39 @@ const RIGHT: [Route, string][] = [
 const CS = [146, 164, 182, 200, 218, 236, 254];
 const NETS = ["VCC", "CLK", "RST", "TX"];
 const GND = ["GND", "RX", "SDA"];
-const SVG_NS = "http://www.w3.org/2000/svg";
 
 const reduceMotion = () => matchMedia("(prefers-reduced-motion: reduce)").matches;
 const d = (n: number) => ({ "--d": `${n.toFixed(2)}s` }) as React.CSSProperties;
 
 /**
  * The VKG-04 pinout: six labelled pins link to pages. On load the traces draw in, then red packets
- * travel along random traces (SMIL animateMotion); the chip tilts toward a fine pointer.
+ * travel along random traces (HTML dots over the SVG, moved by the compositor); the chip tilts
+ * toward a fine pointer.
  */
 export function Chip({ active = "/" }: { active?: Route }) {
   const router = useRouter();
   const ref = useRef<SVGSVGElement>(null);
+  const tiltRef = useRef<HTMLDivElement>(null);
+  const pkRef = useRef<HTMLDivElement>(null);
   const [intro, setIntro] = useState(true);
 
   useEffect(() => {
     const chip = ref.current;
-    if (!chip || reduceMotion()) return;
+    const tilt = tiltRef.current;
+    const layer = pkRef.current;
+    if (!chip || !tilt || !layer || reduceMotion()) return;
     const t = setTimeout(() => setIntro(false), 2600);
     const send = (p: Element | null) => {
       const path = p?.getAttribute("d");
       if (!path) return;
-      const c = document.createElementNS(SVG_NS, "circle");
-      const m = document.createElementNS(SVG_NS, "animateMotion");
-      c.setAttribute("r", "3");
-      c.setAttribute("class", s.pkt!);
-      m.setAttribute("dur", ".8s");
-      m.setAttribute("path", path);
-      m.setAttribute("fill", "freeze");
-      m.setAttribute("begin", "indefinite");
-      c.append(m);
-      chip.append(c);
-      (m as SVGAnimationElement).beginElement();
-      setTimeout(() => c.remove(), 850);
+      const dot = document.createElement("i");
+      layer.append(dot);
+      const run = dot.animate?.(packetFrames(pathPoints(path), layer.clientWidth / 400), {
+        duration: 800,
+        fill: "forwards",
+      });
+      if (run) run.onfinish = () => dot.remove();
+      else dot.remove();
     };
     const paths = [...chip.querySelectorAll(`.${s.tr}, .${s.trd}`)];
     let vis = true;
@@ -68,20 +69,25 @@ export function Chip({ active = "/" }: { active?: Route }) {
     const onPin = (e: Event) => send((e.currentTarget as Element).querySelector(`.${s.tr}`));
     pins.forEach((a) => a.addEventListener("mouseenter", onPin));
 
-    // tilt toward the pointer (fine pointers only)
-    const host = chip.parentElement;
+    // tilt toward the pointer (fine pointers only); --rx/--ry don't inherit, so only the wrapper
+    // restyles, and the shadow offsets go on the package rect alone
+    const host = tilt.parentElement;
+    const body = chip.querySelector<SVGElement>(`.${s.body}`);
     const fine = matchMedia("(pointer: fine)").matches;
     const mv = (e: PointerEvent) => {
       if (!host) return;
       const r = host.getBoundingClientRect();
       const x = (e.clientX - r.left) / r.width - 0.5;
       const y = (e.clientY - r.top) / r.height - 0.5;
-      chip.style.setProperty("--ry", `${(x * 10).toFixed(2)}deg`);
-      chip.style.setProperty("--rx", `${(-y * 10).toFixed(2)}deg`);
-      chip.style.setProperty("--sx", `${(-x * 14).toFixed(1)}px`);
-      chip.style.setProperty("--sy", `${(6 - y * 10).toFixed(1)}px`);
+      tilt.style.setProperty("--ry", `${(x * 10).toFixed(2)}deg`);
+      tilt.style.setProperty("--rx", `${(-y * 10).toFixed(2)}deg`);
+      body?.style.setProperty("--sx", `${(-x * 14).toFixed(1)}px`);
+      body?.style.setProperty("--sy", `${(6 - y * 10).toFixed(1)}px`);
     };
-    const out = () => ["--rx", "--ry", "--sx", "--sy"].forEach((p) => chip.style.removeProperty(p));
+    const out = () => {
+      ["--rx", "--ry"].forEach((p) => tilt.style.removeProperty(p));
+      ["--sx", "--sy"].forEach((p) => body?.style.removeProperty(p));
+    };
     if (fine && host) {
       host.addEventListener("pointermove", mv);
       host.addEventListener("pointerleave", out);
@@ -93,6 +99,7 @@ export function Chip({ active = "/" }: { active?: Route }) {
       pins.forEach((a) => a.removeEventListener("mouseenter", onPin));
       host?.removeEventListener("pointermove", mv);
       host?.removeEventListener("pointerleave", out);
+      layer.replaceChildren();
     };
   }, []);
 
@@ -157,69 +164,72 @@ export function Chip({ active = "/" }: { active?: Route }) {
   };
 
   return (
-    <svg
-      ref={ref}
-      className={`${s.chip} ${intro ? s.intro : ""} probe`}
-      viewBox="0 0 400 400"
-      role="group"
-      aria-label="Pinout: each labelled pin links to a page"
-    >
-      {CS.map((c, k) => {
-        const x = c + (k - 3) * 14;
-        if (k % 2 === 0) {
-          const y = 34 + ((k * 13) % 28);
+    <div ref={tiltRef} className={s.tilt}>
+      <svg
+        ref={ref}
+        className={`${s.chip} ${intro ? s.intro : ""} probe`}
+        viewBox="0 0 400 400"
+        role="group"
+        aria-label="Pinout: each labelled pin links to a page"
+      >
+        {CS.map((c, k) => {
+          const x = c + (k - 3) * 14;
+          if (k % 2 === 0) {
+            const y = 34 + ((k * 13) % 28);
+            return (
+              <g key={c}>
+                <rect className={s.stub} x={c - 3} y="118" width="6" height="12" />
+                <rect className={s.stub} x={c - 3} y="270" width="6" height="12" />
+                <g style={d(k * 0.08)}>
+                  <path className={s.trd} pathLength={1} d={`M${c} 118 V104 L${x} 90 V${y + 6}`} />
+                  <circle className={s.via} cx={x} cy={y} r="5" />
+                  <text className={s.net} x={x} y={y - 9} textAnchor="middle">
+                    {NETS[k / 2]}
+                  </text>
+                </g>
+                <rect className={s.stub} x="118" y={c - 3} width="12" height="6" />
+                <rect className={s.stub} x="270" y={c - 3} width="12" height="6" />
+              </g>
+            );
+          }
+          const i = (k - 1) / 2;
+          const y = 350 + ((k * 11) % 24);
+          const [lh, ll] = LEFT[i]!;
+          const [rh, rl] = RIGHT[i]!;
           return (
             <g key={c}>
               <rect className={s.stub} x={c - 3} y="118" width="6" height="12" />
               <rect className={s.stub} x={c - 3} y="270" width="6" height="12" />
-              <g style={d(k * 0.08)}>
-                <path className={s.trd} pathLength={1} d={`M${c} 118 V104 L${x} 90 V${y + 6}`} />
+              <g style={d(0.1 + k * 0.08)}>
+                <path className={s.trd} pathLength={1} d={`M${c} 282 V296 L${x} 310 V${y - 6}`} />
                 <circle className={s.via} cx={x} cy={y} r="5" />
-                <text className={s.net} x={x} y={y - 9} textAnchor="middle">
-                  {NETS[k / 2]}
+                <text className={s.net} x={x} y={y + 16} textAnchor="middle">
+                  {GND[(k - 1) / 2]}
                 </text>
               </g>
-              <rect className={s.stub} x="118" y={c - 3} width="12" height="6" />
-              <rect className={s.stub} x="270" y={c - 3} width="12" height="6" />
+              {pin(lh, ll, i + 1, c, "l", 0.15 + i * 0.12)}
+              {pin(rh, rl, i + 4, c, "r", 0.2 + i * 0.12)}
             </g>
           );
-        }
-        const i = (k - 1) / 2;
-        const y = 350 + ((k * 11) % 24);
-        const [lh, ll] = LEFT[i]!;
-        const [rh, rl] = RIGHT[i]!;
-        return (
-          <g key={c}>
-            <rect className={s.stub} x={c - 3} y="118" width="6" height="12" />
-            <rect className={s.stub} x={c - 3} y="270" width="6" height="12" />
-            <g style={d(0.1 + k * 0.08)}>
-              <path className={s.trd} pathLength={1} d={`M${c} 282 V296 L${x} 310 V${y - 6}`} />
-              <circle className={s.via} cx={x} cy={y} r="5" />
-              <text className={s.net} x={x} y={y + 16} textAnchor="middle">
-                {GND[(k - 1) / 2]}
-              </text>
-            </g>
-            {pin(lh, ll, i + 1, c, "l", 0.15 + i * 0.12)}
-            {pin(rh, rl, i + 4, c, "r", 0.2 + i * 0.12)}
-          </g>
-        );
-      })}
-      <rect className={s.body} x="130" y="130" width="140" height="140" rx="6" />
-      <circle className={s.p1} cx="146" cy="146" r="4" />
-      <text className={s.ct} x="200" y="196" fontSize="24" fontWeight="700">
-        VKG-04
-      </text>
-      <text className={s.ct} x="200" y="216" fontSize="11">
-        vije.sh
-      </text>
-      <text className={s.ct} x="200" y="234" fontSize="8" opacity=".6">
-        2641 &#183; RED &#183; e3
-      </text>
-      <path className={s.trd} pathLength={1} style={d(0.9)} d="M330 254 V300" />
-      <circle className={s.led} cx="330" cy="310" r="7" />
-      <text className={s.net} x="342" y="313">
-        D1
-      </text>
-    </svg>
+        })}
+        <rect className={s.body} x="130" y="130" width="140" height="140" rx="6" />
+        <circle className={s.p1} cx="146" cy="146" r="4" />
+        <text className={s.ct} x="200" y="196" fontSize="24" fontWeight="700">
+          VKG-04
+        </text>
+        <text className={s.ct} x="200" y="216" fontSize="11">
+          vije.sh
+        </text>
+        <text className={s.ct} x="200" y="234" fontSize="8" opacity=".6">
+          2641 &#183; RED &#183; e3
+        </text>
+        <path className={s.trd} pathLength={1} style={d(0.9)} d="M330 254 V300" />
+        <circle className={s.led} cx="330" cy="310" r="7" />
+        <text className={s.net} x="342" y="313">
+          D1
+        </text>
+      </svg>
+      <div ref={pkRef} className={s.pk} aria-hidden="true" />
+    </div>
   );
 }

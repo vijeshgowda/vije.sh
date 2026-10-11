@@ -23,7 +23,19 @@ test("cards track the pointer for the spotlight", async ({ page, isMobile }) => 
   await card.scrollIntoViewIfNeeded();
   const box = (await card.boundingBox())!;
   await page.mouse.move(box.x + 30, box.y + 20);
+  // x only: the scroll reveal may still be lifting the card when the pointer arrives
   await expect
-    .poll(() => card.evaluate((el) => (el as HTMLElement).style.getPropertyValue("--mx")))
-    .toMatch(/^(29|30|31)(\.\d+)?px$/);
+    .poll(() => card.locator("[data-spot]").evaluate((el) => (el as HTMLElement).style.transform))
+    .toMatch(/^translate\((29|30|31)(\.\d+)?px, -?[\d.]+px\)$/);
+});
+
+test("chip packets travel the traces as HTML dots, not SVG animation", async ({
+  page,
+  isMobile,
+}) => {
+  test.skip(isMobile, "the chip sits below the fold on phones");
+  await page.goto("/");
+  const chip = page.getByRole("group", { name: /^Pinout/ });
+  await expect(chip.locator("..").locator("i").first()).toBeAttached({ timeout: 6000 });
+  await expect(chip.locator("circle animateMotion")).toHaveCount(0);
 });

@@ -24,6 +24,7 @@ export function Card({
       data-spotlight
       {...rest}
     >
+      <span className={styles.spot} data-spot aria-hidden="true" />
       <header className={styles.head}>
         <span>{code}</span>
         {meta !== undefined && <span>{meta}</span>}

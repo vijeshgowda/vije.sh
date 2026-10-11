@@ -65,11 +65,23 @@ describe("globeBus", () => {
     expect(globeBus.get().quakes).toEqual([q]);
     await ensureQuakes(load);
     expect(load).toHaveBeenCalledTimes(1);
-    globeBus.set({ quakes: [] });
+    globeBus.set({ quakes: [], quakeMeta: null });
     await ensureQuakes(async () => Response.json({ ok: false, key: "eq", at: 1, error: "x" }));
     await ensureQuakes(async () => {
       throw new Error("offline");
     });
     expect(globeBus.get().quakes).toEqual([]);
+  });
+
+  it("doesn't refetch on a quiet day with no quakes", async () => {
+    globeBus.set({ quakes: [], quakeMeta: null });
+    const load = vi.fn(async () =>
+      Response.json({ ok: true, key: "eq", at: 1, data: { total: 0, events: [] } }),
+    );
+    await ensureQuakes(load);
+    await ensureQuakes(load);
+    expect(load).toHaveBeenCalledTimes(1);
+    expect(globeBus.get().quakeMeta).toEqual({ total: 0, at: 1 });
+    globeBus.set({ quakeMeta: null });
   });
 });

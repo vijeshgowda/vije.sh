@@ -4,7 +4,9 @@
   left: 0;
   top: 0;
   height: 3px;
-  width: 0;
+  width: 100%;
+  transform: scaleX(0);
+  transform-origin: left;
   background: var(--red);
   z-index: 30;
 }

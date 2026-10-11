@@ -74,6 +74,6 @@ describe("Post", () => {
     );
     const bar = container.querySelector<HTMLElement>('[aria-hidden="true"]');
     // jsdom has no layout: nothing to scroll counts as fully read
-    expect(bar?.style.width).toBe("100%");
+    expect(bar?.style.transform).toBe("scaleX(1)");
   });
 });

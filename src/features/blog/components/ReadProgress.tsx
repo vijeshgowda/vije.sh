@@ -11,7 +11,8 @@ export function ReadProgress() {
     if (!bar) return;
     const on = () => {
       const max = document.documentElement.scrollHeight - window.innerHeight;
-      bar.style.width = `${(max > 0 ? Math.min(1, window.scrollY / max) : 1) * 100}%`;
+      // a transform, not width: no layout on every scroll event
+      bar.style.transform = `scaleX(${max > 0 ? Math.min(1, window.scrollY / max) : 1})`;
     };
     on();
     window.addEventListener("scroll", on, { passive: true });

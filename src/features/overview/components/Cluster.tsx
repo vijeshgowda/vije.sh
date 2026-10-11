@@ -77,10 +77,12 @@ function createController(render: (pods: Pod[], restarts: number) => void) {
 
   return {
     reconcile() {
-      alive().forEach((p) => drained && p.node === "node-b" && kill(p, "evicted from node-b"));
+      const evict = alive().filter((p) => drained && p.node === "node-b");
+      evict.forEach((p) => kill(p, "evicted from node-b"));
       const l = alive();
       if (l.length < want) make();
       else if (l.length > want) kill(l[l.length - 1]!, "scaled down");
+      else if (!evict.length) return;
       commit();
     },
     crash() {

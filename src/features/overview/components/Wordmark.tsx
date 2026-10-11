@@ -33,8 +33,17 @@ export function Wordmark({
     };
     fit();
     void document.fonts?.ready.then(() => wm.isConnected && fit());
-    addEventListener("resize", fit);
-    return () => removeEventListener("resize", fit);
+    // at most one refit (two forced layouts) per frame while the window is resized
+    let raf = 0;
+    const onResize = () => {
+      cancelAnimationFrame(raf);
+      raf = requestAnimationFrame(fit);
+    };
+    addEventListener("resize", onResize);
+    return () => {
+      cancelAnimationFrame(raf);
+      removeEventListener("resize", onResize);
+    };
   }, []);
   return (
     <h1 ref={ref} id={id} className={className} tabIndex={-1} aria-label="vije.sh">

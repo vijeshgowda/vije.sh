@@ -59,6 +59,17 @@ type OkResult = Extract<FeedResult, { ok: true }>;
 // bump when a feed's data shape changes, so stale copies in localStorage aren't rendered
 const stored = (key: ServerFeedKey) => `feed3:${key}`;
 
+const saved = new Set<string>();
+/** Keeps the last good result for when the server reports a failure: once per result, when idle */
+function remember(r: OkResult) {
+  const id = `${r.key}:${r.at}`;
+  if (saved.has(id)) return;
+  saved.add(id);
+  const write = () => storage.set(stored(r.key), r);
+  if (typeof requestIdleCallback === "function") requestIdleCallback(write, { timeout: 5000 });
+  else setTimeout(write, 0);
+}
+
 function useServerFeed(
   key: ServerFeedKey,
   initial: FeedResult | undefined,
@@ -76,7 +87,7 @@ function useServerFeed(
     } catch {
       r = { ok: false, key, at: Date.now(), error: "network" };
     }
-    if (r.ok) storage.set(stored(key), r);
+    if (r.ok) remember(r);
     else {
       const c = storage.get<FeedResult | null>(stored(key), null);
       setFallback(c?.ok && c.key === key ? c : null);
@@ -86,8 +97,8 @@ function useServerFeed(
   }, [key]);
 
   useEffect(() => {
-    if (initial?.ok) storage.set(stored(key), initial);
-  }, [key, initial]);
+    if (initial?.ok) remember(initial);
+  }, [initial]);
 
   useEffect(() => {
     if (initial?.ok) return;

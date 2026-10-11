@@ -111,7 +111,9 @@ describe("feed loaders", () => {
   });
 
   it("quakes, events and advisories", async () => {
-    expect((await LOADERS.eq())[0]).toMatchObject({ mag: 6.1, lon: 10, lat: 20, depth: 30 });
+    const q = await LOADERS.eq();
+    expect(q.total).toBe(1);
+    expect(q.events[0]).toMatchObject({ mag: 6.1, lon: 10, lat: 20, depth: 30 });
     const e = await LOADERS.eo();
     expect(e[0]).toMatchObject({
       category: "Severe Storms",
@@ -122,6 +124,22 @@ describe("feed loaders", () => {
     const a = await LOADERS.sec();
     expect(a[0]!.pkg).toBe("left-pad");
     expect(a[0]!.summary.length).toBe(89);
+  });
+
+  it("quakes count every event and keep the strongest when the list is cut", async () => {
+    const features = Array.from({ length: 120 }, (_, i) => ({
+      properties: { mag: i === 119 ? 7.4 : 4.6, place: `P${i}`, time: 1000 - i },
+      geometry: { coordinates: [0, 0, 10] },
+    }));
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(fakeFetch({ "4.5_day.geojson": { features: features.reverse() } })),
+    );
+    const q = await LOADERS.eq();
+    expect(q.total).toBe(120);
+    expect(q.events).toHaveLength(101);
+    expect(q.events[0]!.place).toBe("P0");
+    expect(q.events.at(-1)).toMatchObject({ place: "P119", mag: 7.4 });
   });
 
   it("throws on HTTP errors", async () => {

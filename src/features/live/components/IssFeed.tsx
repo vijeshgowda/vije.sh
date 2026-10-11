@@ -4,7 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import { Button } from "@/components/ui/Button";
 import { latLon } from "../format";
 import { createGlobe, loadLand, type Globe, type IssPosition } from "../client/globe";
-import { globeBus } from "../client/globe-bus";
+import { ensureQuakes, globeBus } from "../client/globe-bus";
 import type { FeedStatus } from "./FeedCard";
 import s from "./Feeds.module.css";
 
@@ -50,6 +50,8 @@ export function IssFeed({ onStatus }: { onStatus: (s: FeedStatus) => void }) {
       lastHi = o.highlight;
       apply(o, changed);
     });
+    // after sibling effects, so an LF-16 card on the same page publishes first
+    const qt = setTimeout(() => void ensureQuakes(), 0);
 
     let fails = 0;
     const poll = async () => {
@@ -82,6 +84,7 @@ export function IssFeed({ onStatus }: { onStatus: (s: FeedStatus) => void }) {
     const i2 = setInterval(track, 5 * 60_000);
     return () => {
       alive = false;
+      clearTimeout(qt);
       clearInterval(i1);
       clearInterval(i2);
       unsub();

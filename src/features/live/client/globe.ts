@@ -2,6 +2,7 @@
  * Orthographic canvas globe for LF-01: coastlines (TopoJSON), day/night dots, ISS + ground track,
  * launch pads and earthquake rings. Plain DOM/canvas, no React; IssFeed owns its lifecycle.
  */
+import { strongest } from "../format";
 import type { Launch, Quake } from "../types";
 
 const RAD = Math.PI / 180;
@@ -95,12 +96,22 @@ export function createGlobe(wrap: HTMLElement, opts: { reduceMotion: () => boole
   let raf = 0;
   let vis = true;
   let last = 0;
-  let col = { ink: "", line: "", card: "", faint: "", red: "#e30613", redt: "", sh: "" };
+  let col = {
+    ink: "",
+    line: "",
+    card: "",
+    faint: "",
+    red: "#e30613",
+    redt: "",
+    quake: "",
+    sh: "",
+  };
   let iss: IssPosition | null = null;
   let track: LonLat[] = [];
   let pads: Launch[] = [];
   let hi = -1;
   let quakes: Quake[] = [];
+  let topQuake: Quake | null = null;
   const reduce = opts.reduceMotion;
 
   const readCol = () => {
@@ -114,6 +125,7 @@ export function createGlobe(wrap: HTMLElement, opts: { reduceMotion: () => boole
       faint: v("--faint"),
       red: "#e30613",
       redt: v("--red-t"),
+      quake: v("--quake"),
       sh: `rgb(${v("--sc")} / ${dark ? 0.7 : 0.3})`,
     };
   };
@@ -210,13 +222,31 @@ export function createGlobe(wrap: HTMLElement, opts: { reduceMotion: () => boole
     for (const q of quakes) {
       const [x, y, c] = P(q.lon, q.lat);
       if (c < 0) continue;
+      const r = 4 + Math.max(0, q.mag - 4.5) * 3.5;
       ctx.beginPath();
-      ctx.arc(x, y, 2 + Math.max(0, q.mag - 4.5) * 3, 0, 7);
-      ctx.strokeStyle = col.ink;
-      ctx.globalAlpha = 0.6;
-      ctx.lineWidth = 1.2;
-      ctx.stroke();
+      ctx.arc(x, y, r, 0, 7);
+      ctx.fillStyle = col.quake;
+      ctx.globalAlpha = 0.16;
+      ctx.fill();
       ctx.globalAlpha = 1;
+      ctx.strokeStyle = col.quake;
+      ctx.lineWidth = 1.5;
+      ctx.stroke();
+      if (q === topQuake) {
+        const ph = reduce() ? 0.35 : (t / 2200) % 1;
+        ctx.beginPath();
+        ctx.arc(x, y, r + 3 + ph * 14, 0, 7);
+        ctx.globalAlpha = (1 - ph) * 0.8;
+        ctx.stroke();
+        ctx.globalAlpha = 1;
+      }
+      ctx.beginPath();
+      ctx.arc(x, y, 2.4, 0, 7);
+      ctx.fillStyle = col.quake;
+      ctx.fill();
+      ctx.strokeStyle = col.card;
+      ctx.lineWidth = 1;
+      ctx.stroke();
     }
     pads.forEach((p, i) => {
       if (p.lat === null || p.lon === null) return;
@@ -353,6 +383,7 @@ export function createGlobe(wrap: HTMLElement, opts: { reduceMotion: () => boole
     },
     setQuakes(q: Quake[]) {
       quakes = q;
+      topQuake = strongest(q);
       draw();
     },
     highlight(i: number, focus: boolean) {

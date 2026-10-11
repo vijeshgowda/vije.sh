@@ -1,6 +1,6 @@
 "use client";
 
-import type { Launch, Quake } from "../types";
+import type { FeedResult, Launch, Quake } from "../types";
 
 /**
  * Lets feeds talk to the LF-01 globe without knowing about each other: the launch manifest
@@ -27,3 +27,14 @@ export const globeBus = {
     return () => void listeners.delete(l);
   },
 };
+
+/** The globe needs quakes even when LF-16 isn't on the page: load them from our cached API. */
+export async function ensureQuakes(load: typeof fetch = fetch) {
+  if (state.quakes.length) return;
+  try {
+    const r = (await (await load("/api/feeds/eq")).json()) as FeedResult<"eq">;
+    if (r.ok && !state.quakes.length) globeBus.set({ quakes: r.data.events });
+  } catch {
+    // the overlay is optional
+  }
+}

@@ -1,24 +1,25 @@
 "use client";
 
 import { useEffect } from "react";
-import type { NaturalEvent, Quake } from "../../types";
+import type { NaturalEvent, QuakeFeed } from "../../types";
+import { strongest } from "../../format";
 import { globeBus } from "../../client/globe-bus";
 import { useNow } from "../../client/use-now";
 import { Ago, Big, List, Note, Row } from "./parts";
 
-export function Quakes({ data }: { data: Quake[] }) {
+export function Quakes({ data }: { data: QuakeFeed }) {
   const now = useNow(30_000);
   useEffect(() => {
-    globeBus.set({ quakes: data });
+    globeBus.set({ quakes: data.events });
   }, [data]);
-  const big = data.reduce<Quake | null>((a, b) => (!a || b.mag > a.mag ? b : a), null);
+  const big = strongest(data.events);
   return (
     <>
-      <Big value={data.length} red={(big?.mag ?? 0) >= 6}>
+      <Big value={data.total} red={(big?.mag ?? 0) >= 6}>
         in 24 h{big && <> &middot; strongest M{big.mag.toFixed(1)}</>}
       </Big>
       <List>
-        {data.slice(0, 6).map((q, i) => (
+        {data.events.slice(0, 6).map((q, i) => (
           <Row
             key={`${q.time}-${q.place}`}
             n={i + 1}
@@ -34,7 +35,7 @@ export function Quakes({ data }: { data: Quake[] }) {
           />
         ))}
       </List>
-      <Note>Also drawn as rings on the LF-01 globe.</Note>
+      <Note>Also marked in orange on the LF-01 globe.</Note>
     </>
   );
 }

@@ -56,6 +56,9 @@ function Skeleton() {
  */
 type OkResult = Extract<FeedResult, { ok: true }>;
 
+// bump when a feed's data shape changes, so stale copies in localStorage aren't rendered
+const stored = (key: ServerFeedKey) => `feed2:${key}`;
+
 function useServerFeed(
   key: ServerFeedKey,
   initial: FeedResult | undefined,
@@ -73,9 +76,9 @@ function useServerFeed(
     } catch {
       r = { ok: false, key, at: Date.now(), error: "network" };
     }
-    if (r.ok) storage.set(`feed:${key}`, r);
+    if (r.ok) storage.set(stored(key), r);
     else {
-      const c = storage.get<FeedResult | null>(`feed:${key}`, null);
+      const c = storage.get<FeedResult | null>(stored(key), null);
       setFallback(c?.ok && c.key === key ? c : null);
     }
     setResult(r);
@@ -83,7 +86,7 @@ function useServerFeed(
   }, [key]);
 
   useEffect(() => {
-    if (initial?.ok) storage.set(`feed:${key}`, initial);
+    if (initial?.ok) storage.set(stored(key), initial);
   }, [key, initial]);
 
   useEffect(() => {

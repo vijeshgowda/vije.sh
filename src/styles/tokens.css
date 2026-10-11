@@ -19,6 +19,7 @@
   --card: #f8f3ea;
   --ok: #3c9a5f;
   --warn: #c99a2e;
+  --quake: #c2410c; /* earthquake markers: orange, so they never read as the red ISS */
   color-scheme: light;
 
   /* elevation: a tight contact shadow plus a soft ambient one; same light source (above) */
@@ -51,6 +52,7 @@
   --pin: #6b6e75;
   --chip: #1d1f24;
   --card: #15161a;
+  --quake: #ff8a3d;
   color-scheme: dark;
 
   /* black shadows vanish on a black page, so dark adds a 1px top highlight and a lighter surface */

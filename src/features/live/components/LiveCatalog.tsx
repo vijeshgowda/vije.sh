@@ -7,6 +7,8 @@ import {
   DEFAULT_PINS,
   FEED_BY_KEY,
   FEEDS,
+  LIVE_ORDER,
+  liveSize,
   type FeedKey,
   type ServerFeedKey,
 } from "../catalog";
@@ -58,15 +60,16 @@ export function LiveCatalog({ initial }: { initial: Initial }) {
         {visible} of {FEEDS.length} feeds shown
       </p>
       <Reveal className={s.feeds}>
-        {FEEDS.map((f) => (
+        {LIVE_ORDER.map((k) => (
           <FeedCard
-            key={f.key}
-            feedKey={f.key}
-            initial={initial[f.key as ServerFeedKey]}
+            key={k}
+            feedKey={k}
+            size={liveSize(k)}
+            initial={initial[k as ServerFeedKey]}
             picker
-            hidden={!shows(f.key)}
-            pinned={picked.includes(f.key)}
-            onTogglePin={() => toggle(f.key)}
+            hidden={!shows(k)}
+            pinned={picked.includes(k)}
+            onTogglePin={() => toggle(k)}
           />
         ))}
       </Reveal>

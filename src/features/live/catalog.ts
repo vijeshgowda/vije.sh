@@ -215,6 +215,41 @@ export const isServerFeedKey = (k: string): k is ServerFeedKey =>
 /** Shown on the overview until the visitor picks their own */
 export const DEFAULT_PINS: FeedKey[] = ["iss", "man", "hn"];
 
+/**
+ * Live page order and spans: the big globe and the launch manifest share the first row, the
+ * earthquakes it plots fill the second, and Hacker News takes LF-16's old place.
+ */
+export const LIVE_ORDER: FeedKey[] = [
+  "iss",
+  "man",
+  "eq",
+  "crew",
+  "kp",
+  "sfn",
+  "rel",
+  "eol",
+  "stat",
+  "hf",
+  "pap",
+  "npm",
+  "wx",
+  "moon",
+  "xr",
+  "hn",
+  "eo",
+  "sec",
+  "show",
+];
+const LIVE_SIZE: Partial<Record<FeedKey, FeedMeta["size"] | "w1">> = {
+  iss: "w2",
+  man: "w1",
+  eq: "w3",
+};
+export const liveSize = (k: FeedKey): "w2" | "w3" | null => {
+  const s = LIVE_SIZE[k] ?? FEED_BY_KEY[k].size;
+  return s === "w1" || !s ? null : s;
+};
+
 export const CATEGORIES: { id: FeedCategory | "" | "pinned"; label: string }[] = [
   { id: "", label: "All" },
   { id: "space", label: "Space" },

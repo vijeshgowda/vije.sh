@@ -9,38 +9,52 @@ const RAD = Math.PI / 180;
 type LonLat = [number, number];
 type Vec3 = [number, number, number];
 
-let landArcs: LonLat[][] | null = null;
-let landReq: Promise<LonLat[][] | null> | null = null;
-
-/** Coastlines, self-hosted (public/data/land-110m.json, world-atlas@2, ISC) */
-export function loadLand(): Promise<LonLat[][] | null> {
-  landReq ??= fetch("/data/land-110m.json")
-    .then((r) => r.json())
-    .then((t: { transform: { scale: LonLat; translate: LonLat }; arcs: LonLat[][] }) => {
-      const [sx, sy] = t.transform.scale;
-      const [tx, ty] = t.transform.translate;
-      landArcs = t.arcs.map((a) => {
-        let x = 0;
-        let y = 0;
-        return a.map(([dx, dy]): LonLat => {
-          x += dx;
-          y += dy;
-          return [x * sx + tx, y * sy + ty];
-        });
-      });
-      return landArcs;
-    })
-    .catch(() => {
-      landReq = null;
-      return null;
-    });
-  return landReq;
+/** Coastline arcs as flat [x, y, z] unit vectors, so drawing a frame is one rotation per point */
+export type Land = Float32Array[];
+/** 110m for small globes; 50m (about 12x the points) where the globe is big enough to show it */
+export type LandRes = "110m" | "50m";
+interface Topo {
+  transform: { scale: LonLat; translate: LonLat };
+  arcs: LonLat[][];
 }
 
-const DOTS: LonLat[] = [];
-for (let la = -84; la <= 84; la += 4) {
-  const n = Math.max(1, Math.round(90 * Math.cos(la * RAD)));
-  for (let k = 0; k < n; k++) DOTS.push([(k / n) * 360 - 180, la]);
+export function decodeLand(t: Topo): Land {
+  const [sx, sy] = t.transform.scale;
+  const [tx, ty] = t.transform.translate;
+  return t.arcs.map((a) => {
+    const out = new Float32Array(a.length * 3);
+    let x = 0;
+    let y = 0;
+    a.forEach(([dx, dy], i) => {
+      x += dx;
+      y += dy;
+      out.set(xyz(x * sx + tx, y * sy + ty), i * 3);
+    });
+    return out;
+  });
+}
+
+const landReq: Partial<Record<LandRes, Promise<Land | null>>> = {};
+
+/** Coastlines, self-hosted (public/data/land-*.json, world-atlas@2, ISC) */
+export function loadLand(res: LandRes = "110m"): Promise<Land | null> {
+  return (landReq[res] ??= fetch(`/data/land-${res}.json`)
+    .then((r) => r.json() as Promise<Topo>)
+    .then(decodeLand)
+    .catch(() => {
+      delete landReq[res];
+      return null;
+    }));
+}
+
+/** Day/night dot grid as unit vectors, `step` degrees apart */
+function dotGrid(step: number): Float32Array {
+  const pts: number[] = [];
+  for (let la = -84; la <= 84; la += step) {
+    const n = Math.max(1, Math.round((360 / step) * Math.cos(la * RAD)));
+    for (let k = 0; k < n; k++) pts.push(...xyz((k / n) * 360 - 180, la));
+  }
+  return Float32Array.from(pts);
 }
 
 export const xyz = (lon: number, lat: number): Vec3 => [
@@ -79,24 +93,42 @@ export interface IssPosition {
   longitude: number;
 }
 
+export interface Layers {
+  iss: boolean;
+  pads: boolean;
+  quakes: boolean;
+}
+
+const HOME = { lon: -40, lat: 22 };
+
 export function createGlobe(
   wrap: HTMLElement,
-  opts: { reduceMotion: () => boolean; onPickQuake?: (q: Quake) => void },
+  opts: {
+    reduceMotion: () => boolean;
+    onPickQuake?: (q: Quake) => void;
+    /** big globe: denser dot grid and graticule */
+    detail?: boolean;
+  },
 ) {
   const cv = document.createElement("canvas");
   cv.setAttribute("aria-hidden", "true");
   wrap.prepend(cv);
   const ctx = cv.getContext("2d")!;
+  const dots = dotGrid(opts.detail ? 3 : 4);
+  const grid = opts.detail ? 15 : 30;
+  let land: Land | null = null;
   let W = 0;
   let H = 0;
   let R = 0;
   let cx = 0;
   let cy = 0;
-  let lon0 = -40;
-  let lat0 = 22;
+  let lon0 = HOME.lon;
+  let lat0 = HOME.lat;
   let drag: [number, number, number, number] | null = null;
   let moved = false;
   let follow = false;
+  let paused = false;
+  let show: Layers = { iss: true, pads: true, quakes: true };
   let raf = 0;
   let vis = true;
   let last = 0;
@@ -160,9 +192,36 @@ export function createGlobe(
       on = true;
     }
   };
+  // rotation for the current view, refreshed at the start of each frame (see P for the maths)
+  let cl = 1;
+  let sl = 0;
+  let sp = 0;
+  let cp0 = 1;
+  const lineV = (v: Float32Array) => {
+    let on = false;
+    for (let i = 0; i < v.length; i += 3) {
+      const x = v[i]!;
+      const y = v[i + 1]!;
+      const z = v[i + 2]!;
+      const a = x * cl + y * sl;
+      if (sp * z + cp0 * a < 0) {
+        on = false;
+        continue;
+      }
+      const px = cx + R * (y * cl - x * sl);
+      const py = cy - R * (cp0 * z - sp * a);
+      if (on) ctx.lineTo(px, py);
+      else ctx.moveTo(px, py);
+      on = true;
+    }
+  };
 
   function draw(t = performance.now()) {
     if (R <= 0) return;
+    cl = Math.cos(lon0 * RAD);
+    sl = Math.sin(lon0 * RAD);
+    sp = Math.sin(lat0 * RAD);
+    cp0 = Math.cos(lat0 * RAD);
     ctx.clearRect(0, 0, W, H);
     const g = ctx.createRadialGradient(cx - R * 0.35, cy - R * 0.4, R * 0.1, cx, cy, R);
     g.addColorStop(0, col.card);
@@ -181,26 +240,29 @@ export function createGlobe(
     ctx.stroke();
 
     ctx.beginPath();
-    for (let lo = -180; lo < 180; lo += 30)
+    for (let lo = -180; lo < 180; lo += grid)
       line(Array.from({ length: 61 }, (_, k): LonLat => [lo, -90 + k * 3]));
-    for (let la = -60; la <= 60; la += 30)
+    for (let la = -90 + grid; la < 90; la += grid)
       line(Array.from({ length: 121 }, (_, k): LonLat => [-180 + k * 3, la]));
     ctx.strokeStyle = col.line;
-    ctx.lineWidth = 0.7;
+    ctx.lineWidth = opts.detail ? 0.6 : 0.7;
     ctx.stroke();
 
-    const sv = xyz(...subsolar());
+    const [s0, s1, s2] = xyz(...subsolar());
     const day = new Path2D();
     const night = new Path2D();
-    for (const [lo, la] of DOTS) {
-      const [x, y, c] = P(lo, la);
-      if (c < 0.02) continue;
-      const v = xyz(lo, la);
-      (v[0] * sv[0] + v[1] * sv[1] + v[2] * sv[2] > 0 ? day : night).rect(
-        x - 0.7,
-        y - 0.7,
-        1.4,
-        1.4,
+    const dr = opts.detail ? 0.6 : 0.7;
+    for (let i = 0; i < dots.length; i += 3) {
+      const x = dots[i]!;
+      const y = dots[i + 1]!;
+      const z = dots[i + 2]!;
+      const a = x * cl + y * sl;
+      if (sp * z + cp0 * a < 0.02) continue;
+      (x * s0 + y * s1 + z * s2 > 0 ? day : night).rect(
+        cx + R * (y * cl - x * sl) - dr,
+        cy - R * (cp0 * z - sp * a) - dr,
+        dr * 2,
+        dr * 2,
       );
     }
     ctx.fillStyle = col.ink;
@@ -210,14 +272,15 @@ export function createGlobe(
     ctx.fill(night);
     ctx.globalAlpha = 1;
 
-    if (landArcs) {
+    if (land) {
       ctx.beginPath();
-      landArcs.forEach(line);
+      land.forEach(lineV);
       ctx.strokeStyle = col.ink;
       ctx.lineWidth = 1;
+      ctx.lineJoin = "round";
       ctx.stroke();
     }
-    if (track.length > 1) {
+    if (show.iss && track.length > 1) {
       ctx.beginPath();
       line(track);
       ctx.setLineDash([4, 5]);
@@ -226,7 +289,8 @@ export function createGlobe(
       ctx.stroke();
       ctx.setLineDash([]);
     }
-    for (const q of quakes) {
+    const qs = show.quakes ? quakes : [];
+    for (const q of qs) {
       const [x, y, c] = P(q.lon, q.lat);
       if (c < 0) continue;
       const r = quakeR(q);
@@ -256,7 +320,7 @@ export function createGlobe(
       ctx.stroke();
     }
     for (const q of [qHover, qPick]) {
-      const m = q && quakes.find((x) => sameQuake(x, q));
+      const m = q && qs.find((x) => sameQuake(x, q));
       if (!m) continue;
       const [x, y, c] = P(m.lon, m.lat);
       if (c < 0) continue;
@@ -270,7 +334,7 @@ export function createGlobe(
       ctx.fillStyle = col.ink;
       ctx.fillText(`M${m.mag.toFixed(1)}`, x + r + 4, y + 4);
     }
-    pads.forEach((p, i) => {
+    (show.pads ? pads : []).forEach((p, i) => {
       if (p.lat === null || p.lon === null) return;
       const [x, y, c] = P(p.lon, p.lat);
       if (c < 0) return;
@@ -291,7 +355,7 @@ export function createGlobe(
         ctx.stroke();
       }
     });
-    if (iss) {
+    if (show.iss && iss) {
       const [x, y, c] = P(iss.longitude, iss.latitude);
       if (c >= 0) {
         const ph = (t / 1600) % 1;
@@ -319,7 +383,7 @@ export function createGlobe(
       if (follow && iss) {
         lon0 += (((iss.longitude - lon0 + 540) % 360) - 180) * Math.min(1, dt / 400);
         lat0 += (Math.max(-60, Math.min(60, iss.latitude)) - lat0) * Math.min(1, dt / 400);
-      } else if (!reduce() && !qPick) lon0 += dt * 0.004;
+      } else if (!reduce() && !qPick && !paused) lon0 += dt * 0.004;
     }
     draw(t);
     if (vis && !document.hidden && !reduce()) raf = requestAnimationFrame(frame);
@@ -379,7 +443,7 @@ export function createGlobe(
   const pickAt = (px: number, py: number) => {
     let best: Quake | null = null;
     let bd = Infinity;
-    for (const q of quakes) {
+    for (const q of show.quakes ? quakes : []) {
       const [x, y, c] = P(q.lon, q.lat);
       const d = Math.hypot(x - px, y - py);
       if (c >= 0 && d <= quakeR(q) + 6 && d < bd) {
@@ -454,7 +518,23 @@ export function createGlobe(
       follow = on;
       kick();
     },
-    redraw: () => draw(),
+    setLand(l: Land) {
+      land = l;
+      draw();
+    },
+    setLayers(l: Layers) {
+      show = l;
+      draw();
+    },
+    pause(on: boolean) {
+      paused = on;
+    },
+    reset() {
+      follow = false;
+      lon0 = HOME.lon;
+      lat0 = HOME.lat;
+      draw();
+    },
     destroy() {
       cancelAnimationFrame(raf);
       ro.disconnect();

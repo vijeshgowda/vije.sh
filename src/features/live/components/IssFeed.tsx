@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState, useSyncExternalStore } from "react";
 import { Button } from "@/components/ui/Button";
 import { ago, fmtDay, latLon } from "../format";
-import { createGlobe, loadLand, type Globe, type IssPosition } from "../client/globe";
+import { createGlobe, loadLand, type Globe, type IssPosition, type Layers } from "../client/globe";
 import { ensureQuakes, globeBus } from "../client/globe-bus";
 import { useNow } from "../client/use-now";
 import { Ago, Ext } from "./bodies/parts";
@@ -24,11 +24,22 @@ async function getJSON<T>(url: string, ms: number): Promise<T> {
   return (await r.json()) as T;
 }
 
-/** LF-01. Polled from the browser (wheretheiss.at allows ~1 request/s per IP); 5 s while visible. */
-export function IssFeed({ onStatus }: { onStatus: (s: FeedStatus) => void }) {
+/**
+ * LF-01. Polled from the browser (wheretheiss.at allows ~1 request/s per IP); 5 s while visible.
+ * `wide` (Live page): a bigger, more detailed globe with readouts, layers and view controls beside it.
+ */
+export function IssFeed({
+  onStatus,
+  wide = false,
+}: {
+  onStatus: (s: FeedStatus) => void;
+  wide?: boolean;
+}) {
   const wrapRef = useRef<HTMLDivElement>(null);
   const globeRef = useRef<Globe | null>(null);
   const [follow, setFollow] = useState(false);
+  const [paused, setPaused] = useState(false);
+  const [layers, setLayers] = useState<Layers>({ iss: true, pads: true, quakes: true });
   const [r, setR] = useState<Reading | null>(null);
 
   useEffect(() => {
@@ -36,11 +47,19 @@ export function IssFeed({ onStatus }: { onStatus: (s: FeedStatus) => void }) {
     if (!wrap) return;
     const g = createGlobe(wrap, {
       reduceMotion,
+      detail: wide,
       onPickQuake: (quake) => globeBus.set({ quakePick: { quake, focus: false } }),
     });
     globeRef.current = g;
     let alive = true;
-    void loadLand().then((a) => alive && a && g.redraw());
+    let fine = false;
+    void loadLand("110m").then((a) => alive && a && !fine && g.setLand(a));
+    if (wide)
+      void loadLand("50m").then((a) => {
+        if (!alive || !a) return;
+        fine = true;
+        g.setLand(a);
+      });
     globeBus.set({ globes: globeBus.get().globes + 1 });
 
     type Overlay = ReturnType<typeof globeBus.get>;
@@ -52,8 +71,11 @@ export function IssFeed({ onStatus }: { onStatus: (s: FeedStatus) => void }) {
       g.highlight(o.highlight.index, padFocus);
       g.markQuakes(o.quakeHover, o.quakePick?.quake ?? null, quakeFocus);
       if (padFocus || quakeFocus) setFollow(false);
-      if (quakeFocus)
+      if (padFocus) setLayers((l) => (l.pads ? l : { ...l, pads: true }));
+      if (quakeFocus) {
+        setLayers((l) => (l.quakes ? l : { ...l, quakes: true }));
         wrap.scrollIntoView({ block: "nearest", behavior: reduceMotion() ? "auto" : "smooth" });
+      }
     };
     let prev = globeBus.get();
     apply(prev, prev);
@@ -103,14 +125,42 @@ export function IssFeed({ onStatus }: { onStatus: (s: FeedStatus) => void }) {
       g.destroy();
       globeRef.current = null;
     };
-  }, [onStatus]);
+  }, [onStatus, wide]);
 
   useEffect(() => {
     globeRef.current?.follow(follow);
   }, [follow]);
+  useEffect(() => {
+    globeRef.current?.pause(paused);
+  }, [paused]);
+  useEffect(() => {
+    globeRef.current?.setLayers(layers);
+  }, [layers]);
+
+  const readouts = (
+    <div className={s.gread}>
+      <div>
+        <small>LAT</small>
+        {r ? latLon(r.latitude, "N", "S") : "\u2014"}
+      </div>
+      <div>
+        <small>LON</small>
+        {r ? latLon(r.longitude, "E", "W") : "\u2014"}
+      </div>
+      <div>
+        <small>ALT KM</small>
+        {r ? r.altitude.toFixed(1) : "\u2014"}
+      </div>
+      <div>
+        <small>KM/H</small>
+        {r ? Math.round(r.velocity).toLocaleString("en-GB") : "\u2014"}
+      </div>
+    </div>
+  );
+  const toggle = (k: keyof Layers) => setLayers((l) => ({ ...l, [k]: !l[k] }));
 
   return (
-    <>
+    <div className={wide ? s.gwide : s.gstack}>
       <div ref={wrapRef} className={`${s.gwrap} probe`}>
         <span className={s.ghint}>drag to rotate</span>
         <div className={s.gctl}>
@@ -119,26 +169,45 @@ export function IssFeed({ onStatus }: { onStatus: (s: FeedStatus) => void }) {
           </Button>
         </div>
       </div>
-      <div className={s.gread}>
-        <div>
-          <small>LAT</small>
-          {r ? latLon(r.latitude, "N", "S") : "\u2014"}
-        </div>
-        <div>
-          <small>LON</small>
-          {r ? latLon(r.longitude, "E", "W") : "\u2014"}
-        </div>
-        <div>
-          <small>ALT KM</small>
-          {r ? r.altitude.toFixed(1) : "\u2014"}
-        </div>
-        <div>
-          <small>KM/H</small>
-          {r ? Math.round(r.velocity).toLocaleString("en-GB") : "\u2014"}
-        </div>
+      <div className={s.gside}>
+        {readouts}
+        <QuakePanel />
+        {wide && (
+          <>
+            <fieldset className={s.glay}>
+              <legend>Layers</legend>
+              <button type="button" aria-pressed={layers.iss} onClick={() => toggle("iss")}>
+                <i className={s.kiss} aria-hidden="true" />
+                ISS and ground track
+              </button>
+              <button type="button" aria-pressed={layers.pads} onClick={() => toggle("pads")}>
+                <i className={s.kpad} aria-hidden="true" />
+                Launch pads (LF-02)
+              </button>
+              <button type="button" aria-pressed={layers.quakes} onClick={() => toggle("quakes")}>
+                <i className={s.qdot} aria-hidden="true" />
+                Earthquakes (LF-16)
+              </button>
+              <small>Ring size grows with magnitude; the strongest pulses.</small>
+            </fieldset>
+            <div className={s.gbtns}>
+              <Button size="sm" aria-pressed={paused} onClick={() => setPaused((p) => !p)}>
+                Pause rotation
+              </Button>
+              <Button
+                size="sm"
+                onClick={() => {
+                  setFollow(false);
+                  globeRef.current?.reset();
+                }}
+              >
+                Reset view
+              </Button>
+            </div>
+          </>
+        )}
       </div>
-      <QuakePanel />
-    </>
+    </div>
   );
 }
 

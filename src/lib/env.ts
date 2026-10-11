@@ -56,6 +56,10 @@ const schemas = {
   cron: z.object({
     CRON_SECRET: z.string().min(16),
   }),
+  testAuth: z.object({
+    AUTH_MODE: z.literal("test"),
+    TEST_AUTH_SECRET: z.string().min(32),
+  }),
 } as const;
 
 export type EnvGroup = keyof typeof schemas;

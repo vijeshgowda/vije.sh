@@ -6,6 +6,7 @@ import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react
 import { PAGES, SITE, pageBySegment } from "@/config/site";
 import { ThemeToggle } from "@/components/theme/ThemeToggle";
 import { PaletteButton } from "@/features/palette/components/PaletteButton";
+import { UserMenu } from "@/features/auth/components/UserMenu";
 import styles from "./SiteHeader.module.css";
 
 type Fit = "full" | "dense" | "compact";
@@ -116,6 +117,7 @@ export function SiteHeader() {
         </nav>
         <PaletteButton variant="header" className={styles.jump} />
         <ThemeToggle />
+        <UserMenu />
         <button
           ref={menuRef}
           type="button"

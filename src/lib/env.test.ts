@@ -36,6 +36,13 @@ describe("env()", () => {
     expect(e.DATABASE_CA_CERT).toBe("a\nb");
   });
 
+  it("requires AUTH_MODE=test and a long secret for test sign-in", () => {
+    const secret = "s".repeat(32);
+    expect(hasEnv("testAuth", { AUTH_MODE: "test", TEST_AUTH_SECRET: secret })).toBe(true);
+    expect(hasEnv("testAuth", { AUTH_MODE: "prod", TEST_AUTH_SECRET: secret })).toBe(false);
+    expect(hasEnv("testAuth", { AUTH_MODE: "test", TEST_AUTH_SECRET: "short" })).toBe(false);
+  });
+
   it("rejects non-postgres URLs and non-http site URLs", () => {
     expect(hasEnv("database", { DATABASE_URL: "mysql://localhost/x" })).toBe(false);
     expect(hasEnv("site", { NEXT_PUBLIC_SITE_URL: "javascript:alert(1)" })).toBe(false);

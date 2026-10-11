@@ -16,8 +16,12 @@ describe("feed loaders", () => {
     expect(Object.keys(LOADERS).sort()).toEqual([...SERVER_FEED_KEYS].sort());
   });
 
-  it("launch manifest drops launches more than an hour old", async () => {
-    const l = await LOADERS.man();
+  it("launch manifest drops launches more than an hour old and counts this month", async () => {
+    vi.useFakeTimers({ toFake: ["Date"] });
+    vi.setSystemTime(Date.UTC(2026, 9, 11, 12));
+    const m = await LOADERS.man();
+    vi.useRealTimers();
+    const l = m.launches;
     expect(l).toHaveLength(1);
     expect(l[0]).toMatchObject({
       name: "Falcon 9 | Starlink",
@@ -26,6 +30,27 @@ describe("feed loaders", () => {
       lon: -80.57,
       orbit: "LEO",
     });
+    expect(m.month).toEqual({ start: "2026-10-01T00:00:00.000Z", count: 14 });
+    const urls = vi.mocked(fetch).mock.calls.map(([u]) => String(u));
+    expect(urls).toContain(
+      "https://ll.thespacedevs.com/2.3.0/launches/?net__gte=2026-10-01T00:00:00.000Z&net__lt=2026-11-01T00:00:00.000Z&limit=1&mode=list",
+    );
+  });
+
+  it("launch manifest keeps 15 launches and survives a failed month count", async () => {
+    const results = Array.from({ length: 16 }, (_, i) => ({
+      name: `L${i}`,
+      net: `2099-01-${String(i + 1).padStart(2, "0")}T00:00:00Z`,
+    }));
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(
+        fakeFetch({ "ll.thespacedevs.com": { results }, "2.3.0/launches/?net__gte": new Error() }),
+      ),
+    );
+    const m = await LOADERS.man();
+    expect(m.launches).toHaveLength(15);
+    expect(m.month).toBeNull();
   });
 
   it("HN keeps safe URLs only and skips bad ids", async () => {

@@ -8,7 +8,7 @@ import { ago } from "../format";
 import { FEED_BY_KEY, type FeedKey, type FeedMeta, type ServerFeedKey } from "../catalog";
 import type { FeedResult } from "../types";
 import { useNow } from "../client/use-now";
-import { BODIES } from "./bodies";
+import { BODIES, HEADS } from "./bodies";
 import { IssFeed } from "./IssFeed";
 import { MoonFeed } from "./MoonFeed";
 import { WeatherFeed } from "./WeatherFeed";
@@ -57,7 +57,7 @@ function Skeleton() {
 type OkResult = Extract<FeedResult, { ok: true }>;
 
 // bump when a feed's data shape changes, so stale copies in localStorage aren't rendered
-const stored = (key: ServerFeedKey) => `feed2:${key}`;
+const stored = (key: ServerFeedKey) => `feed3:${key}`;
 
 function useServerFeed(
   key: ServerFeedKey,
@@ -124,6 +124,7 @@ function Frame({
   feedKey,
   size,
   status,
+  titleExtra,
   onRefresh,
   picker,
   hidden,
@@ -135,6 +136,7 @@ function Frame({
   feedKey: FeedKey;
   size?: FeedMeta["size"] | null;
   status: FeedStatus;
+  titleExtra?: ReactNode;
   onRefresh?: () => void;
   picker?: boolean;
   hidden?: boolean;
@@ -179,7 +181,12 @@ function Frame({
           )}
         </span>
       }
-      title={f.title}
+      title={
+        <>
+          {f.title}
+          {titleExtra}
+        </>
+      }
       titleId={`fh-${f.key}`}
     >
       <div className={s.fb}>{children}</div>
@@ -216,11 +223,19 @@ function ServerFeedCard({ feedKey, initial, ...rest }: FeedCardProps & { feedKey
   const ref = useRef<HTMLElement>(null);
   const { shown, status, busy, load, failed } = useServerFeed(feedKey, initial, ref);
   const Body = BODIES[feedKey] as React.ComponentType<{ data: unknown; at: number }>;
+  const Head = HEADS[feedKey] as React.ComponentType<{ data: unknown }> | undefined;
   const refresh = () => {
     if (!busy) void load();
   };
   return (
-    <Frame feedKey={feedKey} status={status} onRefresh={refresh} cardRef={ref} {...rest}>
+    <Frame
+      feedKey={feedKey}
+      status={status}
+      onRefresh={refresh}
+      cardRef={ref}
+      titleExtra={shown && Head ? <Head data={shown.data} /> : null}
+      {...rest}
+    >
       {shown ? (
         <Body data={shown.data} at={shown.at} />
       ) : failed ? (

@@ -1,66 +1,115 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useId, useMemo, useRef, useState } from "react";
+import { Button } from "@/components/ui/Button";
 import { fmtDay, kpLabel, tminus, xclass } from "../../format";
-import type { Article, Crew, Launch, SpaceWeather, XRays } from "../../types";
+import type { Article, Crew, Manifest, SpaceWeather, XRays } from "../../types";
 import { globeBus } from "../../client/globe-bus";
 import { useNow } from "../../client/use-now";
 import s from "../Feeds.module.css";
 import { Ago, Big, List, Note, Row } from "./parts";
 
-export function Launches({ data }: { data: Launch[] }) {
+const FIRST = 5;
+
+/** Next to the LF-02 title: launches with a target date this UTC month, flown or planned */
+export function LaunchMonth({ data }: { data: Manifest }) {
+  if (!data.month) return null;
+  const month = fmtDay(data.month.start, { month: "long", year: "numeric", timeZone: "UTC" });
+  return (
+    <span className={s.fcount} title={`Launches with a target date in ${month} (UTC)`}>
+      <b>{data.month.count}</b> launches this month
+    </span>
+  );
+}
+
+export function Launches({ data }: { data: Manifest }) {
   const now = useNow(1000);
+  const id = useId();
   const [on, setOn] = useState(-1);
+  // collapsed list height, kept when expanded so the card (and the globe beside it) don't grow
+  const [maxH, setMaxH] = useState<number | null>(null);
+  const listRef = useRef<HTMLDivElement>(null);
+  const more = maxH !== null;
+  const all = data.launches;
+  const shown = useMemo(() => (more ? all : all.slice(0, FIRST)), [all, more]);
   useEffect(() => {
-    globeBus.set({ pads: data });
-  }, [data]);
+    globeBus.set({ pads: shown });
+  }, [shown]);
   const hover = (i: number) => {
     setOn(i);
     globeBus.set({ highlight: { index: i, focus: false } });
   };
-  if (!data.length) return <Note>No launches scheduled in the next few days.</Note>;
+  if (!all.length) return <Note>No launches scheduled in the next few days.</Note>;
   return (
-    <List>
-      {data.map((l, i) => (
-        <li
-          key={`${l.name}-${l.net}`}
-          data-on={on === i || undefined}
-          onMouseEnter={() => hover(i)}
-          onMouseLeave={() => hover(-1)}
-        >
-          <div>
-            <span className={s.i}>{String(i + 1).padStart(2, "0")}</span>
-            <button
-              type="button"
-              className={s.padb}
-              aria-label={`${l.name}. Show ${l.location} on the globe`}
-              onClick={() => globeBus.set({ highlight: { index: i, focus: true } })}
+    <>
+      <div
+        ref={listRef}
+        id={id}
+        className={more ? s.fscroll : undefined}
+        style={more ? { maxHeight: maxH } : undefined}
+      >
+        <List>
+          {shown.map((l, i) => (
+            <li
+              key={`${l.name}-${l.net}`}
+              data-on={on === i || undefined}
+              onMouseEnter={() => hover(i)}
+              onMouseLeave={() => hover(-1)}
             >
-              <b>{l.name}</b>
-              <small>
-                {l.provider} &middot; {l.location.split(",")[0]}
-                {l.orbit && <> &middot; {l.orbit}</>} &middot;{" "}
-                {fmtDay(l.net, {
-                  day: "numeric",
-                  month: "short",
-                  hour: "2-digit",
-                  minute: "2-digit",
-                  timeZone: "UTC",
-                })}{" "}
-                UTC
-              </small>
-            </button>
-            <span className={s.v}>
-              <span className={s.tm}>{now === null ? "T-" : tminus(l.net, now)}</span>
-              <br />
-              <span className={s.go} data-go={l.status === "Go" || undefined} title={l.statusName}>
-                {l.status || "TBD"}
-              </span>
-            </span>
-          </div>
-        </li>
-      ))}
-    </List>
+              <div>
+                <span className={s.i}>{String(i + 1).padStart(2, "0")}</span>
+                <button
+                  type="button"
+                  className={s.padb}
+                  aria-label={`${l.name}. Show ${l.location} on the globe`}
+                  onClick={() => globeBus.set({ highlight: { index: i, focus: true } })}
+                >
+                  <b>{l.name}</b>
+                  <small>
+                    {l.provider} &middot; {l.location.split(",")[0]}
+                    {l.orbit && <> &middot; {l.orbit}</>} &middot;{" "}
+                    {fmtDay(l.net, {
+                      day: "numeric",
+                      month: "short",
+                      hour: "2-digit",
+                      minute: "2-digit",
+                      timeZone: "UTC",
+                    })}{" "}
+                    UTC
+                  </small>
+                </button>
+                <span className={s.v}>
+                  <span className={s.tm}>{now === null ? "T-" : tminus(l.net, now)}</span>
+                  <br />
+                  <span
+                    className={s.go}
+                    data-go={l.status === "Go" || undefined}
+                    title={l.statusName}
+                  >
+                    {l.status || "TBD"}
+                  </span>
+                </span>
+              </div>
+            </li>
+          ))}
+        </List>
+      </div>
+      {all.length > FIRST && (
+        <div className={s.more}>
+          <Button
+            size="sm"
+            aria-expanded={more}
+            aria-controls={id}
+            onClick={() => {
+              if (more) hover(-1);
+              setMaxH(more ? null : (listRef.current?.offsetHeight ?? 0) || 480);
+            }}
+          >
+            {more ? "Show fewer" : `Show ${all.length - FIRST} more`}
+          </Button>
+        </div>
+      )}
+    </>
   );
 }
 

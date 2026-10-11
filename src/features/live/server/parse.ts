@@ -23,7 +23,7 @@ import type {
 } from "../types";
 import { arr, get, num, numOrNull, obj, str, type Json } from "./json";
 
-export function parseLaunches(raw: Json, now: number): Launch[] {
+export function parseLaunches(raw: Json, now: number, max = 15): Launch[] {
   return arr(get(raw, "results"))
     .map((l) => ({
       name: str(get(l, "name")),
@@ -37,8 +37,19 @@ export function parseLaunches(raw: Json, now: number): Launch[] {
       orbit: str(get(l, "mission", "orbit", "abbrev")),
     }))
     .filter((l) => l.net && Date.parse(l.net) > now - 3600e3)
-    .slice(0, 5);
+    .slice(0, max);
 }
+
+/** Start of the current UTC month and of the next one, as ISO strings */
+export function monthRange(now: number): [string, string] {
+  const d = new Date(now);
+  return [
+    new Date(Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), 1)).toISOString(),
+    new Date(Date.UTC(d.getUTCFullYear(), d.getUTCMonth() + 1, 1)).toISOString(),
+  ];
+}
+
+export const parseCount = (raw: Json): number | null => numOrNull(get(raw, "count"));
 
 export function parseStory(raw: Json): Story | null {
   const id = num(get(raw, "id"), NaN);

@@ -14,6 +14,12 @@ export interface Launch {
   lon: number | null;
   orbit: string;
 }
+export interface Manifest {
+  /** Next launches, soonest first (up to 15; the card shows 5 until asked for more) */
+  launches: Launch[];
+  /** Every launch with a NET in the current UTC calendar month, flown or planned */
+  month: { start: string; count: number } | null;
+}
 export interface Story {
   id: number;
   title: string;
@@ -106,7 +112,7 @@ export interface Advisory {
 }
 
 export interface FeedDataMap {
-  man: Launch[];
+  man: Manifest;
   hn: Story[];
   crew: Crew;
   kp: SpaceWeather;

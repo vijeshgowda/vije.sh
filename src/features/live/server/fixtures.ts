@@ -19,6 +19,7 @@ export const UPSTREAM: Record<string, unknown> = {
       { name: "Old", net: "2000-01-01T00:00:00Z" },
     ],
   },
+  "2.3.0/launches/?net__gte": { count: 14, results: [] },
   "topstories.json": [1, 2, "bad"],
   "showstories.json": [3],
   "item/1.json": { id: 1, title: "Hello", url: "https://example.com/a", score: 10, descendants: 2 },

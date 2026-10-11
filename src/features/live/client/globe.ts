@@ -2,7 +2,7 @@
  * Orthographic canvas globe for LF-01: coastlines (TopoJSON), day/night dots, ISS + ground track,
  * launch pads and earthquake rings. Plain DOM/canvas, no React; IssFeed owns its lifecycle.
  */
-import { strongest } from "../format";
+import { sameQuake, strongest } from "../format";
 import type { Launch, Quake } from "../types";
 
 const RAD = Math.PI / 180;
@@ -79,7 +79,10 @@ export interface IssPosition {
   longitude: number;
 }
 
-export function createGlobe(wrap: HTMLElement, opts: { reduceMotion: () => boolean }) {
+export function createGlobe(
+  wrap: HTMLElement,
+  opts: { reduceMotion: () => boolean; onPickQuake?: (q: Quake) => void },
+) {
   const cv = document.createElement("canvas");
   cv.setAttribute("aria-hidden", "true");
   wrap.prepend(cv);
@@ -92,6 +95,7 @@ export function createGlobe(wrap: HTMLElement, opts: { reduceMotion: () => boole
   let lon0 = -40;
   let lat0 = 22;
   let drag: [number, number, number, number] | null = null;
+  let moved = false;
   let follow = false;
   let raf = 0;
   let vis = true;
@@ -112,7 +116,10 @@ export function createGlobe(wrap: HTMLElement, opts: { reduceMotion: () => boole
   let hi = -1;
   let quakes: Quake[] = [];
   let topQuake: Quake | null = null;
+  let qHover: Quake | null = null;
+  let qPick: Quake | null = null;
   const reduce = opts.reduceMotion;
+  const quakeR = (q: Quake) => 4 + Math.max(0, q.mag - 4.5) * 3.5;
 
   const readCol = () => {
     const s = getComputedStyle(document.documentElement);
@@ -222,7 +229,7 @@ export function createGlobe(wrap: HTMLElement, opts: { reduceMotion: () => boole
     for (const q of quakes) {
       const [x, y, c] = P(q.lon, q.lat);
       if (c < 0) continue;
-      const r = 4 + Math.max(0, q.mag - 4.5) * 3.5;
+      const r = quakeR(q);
       ctx.beginPath();
       ctx.arc(x, y, r, 0, 7);
       ctx.fillStyle = col.quake;
@@ -247,6 +254,21 @@ export function createGlobe(wrap: HTMLElement, opts: { reduceMotion: () => boole
       ctx.strokeStyle = col.card;
       ctx.lineWidth = 1;
       ctx.stroke();
+    }
+    for (const q of [qHover, qPick]) {
+      const m = q && quakes.find((x) => sameQuake(x, q));
+      if (!m) continue;
+      const [x, y, c] = P(m.lon, m.lat);
+      if (c < 0) continue;
+      const r = quakeR(m) + 3;
+      ctx.beginPath();
+      ctx.arc(x, y, r, 0, 7);
+      ctx.strokeStyle = col.ink;
+      ctx.lineWidth = 2;
+      ctx.stroke();
+      ctx.font = '700 11px "JetBrains Mono", monospace';
+      ctx.fillStyle = col.ink;
+      ctx.fillText(`M${m.mag.toFixed(1)}`, x + r + 4, y + 4);
     }
     pads.forEach((p, i) => {
       if (p.lat === null || p.lon === null) return;
@@ -297,7 +319,7 @@ export function createGlobe(wrap: HTMLElement, opts: { reduceMotion: () => boole
       if (follow && iss) {
         lon0 += (((iss.longitude - lon0 + 540) % 360) - 180) * Math.min(1, dt / 400);
         lat0 += (Math.max(-60, Math.min(60, iss.latitude)) - lat0) * Math.min(1, dt / 400);
-      } else if (!reduce()) lon0 += dt * 0.004;
+      } else if (!reduce() && !qPick) lon0 += dt * 0.004;
     }
     draw(t);
     if (vis && !document.hidden && !reduce()) raf = requestAnimationFrame(frame);
@@ -342,18 +364,38 @@ export function createGlobe(wrap: HTMLElement, opts: { reduceMotion: () => boole
   document.addEventListener("visibilitychange", onVis);
 
   const onDown = (e: PointerEvent) => {
-    if ((e.target as Element).closest("button")) return;
+    if ((e.target as Element).closest("button, a")) return;
     drag = [e.clientX, e.clientY, lon0, lat0];
+    moved = false;
     wrap.setPointerCapture(e.pointerId);
   };
   const onMove = (e: PointerEvent) => {
     if (!drag) return;
+    if (Math.hypot(e.clientX - drag[0], e.clientY - drag[1]) > 4) moved = true;
     lon0 = drag[2] - (e.clientX - drag[0]) * 0.35;
     lat0 = Math.max(-80, Math.min(80, drag[3] + (e.clientY - drag[1]) * 0.35));
     if (reduce()) draw();
   };
-  const onUp = () => {
+  const pickAt = (px: number, py: number) => {
+    let best: Quake | null = null;
+    let bd = Infinity;
+    for (const q of quakes) {
+      const [x, y, c] = P(q.lon, q.lat);
+      const d = Math.hypot(x - px, y - py);
+      if (c >= 0 && d <= quakeR(q) + 6 && d < bd) {
+        best = q;
+        bd = d;
+      }
+    }
+    return best;
+  };
+  const onUp = (e: PointerEvent) => {
+    const wasDrag = drag;
     drag = null;
+    if (!wasDrag || moved || e.type !== "pointerup" || !opts.onPickQuake) return;
+    const b = wrap.getBoundingClientRect();
+    const q = pickAt(e.clientX - b.left, e.clientY - b.top);
+    if (q) opts.onPickQuake(q);
   };
   wrap.addEventListener("pointerdown", onDown);
   wrap.addEventListener("pointermove", onMove);
@@ -384,6 +426,18 @@ export function createGlobe(wrap: HTMLElement, opts: { reduceMotion: () => boole
     setQuakes(q: Quake[]) {
       quakes = q;
       topQuake = strongest(q);
+      draw();
+    },
+    /** hover highlights a marker; pick also labels it, stops the spin and, with focus, centres it */
+    markQuakes(hover: Quake | null, pick: Quake | null, focus: boolean) {
+      qHover = hover;
+      qPick = pick;
+      if (focus && pick) {
+        follow = false;
+        lon0 = pick.lon;
+        lat0 = Math.max(-60, Math.min(60, pick.lat));
+      }
+      kick();
       draw();
     },
     highlight(i: number, focus: boolean) {

@@ -117,3 +117,7 @@ export const fmtDay = (iso: string | number, opts: Intl.DateTimeFormatOptions) =
 
 export const strongest = (qs: readonly Quake[]): Quake | null =>
   qs.reduce<Quake | null>((a, b) => (!a || b.mag > a.mag ? b : a), null);
+
+/** Same event across feed refreshes (new objects each time) */
+export const sameQuake = (a: Quake | null | undefined, b: Quake | null | undefined) =>
+  !!a && !!b && a.time === b.time && a.lat === b.lat && a.lon === b.lon;

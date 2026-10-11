@@ -210,14 +210,14 @@ export function FeedCard(props: FeedCardProps) {
 function ServerFeedCard({ feedKey, initial, ...rest }: FeedCardProps & { feedKey: ServerFeedKey }) {
   const ref = useRef<HTMLElement>(null);
   const { shown, status, busy, load, failed } = useServerFeed(feedKey, initial, ref);
-  const Body = BODIES[feedKey] as React.ComponentType<{ data: unknown }>;
+  const Body = BODIES[feedKey] as React.ComponentType<{ data: unknown; at: number }>;
   const refresh = () => {
     if (!busy) void load();
   };
   return (
     <Frame feedKey={feedKey} status={status} onRefresh={refresh} cardRef={ref} {...rest}>
       {shown ? (
-        <Body data={shown.data} />
+        <Body data={shown.data} at={shown.at} />
       ) : failed ? (
         <p className={s.fmsg}>
           No signal from {FEED_BY_KEY[feedKey].host}.

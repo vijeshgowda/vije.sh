@@ -23,7 +23,20 @@ const nextConfig: NextConfig = {
     },
   },
   async headers() {
-    return headerRoutes(process.env.NODE_ENV !== "production");
+    return [
+      ...headerRoutes(process.env.NODE_ENV !== "production"),
+      // public/ files default to max-age=0; the coastlines change only with a deploy and an old
+      // copy is harmless
+      {
+        source: "/data/:file*",
+        headers: [
+          {
+            key: "Cache-Control",
+            value: "public, max-age=604800, stale-while-revalidate=2592000",
+          },
+        ],
+      },
+    ];
   },
 };
 

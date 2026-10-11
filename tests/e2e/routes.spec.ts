@@ -51,3 +51,11 @@ test("robots, sitemap and the feeds API", async ({ request }) => {
   expect(await feed.json()).toMatchObject({ key: "hn", ok: false, error: "offline" });
   expect((await request.get("/api/feeds/nope")).status()).toBe(404);
 });
+
+test("coastline data is cached by the browser", async ({ request }) => {
+  for (const res of ["110m", "50m"]) {
+    const r = await request.get(`/data/land-${res}.json`);
+    expect(r.status()).toBe(200);
+    expect(r.headers()["cache-control"]).toContain("max-age=604800");
+  }
+});

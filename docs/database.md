@@ -364,6 +364,14 @@ revoke all on all sequences in schema app from public, anon, authenticated;
 revoke all on all functions in schema app from public, anon, authenticated;
 ```
 
+### Foreign key indexes and default privileges (`0002_fk_indexes.sql`)
+Every foreign key has a full (non-partial) index whose first column is the key, so deleting a
+thread, reply or profile never scans the tables that point at it. New foreign keys need one too:
+`tests/db/schema.int.test.ts` fails when one is missing. 0002 also sets `alter default privileges
+in schema app revoke all ... from public, anon, authenticated` for tables, sequences and functions,
+so objects added later are locked out like the ones above. A function the app calls directly then
+needs an explicit `grant execute ... to app_rw`.
+
 ### Seed (`supabase/seed.sql`)
 ```sql
 insert into app.categories (slug, name, description, position, staff_only) values
@@ -445,16 +453,20 @@ attachDatabasePool(pool);
 
 export async function withTransaction<T>(fn: (client: pg.PoolClient) => Promise<T>): Promise<T> {
   const client = await pool.connect();
+  let broken: Error | undefined;
   try {
     await client.query("begin");
     const result = await fn(client);
     await client.query("commit");
     return result;
   } catch (err) {
-    await client.query("rollback");
+    // a failed rollback means the connection is unusable: discard it, keep the original error
+    await client.query("rollback").catch((e: unknown) => {
+      broken = e instanceof Error ? e : new Error(String(e));
+    });
     throw err;
   } finally {
-    client.release();
+    client.release(broken);
   }
 }
 ```

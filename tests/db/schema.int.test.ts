@@ -119,6 +119,21 @@ describe("schema", () => {
     expect(rows[0].author_id).toBeNull();
   });
 
+  it("indexes every foreign key, so deletes never scan the referencing table", async () => {
+    // a full (non-partial) index whose first column is the foreign key column
+    const { rows } = await db.query(
+      `select c.conrelid::regclass::text || '.' || a.attname as fk
+         from pg_constraint c
+         join pg_attribute a on a.attrelid = c.conrelid and a.attnum = c.conkey[1]
+        where c.contype = 'f' and c.connamespace = 'app'::regnamespace
+          and not exists (
+            select 1 from pg_index i
+             where i.indrelid = c.conrelid and i.indkey[0] = c.conkey[1] and i.indpred is null)
+        order by 1`,
+    );
+    expect(rows.map((r) => r.fk)).toEqual([]);
+  });
+
   it("updated_at moves on update", async () => {
     const u = await user("tomas");
     const before = (await db.query("select updated_at from app.profiles where id = $1", [u]))

@@ -84,9 +84,9 @@ test("a member sees their handle and can sign out", async ({ page, asMember }) =
   await expect(banner.getByRole("link", { name: "Sign in" })).toBeVisible();
 });
 
-test("an onboarded member visiting /welcome is told they're set", async ({ page, asAdmin }) => {
+test("an onboarded member visiting /welcome is told they're set", async ({ page, asMember }) => {
   await page.goto("/welcome?next=/blog");
-  await expect(page.getByText(`all set as @${asAdmin.handle}`)).toBeVisible();
+  await expect(page.getByText(`all set as @${asMember.handle}`)).toBeVisible();
   await expect(page.getByRole("link", { name: "Continue" })).toHaveAttribute("href", "/blog");
 });
 

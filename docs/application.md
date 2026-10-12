@@ -564,7 +564,9 @@ for forms.
 
 ### 10.3 Rate limits
 Counted in the database from recent rows (no extra service needed). Rules live in each feature's
-`limits.ts`:
+`limits.ts` as `{ windowMs, fresh, normal }`; the pure helpers in `src/lib/rate-limit.ts`
+(`windowStart`, `isLimited`, `isRateLimitExempt`) pick the limit by account age and exempt staff
+(anyone with a role grant):
 
 | Action | Limit (account under 24 h old) | Limit (normal account) |
 |---|---|---|
@@ -858,9 +860,10 @@ npm run db:test:setup   # bootstrap + migrations + seed on the test database
 - **Database exposure:** app tables live in the `app` schema, which is **not exposed** through
   Supabase's Data API, and `anon` and `authenticated` have no grants on it. The app connects as a
   least-privilege role (`app_rw`). See [database.md](database.md#access-and-roles).
-- **Markdown:** database content is rendered through `rehype-sanitize`; raw HTML is stripped and
-  links get `rel="nofollow ugc noopener"`. Only git posts (Markdown and MDX from the repo) are
-  trusted.
+- **Markdown:** database content is rendered with `renderMarkdown(source, { mode: "sanitised" })`:
+  raw HTML is dropped, `rehype-sanitize` runs before Shiki (links limited to http, https and
+  mailto), ids get a `user-content-` prefix and links get `rel="nofollow ugc noopener"`. Only git
+  posts (Markdown and MDX from the repo) are trusted (the default mode).
 - **SQL:** `pg` parameterised queries only (`$1`, `$2`). Never build SQL by joining strings;
   dynamic identifiers come from a fixed allow-list in code.
 - **Cookies:** HttpOnly, Secure, SameSite=Lax (set by `@supabase/ssr`).

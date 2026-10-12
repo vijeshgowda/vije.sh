@@ -18,10 +18,22 @@ vi.mock("@/components/ui/Turnstile", () => ({
 }));
 
 const { LoginButtons, LoginForm } = await import("./LoginButtons");
-const { UserMenu, hasSessionCookie } = await import("./UserMenu");
+const { UserMenu } = await import("./UserMenu");
 const { WelcomeForm } = await import("./WelcomeForm");
 
-const member = { handle: "vije", displayName: "Vijesh", onboarded: true, roles: [] };
+const member = {
+  handle: "vije",
+  displayName: "Vijesh",
+  onboarded: true,
+  banned: false,
+  roles: [],
+  grants: [],
+};
+const withRole = (role: string, categoryId: string | null = null) => ({
+  ...member,
+  roles: [role],
+  grants: [{ role, categoryId }],
+});
 
 function session(user: object | null, { cookie = true, status = 200 } = {}) {
   document.cookie = cookie ? "test_session=x; path=/" : "test_session=; max-age=0; path=/";
@@ -38,16 +50,6 @@ afterEach(() => {
   vi.unstubAllGlobals();
   vi.clearAllMocks();
   document.cookie = "test_session=; max-age=0; path=/";
-});
-
-describe("hasSessionCookie()", () => {
-  it("spots Supabase (chunked) and test session cookies", () => {
-    expect(hasSessionCookie("a=1; sb-abc-auth-token=x")).toBe(true);
-    expect(hasSessionCookie("sb-abc-auth-token.0=x")).toBe(true);
-    expect(hasSessionCookie("test_session=x")).toBe(true);
-    expect(hasSessionCookie("vj:theme=dark; sb-abc-other=x")).toBe(false);
-    expect(hasSessionCookie("")).toBe(false);
-  });
 });
 
 describe("LoginForm", () => {
@@ -109,6 +111,26 @@ describe("UserMenu", () => {
     const button = screen.getByRole("button", { name: "Sign out" });
     expect(button.closest("form")).toHaveAttribute("action", "/auth/signout");
     expect(button.closest("form")).toHaveAttribute("method", "post");
+  });
+
+  it("links superusers and the owner to /admin, nobody else", async () => {
+    for (const [user, admin] of [
+      [member, false],
+      [withRole("moderator"), false],
+      [withRole("moderator", "2"), false],
+      [withRole("superuser"), true],
+      [withRole("admin"), true],
+      [{ ...withRole("superuser"), banned: true }, false],
+    ] as const) {
+      session(user);
+      const { unmount } = render(<UserMenu />);
+      await userEvent.click(await screen.findByText("@vije"));
+      expect(screen.getByRole("button", { name: "Sign out" })).toBeInTheDocument();
+      const link = screen.queryByRole("link", { name: "Admin" });
+      if (admin) expect(link).toHaveAttribute("href", "/admin");
+      else expect(link).toBeNull();
+      unmount();
+    }
   });
 
   it("re-checks the session after navigating", async () => {

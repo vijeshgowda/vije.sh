@@ -5,6 +5,8 @@ import type { Role } from "@/db/types";
 
 export interface SessionUser extends CurrentUser {
   displayName: string | null;
+  /** When the profile was created; new accounts get stricter rate limits */
+  createdAt: Date;
 }
 
 interface Row {
@@ -12,6 +14,7 @@ interface Row {
   handle: string | null;
   display_name: string | null;
   onboarded_at: Date | null;
+  created_at: Date;
   roles: { role: Role; category_id: string | null }[];
   banned: boolean;
 }
@@ -19,7 +22,7 @@ interface Row {
 /** Profile, roles and ban status in one round trip (database.md section 7). Null without a profile. */
 export async function loadCurrentUser(userId: string): Promise<SessionUser | null> {
   const { rows } = await query<Row>(
-    `select p.id, p.handle::text as handle, p.display_name, p.onboarded_at,
+    `select p.id, p.handle::text as handle, p.display_name, p.onboarded_at, p.created_at,
             coalesce(json_agg(json_build_object('role', r.role, 'category_id', r.category_id::text))
                      filter (where r.role is not null), '[]') as roles,
             exists (select 1 from app.user_bans b
@@ -39,6 +42,7 @@ export async function loadCurrentUser(userId: string): Promise<SessionUser | nul
     displayName: row.display_name,
     onboarded: row.onboarded_at !== null,
     banned: row.banned,
+    createdAt: row.created_at,
     roles: row.roles.map((r) => ({ role: r.role, categoryId: r.category_id })),
   };
 }

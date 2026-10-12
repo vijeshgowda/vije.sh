@@ -14,13 +14,14 @@ describe("GET /api/me", () => {
     expect(await res.json()).toEqual({ user: null });
   });
 
-  it("returns the handle and distinct role names only", async () => {
+  it("returns the handle, ban state, distinct role names and grants, never the id", async () => {
     getCurrentUser.mockResolvedValue({
       id: "secret-id",
       handle: "vije",
       displayName: "Vijesh",
       onboarded: true,
       banned: false,
+      createdAt: new Date("2026-01-01T00:00:00Z"),
       roles: [
         { role: "moderator", categoryId: "1" },
         { role: "moderator", categoryId: "2" },
@@ -32,7 +33,13 @@ describe("GET /api/me", () => {
         handle: "vije",
         displayName: "Vijesh",
         onboarded: true,
+        banned: false,
         roles: ["moderator", "admin"],
+        grants: [
+          { role: "moderator", categoryId: "1" },
+          { role: "moderator", categoryId: "2" },
+          { role: "admin", categoryId: null },
+        ],
       },
     });
   });

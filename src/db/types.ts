@@ -4,7 +4,8 @@
  * timestamptz as Date. Update this file in the same PR as any migration.
  */
 
-export type Role = "admin" | "moderator";
+/** Stored roles; `admin` is the owner (one row, granted by hand) and is labelled "Owner" in the UI */
+export type Role = "admin" | "superuser" | "moderator";
 export type PostStatus = "draft" | "published";
 export type Visibility = "public" | "unlisted" | "private";
 export type ReportStatus = "open" | "actioned" | "dismissed";
@@ -20,7 +21,10 @@ export type ModerationAction =
   | "unban"
   | "role_grant"
   | "role_revoke"
-  | "report_resolve";
+  | "report_resolve"
+  | "category_create"
+  | "category_update"
+  | "category_delete";
 export type NotificationType = "reply" | "mention" | "moderation";
 
 export interface ProfileRow {

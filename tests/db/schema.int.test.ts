@@ -96,7 +96,7 @@ describe("schema", () => {
         "insert into app.user_roles (user_id, role, category_id) select $1, 'admin', id from app.categories limit 1",
         [u],
       ),
-    ).rejects.toThrow(/user_roles_admin_global/);
+    ).rejects.toThrow(/user_roles_scope/);
   });
 
   it("a report targets exactly one thing", async () => {

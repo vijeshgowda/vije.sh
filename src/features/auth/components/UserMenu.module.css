@@ -1,15 +1,20 @@
+/* the account label is the one header item that gives way (truncates) on narrow screens */
 .slot {
   display: inline-block;
-  min-width: 4.5rem;
+  width: 4.5rem;
+  min-width: 0;
+  flex-shrink: 1;
 }
 .link {
-  display: inline-flex;
-  align-items: center;
-  min-height: 2.6rem;
+  display: block;
+  min-width: 0;
+  flex-shrink: 1;
   padding: 0 0.2rem;
-  font: 500 0.75rem var(--font-mono);
+  font: 500 0.75rem/2.6rem var(--font-mono);
   color: var(--ink);
   white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
   cursor: pointer;
   list-style: none;
 }
@@ -21,6 +26,8 @@
 }
 .menu {
   position: relative;
+  min-width: 0;
+  flex-shrink: 1;
 }
 .pop {
   position: absolute;

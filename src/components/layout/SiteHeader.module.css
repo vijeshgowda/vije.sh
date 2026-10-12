@@ -16,6 +16,10 @@
   gap: 1.25rem;
   min-height: var(--header-h);
 }
+/* only the nav and the account label may shrink (zero specificity so their own rules win) */
+:where(.in) > * {
+  flex-shrink: 0;
+}
 .brand {
   display: flex;
   align-items: center;
@@ -255,7 +259,16 @@
   background: var(--faint);
 }
 
-@media (max-width: 26rem) {
+/* phones: plain hamburger, no badge; the button's accessible name still names the page */
+@media (max-width: 40rem) {
+  .top[data-fit="compact"] .in {
+    gap: 0.4rem;
+  }
+  .top[data-fit="compact"] .menuBtn {
+    justify-content: center;
+    width: 2.6rem;
+    padding: 0;
+  }
   .menuBtn b,
   .brand small {
     display: none;

@@ -295,6 +295,12 @@
   .clock .col {
     animation: blink 1s steps(1) infinite;
   }
+  .wave {
+    animation: xwave 0.87s linear infinite paused;
+  }
+  .xtal[data-run] .wave {
+    animation-play-state: running;
+  }
 }
 
 @media (max-width: 62rem) {
@@ -334,5 +340,11 @@
 @keyframes blink {
   50% {
     opacity: 0;
+  }
+}
+/* one wavelength of the crystal wave (18 pi units) */
+@keyframes xwave {
+  to {
+    transform: translateX(56.549px);
   }
 }

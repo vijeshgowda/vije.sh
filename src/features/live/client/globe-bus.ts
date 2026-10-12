@@ -50,10 +50,11 @@ export function publishQuakes(data: QuakeFeed, at: number) {
 
 /** The globe needs quakes even when LF-16 isn't on the page: load them from our cached API. */
 export async function ensureQuakes(load: typeof fetch = fetch) {
-  if (state.quakes.length) return;
+  // quakeMeta, not quakes.length: a quiet day with no M4.5+ events is still loaded
+  if (state.quakeMeta) return;
   try {
     const r = (await (await load("/api/feeds/eq")).json()) as FeedResult<"eq">;
-    if (r.ok && !state.quakes.length) publishQuakes(r.data, r.at);
+    if (r.ok && !state.quakeMeta) publishQuakes(r.data, r.at);
   } catch {
     // the overlay is optional
   }

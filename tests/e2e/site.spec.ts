@@ -19,10 +19,19 @@ test("main nav and chip pins navigate between pages", async ({ page, isMobile })
 test("dark mode is opt-in and survives a reload", async ({ page }) => {
   await page.goto("/");
   await expect(page.locator("html")).not.toHaveAttribute("data-theme", "dark");
-  await page.getByRole("button", { name: "Dark" }).click();
-  await expect(page.locator("html")).toHaveAttribute("data-theme", "dark");
+  const dark = page.getByRole("button", { name: "Dark" });
+  // a click before hydration is lost, so retry until the toggle reports pressed
+  await expect(async () => {
+    if ((await dark.getAttribute("aria-pressed")) !== "true") await dark.click();
+    await expect(page.locator("html")).toHaveAttribute("data-theme", "dark", { timeout: 1000 });
+  }).toPass();
   await page.reload();
   await expect(page.locator("html")).toHaveAttribute("data-theme", "dark");
+  // the browser bar follows the theme from first paint (browsers use the first theme-color meta)
+  await expect(page.locator('meta[name="theme-color"]').first()).toHaveAttribute(
+    "content",
+    "#0c0d0f",
+  );
 });
 
 test("flashing firmware patches the tagline and logs to the UART", async ({ page, isMobile }) => {

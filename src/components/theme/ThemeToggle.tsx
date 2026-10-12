@@ -2,7 +2,7 @@
 
 import { useSyncExternalStore } from "react";
 import { storage } from "@/lib/storage";
-import { THEME_KEY, type Theme } from "./theme-script";
+import { THEME_COLOR, THEME_KEY, type Theme } from "./theme-script";
 import styles from "./ThemeToggle.module.css";
 
 function subscribe(onChange: () => void) {
@@ -15,6 +15,9 @@ const isDark = () => document.documentElement.dataset.theme === "dark";
 export function setTheme(theme: Theme) {
   if (theme === "dark") document.documentElement.dataset.theme = "dark";
   else delete document.documentElement.dataset.theme;
+  document
+    .querySelectorAll('meta[name="theme-color"]')
+    .forEach((m) => m.setAttribute("content", THEME_COLOR[theme]));
   storage.set(THEME_KEY, theme);
 }
 

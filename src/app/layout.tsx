@@ -2,7 +2,7 @@ import type { Metadata, Viewport } from "next";
 import { JetBrains_Mono, Space_Grotesk } from "next/font/google";
 import { SITE } from "@/config/site";
 import { Spotlight } from "@/components/motion/Spotlight";
-import { THEME_INIT_SCRIPT } from "@/components/theme/theme-script";
+import { THEME_COLOR, THEME_INIT_SCRIPT } from "@/components/theme/theme-script";
 import "./globals.css";
 
 // next/font downloads these at build time and serves them from this origin (no Google requests).
@@ -25,7 +25,7 @@ export const viewport: Viewport = {
   width: "device-width",
   initialScale: 1,
   viewportFit: "cover",
-  themeColor: "#f4eee3",
+  themeColor: THEME_COLOR.light,
 };
 
 export default function RootLayout({ children }: LayoutProps<"/">) {

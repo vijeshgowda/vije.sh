@@ -22,8 +22,13 @@ export function LaunchMonth({ data }: { data: Manifest }) {
   );
 }
 
-export function Launches({ data }: { data: Manifest }) {
+/** Ticks every second on its own, so the launch rows around it don't re-render */
+function Countdown({ net }: { net: string }) {
   const now = useNow(1000);
+  return <span className={s.tm}>{now === null ? "T-" : tminus(net, now)}</span>;
+}
+
+export function Launches({ data }: { data: Manifest }) {
   const id = useId();
   const [on, setOn] = useState(-1);
   // collapsed list height, kept when expanded so the card (and the globe beside it) don't grow
@@ -79,7 +84,7 @@ export function Launches({ data }: { data: Manifest }) {
                   </small>
                 </button>
                 <span className={s.v}>
-                  <span className={s.tm}>{now === null ? "T-" : tminus(l.net, now)}</span>
+                  <Countdown net={l.net} />
                   <br />
                   <span
                     className={s.go}

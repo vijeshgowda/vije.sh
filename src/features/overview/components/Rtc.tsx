@@ -6,12 +6,17 @@ import s from "./Overview.module.css";
 
 const CAREER_START = new Date("2017-09-01T09:00:00");
 const p2 = (n: number) => String(n).padStart(2, "0");
+// one wavelength (18 pi units) wider than the box, so the CSS loop that slides it right is seamless
+const WAVE = Array.from({ length: 70 }, (_, k) => {
+  const x = -57 + k * 3;
+  return `${k ? "L" : "M"}${x} ${(28 + 18 * Math.sin(x / 9)).toFixed(1)}`;
+}).join("");
 
 /** Real-time clock card: live clock, a 32.768 kHz crystal wave, career uptime and session time. */
 export function Rtc() {
   const [clock, setClock] = useState<{ now: Date; t0: number } | null>(null);
   const now = clock?.now ?? null;
-  const waveRef = useRef<SVGPathElement>(null);
+  const xtalRef = useRef<SVGSVGElement>(null);
   const cardRef = useRef<HTMLElement>(null);
 
   useEffect(() => {
@@ -19,31 +24,13 @@ export function Rtc() {
     const tick = () => setClock({ now: new Date(), t0 });
     tick();
     const iv = setInterval(tick, 1000);
-    const wave = waveRef.current;
-    let raf = 0;
-    let vis = false;
-    let ph = 0;
-    const draw = () => {
-      let d = "";
-      for (let x = 0; x <= 150; x += 3)
-        d += `${x ? "L" : "M"}${x} ${(28 + 18 * Math.sin(x / 9 + ph)).toFixed(1)}`;
-      wave?.setAttribute("d", d);
-    };
-    const loop = () => {
-      ph -= 0.12;
-      draw();
-      raf = vis && !document.hidden ? requestAnimationFrame(loop) : 0;
-    };
-    draw();
-    const reduce = matchMedia("(prefers-reduced-motion: reduce)").matches;
+    // the wave only runs while the card is on screen
     const io = new IntersectionObserver((e) => {
-      vis = e[0]?.isIntersecting ?? false;
-      if (vis && !raf && !reduce) raf = requestAnimationFrame(loop);
+      xtalRef.current?.toggleAttribute("data-run", e[0]?.isIntersecting ?? false);
     });
     if (cardRef.current) io.observe(cardRef.current);
     return () => {
       clearInterval(iv);
-      cancelAnimationFrame(raf);
       io.disconnect();
     };
   }, []);
@@ -89,9 +76,9 @@ export function Rtc() {
           </p>
         </div>
         <div>
-          <svg className={s.xtal} viewBox="0 0 150 56" aria-hidden="true">
+          <svg ref={xtalRef} className={s.xtal} viewBox="0 0 150 56" aria-hidden="true">
             <path className={s.gr} d="M0 28H150M37.5 0V56M75 0V56M112.5 0V56" />
-            <path ref={waveRef} d="" />
+            <path className={s.wave} d={WAVE} />
           </svg>
           <p className={s.xcap}>XTAL &middot; 32.768 kHz</p>
         </div>

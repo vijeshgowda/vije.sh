@@ -39,6 +39,11 @@
   border-color: var(--red);
   color: #fff;
 }
+.superuser {
+  background: var(--ink);
+  border-color: var(--ink);
+  color: var(--bg);
+}
 .moderator {
   border-color: var(--ink);
   color: var(--ink);

@@ -15,6 +15,19 @@ describe("displayRole", () => {
     expect(displayRole([{ role: "moderator", categoryId: GAMES }], ENG)).toBe("member");
   });
 
+  it("shows superusers everywhere", () => {
+    expect(displayRole([{ role: "superuser", categoryId: null }], GAMES)).toBe("superuser");
+    expect(
+      displayRole(
+        [
+          { role: "moderator", categoryId: null },
+          { role: "superuser", categoryId: null },
+        ],
+        ENG,
+      ),
+    ).toBe("superuser");
+  });
+
   it("picks the highest grant", () => {
     expect(
       displayRole(
@@ -38,6 +51,11 @@ describe("displayRole", () => {
   });
 
   it("has a label for every role", () => {
-    expect(ROLE_PILL_LABEL).toEqual({ admin: "Admin", moderator: "Moderator", member: "Member" });
+    expect(ROLE_PILL_LABEL).toEqual({
+      admin: "Owner",
+      superuser: "Superuser",
+      moderator: "Moderator",
+      member: "Member",
+    });
   });
 });

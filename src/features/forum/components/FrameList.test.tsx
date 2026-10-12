@@ -62,7 +62,7 @@ describe("FrameList", () => {
     expect(op).toHaveAttribute("id", "thread-42");
     expect(op).toHaveTextContent("FRAME 00");
     expect(within(op).getByText("vijesh").tagName).toBe("B");
-    expect(within(op).getByText("Admin")).toHaveAttribute("data-role", "admin");
+    expect(within(op).getByText("Owner")).toHaveAttribute("data-role", "admin");
     expect(within(op).getByText("5 Oct 2026, 12:30 UTC")).toHaveAttribute(
       "datetime",
       "2026-10-05T12:30:00.000Z",
@@ -78,20 +78,25 @@ describe("FrameList", () => {
     expect(within(items[3]!).getByText("Member")).toHaveAttribute("data-role", "member");
   });
 
+  it("shows superusers with their own pill", () => {
+    render(<FrameList frames={[frame({ author: { handle: "su", role: "superuser" } })]} />);
+    expect(screen.getByText("Superuser")).toHaveAttribute("data-role", "superuser");
+  });
+
   it("shows a placeholder for hidden replies, without author or body", () => {
     render(<FrameList frames={frames} />);
     const hidden = screen.getAllByRole("listitem")[2]!;
     expect(hidden).toHaveAttribute("id", "reply-8");
     expect(hidden).toHaveTextContent("FRAME 02");
     expect(hidden).toHaveTextContent("This reply was hidden by a moderator.");
-    expect(within(hidden).queryByText(/Admin|Moderator|Member/)).toBeNull();
+    expect(within(hidden).queryByText(/Owner|Superuser|Moderator|Member/)).toBeNull();
   });
 
   it("names deleted accounts without a role pill", () => {
     render(<FrameList frames={frames} />);
     const orphan = screen.getAllByRole("listitem")[4]!;
     expect(within(orphan).getByText("[deleted]")).toBeInTheDocument();
-    expect(within(orphan).queryByText(/Admin|Moderator|Member/)).toBeNull();
+    expect(within(orphan).queryByText(/Owner|Superuser|Moderator|Member/)).toBeNull();
   });
 
   it("renders per-frame actions from the extension slot", () => {

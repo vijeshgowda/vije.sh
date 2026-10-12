@@ -199,6 +199,7 @@ describe("getThread", () => {
     const owner = await user("vijesh", [["admin", null]]);
     const globalMod = await user("mod", [["moderator", null]]);
     const gamesMod = await user("gamemod", [["moderator", "games"]]);
+    const su = await user("superu", [["superuser", null]]);
     const engMod = await user("engmod", [["moderator", "engineering"]]);
     const ada = await user("ada");
     const id = await thread({
@@ -218,6 +219,7 @@ describe("getThread", () => {
     const r4 = await reply(id, gamesMod, "Out of scope", "2026-10-01T14:00:00Z");
     const r5 = await reply(id, engMod, "In scope", "2026-10-01T15:00:00Z");
     const r6 = await reply(id, null, "Orphan", "2026-10-01T16:00:00Z");
+    const r7 = await reply(id, su, "Super", "2026-10-01T17:00:00Z");
 
     const t = await q.getThread(id);
     expect(cacheTag).toHaveBeenCalledWith("forum", `thread:${id}`);
@@ -273,6 +275,7 @@ describe("getThread", () => {
       expect.objectContaining({ id: r4, no: 4, author: { handle: "gamemod", role: "member" } }),
       expect.objectContaining({ id: r5, no: 5, author: { handle: "engmod", role: "moderator" } }),
       expect.objectContaining({ id: r6, no: 6, author: null, bodyMd: "Orphan", hidden: false }),
+      expect.objectContaining({ id: r7, no: 7, author: { handle: "superu", role: "superuser" } }),
     ]);
     // the hidden body never leaves the database
     expect(JSON.stringify(t)).not.toContain("Spam body");

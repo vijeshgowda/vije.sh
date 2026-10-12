@@ -3,7 +3,7 @@
 Status: planning. This doc covers the Postgres schema, migrations, access rules and query conventions.
 The app side is in [application.md](application.md).
 
-Last updated: 10 Oct 2026.
+Last updated: 12 Oct 2026.
 
 ---
 
@@ -82,8 +82,12 @@ alter default privileges in schema app grant usage, select on sequences to app_r
 ```
 
 Generate the password locally (`openssl rand -hex 32`) and keep it in a password manager. If
-`app_rw` already exists, don't run `create role` again. The `extensions` grant matters: the local
-tests connect as a superuser, so they can't catch it missing.
+`app_rw` already exists, don't run `create role` again. The `extensions` grant matters: without it
+the citext operators are skipped and handle comparisons silently turn case-sensitive.
+
+`tests/db/bootstrap.sql` creates the same role (`nologin`) with the same grants in the test
+database, so integration tests can run statements as the app with `set local role app_rw` inside a
+transaction and catch a missing grant (`tests/db/roles.int.test.ts`).
 
 `app_rw` can't run DDL; migrations run as `postgres`. The shared pooler (Supavisor) accepts custom
 roles; the username is `<role>.<project-ref>`:
@@ -103,9 +107,17 @@ Roles are kept **in a separate table** from profiles.
 | **B. `user_roles` table** | One row per granted role, optionally scoped to a category | **Chosen.** Several roles per user, category moderators, who granted it and when, revoking = deleting a row |
 | C. Full role-based access control | `roles`, `permissions`, `role_permissions` tables | Overkill for one admin and a few moderators; permissions stay in code (`authz.ts`) |
 
-- Stored roles: **`admin`** (always global) and **`moderator`** (global when `category_id` is null,
-  otherwise only for that category).
+- Stored roles (`app.role`, sorted highest first):
+  - **`admin`**: the site **owner**, labelled "Owner" in the UI. Always global, and there is exactly
+    one (`user_roles_one_owner_idx`). A trigger stops `app_rw` from inserting, updating or deleting
+    an `admin` row, so the app can never create or remove the owner; it is granted by hand
+    ([Granting the first admin](#granting-the-first-admin)). Deleting the owner's account still
+    cascades, because cascades run as the table owner.
+  - **`superuser`**: always global.
+  - **`moderator`**: global when `category_id` is null, otherwise only for that category. Only
+    moderators may have a `category_id` (`user_roles_scope`).
 - **Member** is implicit: `profiles.onboarded_at is not null` and no active ban.
+- What each role may do is code, not data: `src/lib/authz.ts` (application.md 8.7).
 - **Bans** are a separate table (`user_bans`) so they keep history, a reason, who banned and an expiry.
 - Every grant, revoke and ban is also written to `moderation_log`.
 
@@ -372,6 +384,24 @@ in schema app revoke all ... from public, anon, authenticated` for tables, seque
 so objects added later are locked out like the ones above. A function the app calls directly then
 needs an explicit `grant execute ... to app_rw`.
 
+### Staff roles (`0003_staff_roles.sql`)
+```sql
+alter type app.role add value if not exists 'superuser' before 'moderator';
+-- only moderators are scoped to a category
+alter table app.user_roles drop constraint user_roles_admin_global;
+alter table app.user_roles
+  add constraint user_roles_scope check (role = 'moderator' or category_id is null);
+-- one owner
+create unique index user_roles_one_owner_idx on app.user_roles (role) where role = 'admin';
+-- app_rw can't insert, update or delete an 'admin' row (raises 42501)
+create trigger user_roles_protect_owner before insert or update or delete on app.user_roles
+  for each row execute function app.user_roles_protect_owner();
+-- moderation_log.action also accepts category_create, category_update, category_delete
+```
+The new enum value isn't used in the same file: Postgres allows `add value` inside a transaction
+but not using the value before it commits, so the migration applies in one transaction both with
+`supabase db push` and `npm run db:test:setup`. It fails if two `admin` rows already exist.
+
 ### Seed (`supabase/seed.sql`)
 ```sql
 insert into app.categories (slug, name, description, position, staff_only) values
@@ -384,11 +414,38 @@ on conflict (slug) do nothing;
 ```
 
 ### Granting the first admin
-After signing in once (which creates the profile):
-```sql
-insert into app.user_roles (user_id, role)
-select id, 'admin' from app.profiles where handle = 'vije';
-```
+The owner is the `admin` role (the UI says "Owner"). It's granted once, by hand, in **Supabase →
+SQL Editor** (which runs as `postgres`; the app's role can't touch `admin` rows). Do it in the dev
+project first, check, then repeat in prod.
+
+1. Sign in once and finish `/welcome`, which creates the profile. Then check that it exists and that
+   onboarding finished (handles are case-insensitive):
+   ```sql
+   select p.id, p.handle, p.onboarded_at, u.email
+   from app.profiles p join auth.users u on u.id = p.id
+   where p.handle = 'vijesh';
+   ```
+   Expect exactly one row with `onboarded_at` set.
+2. Grant the role (safe to run twice):
+   ```sql
+   insert into app.user_roles (user_id, role)
+   select id, 'admin' from app.profiles
+   where handle = 'vijesh' and onboarded_at is not null
+   on conflict on constraint user_roles_unique do nothing;
+   ```
+3. Check that there is exactly one owner:
+   ```sql
+   select p.handle, r.role, r.category_id, r.granted_at
+   from app.user_roles r join app.profiles p on p.id = r.user_id
+   where r.role = 'admin';
+   ```
+4. While signed in, open `/api/me`: it shows `"roles":["admin"]`. No need to sign in again; roles are
+   read on every request. The account menu now has an "Admin" link.
+5. In prod, keep **Authentication → Settings → Allow new users to sign up** off until the forum
+   opens (application.md 8.4).
+
+Never grant `admin` to anyone else: `0003_staff_roles.sql` adds a unique index for one owner and
+fails to apply if a second one exists. Superusers and moderators are granted from `/admin/members`.
 
 ---
 
@@ -398,7 +455,7 @@ These show the intended shapes. The real queries live in `src/features/*/queries
 
 ```sql
 -- Current user with roles and ban status (one round trip; used by getCurrentUser)
-select p.id, p.handle, p.display_name, p.onboarded_at,
+select p.id, p.handle, p.display_name, p.onboarded_at, p.created_at,
        coalesce(json_agg(json_build_object('role', r.role, 'category_id', r.category_id))
                 filter (where r.role is not null), '[]') as roles,
        exists (select 1 from app.user_bans b
@@ -482,6 +539,10 @@ its PEM text in the `DATABASE_CA_CERT` environment variable. Don't put `sslmode`
 `ssl` object controls it.
 
 Rules:
+- **Handles are `citext`, but only if the operator is found:** Supabase puts `extensions` on the
+  search path, the local test database doesn't, and without it `handle = $1` quietly compares as
+  case-sensitive text. Write `handle operator(extensions.=) $1` for a case-insensitive match that
+  works everywhere (and uses the unique index).
 - **Parameters only:** `pool.query("select ... where id = $1", [id])`. Never join values into SQL.
   For dynamic identifiers (rare, such as a sort column), pick from a fixed allow-list in code.
 - **Reads:** `const { rows } = await pool.query<ThreadRow>(sql, params)`.
@@ -505,7 +566,7 @@ against the SQL at a glance. Narrower types for query results are made with `Pic
 where a query joins or aliases columns.
 
 ```ts
-export type Role = "admin" | "moderator";
+export type Role = "admin" | "superuser" | "moderator"; // admin = the owner
 export type PostStatus = "draft" | "published";
 export type Visibility = "public" | "unlisted" | "private";
 export type ReportStatus = "open" | "actioned" | "dismissed";

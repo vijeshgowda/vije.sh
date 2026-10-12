@@ -228,6 +228,19 @@ describe("blog catalog with notes", () => {
     );
   });
 
+  it("hides git drafts in production, even from a note with the same slug", async () => {
+    vi.stubEnv("VERCEL_ENV", "production");
+    try {
+      const draft = readPosts().find((p) => p.draft);
+      expect(draft).toBeDefined();
+      expect(await catalog.getBlogEntry(draft!.slug)).toBeNull();
+      expect(await catalog.blogStaticSlugs()).not.toContain(draft!.slug);
+      expect((await catalog.blogNoteRows()).map((r) => r.slug)).not.toContain(draft!.slug);
+    } finally {
+      vi.unstubAllEnvs();
+    }
+  });
+
   it("fails the build when a published note and a git post share a slug", async () => {
     const gitSlug = readPosts()[0]!.slug;
     await db.query(

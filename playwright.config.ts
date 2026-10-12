@@ -2,6 +2,7 @@ import { existsSync } from "node:fs";
 import { defineConfig, devices } from "@playwright/test";
 
 const PORT = 3200;
+const CONTENT_SPECS = /notes\.spec\.ts$/;
 const CI = !!process.env.CI;
 
 // e2e never reads the dev project from .env.local: everything the server needs for the database,
@@ -26,8 +27,15 @@ export default defineConfig({
   reporter: CI ? [["github"], ["html", { open: "never" }]] : "list",
   use: { baseURL: `http://localhost:${PORT}`, trace: "on-first-retry" },
   projects: [
-    { name: "chromium", use: { ...devices["Desktop Chrome"] } },
-    { name: "mobile", use: { ...devices["Pixel 7"] } },
+    { name: "chromium", use: { ...devices["Desktop Chrome"] }, testIgnore: CONTENT_SPECS },
+    { name: "mobile", use: { ...devices["Pixel 7"] }, testIgnore: CONTENT_SPECS },
+    // Specs that publish content other specs count (blog lists, AN numbers) run after them.
+    {
+      name: "content",
+      use: { ...devices["Desktop Chrome"] },
+      testMatch: CONTENT_SPECS,
+      dependencies: ["chromium", "mobile"],
+    },
   ],
   webServer: {
     // production build; feeds serve offline results so tests never depend on third-party APIs.

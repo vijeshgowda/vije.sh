@@ -108,6 +108,12 @@ async function reply(
   return rows[0]!.id;
 }
 
+describe("databaseReady", () => {
+  it("answers true against the test database", async () => {
+    expect(await q.databaseReady()).toBe(true);
+  });
+});
+
 describe("categories", () => {
   it("lists public categories in order, without staff-only ones", async () => {
     const list = await q.listCategories();

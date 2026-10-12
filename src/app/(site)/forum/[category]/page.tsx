@@ -4,7 +4,12 @@ import { PageIntro, RunFoot, RunHead, Section } from "@/components/ui/Datasheet"
 import { ForumBar } from "@/features/forum/components/ForumBar";
 import { ThreadList } from "@/features/forum/components/ThreadList";
 import { categoryHref, isCategorySlug } from "@/features/forum/format";
-import { getCategory, listCategories, listCategoryThreads } from "@/features/forum/queries";
+import {
+  databaseReady,
+  getCategory,
+  listCategories,
+  listCategoryThreads,
+} from "@/features/forum/queries";
 
 // Not a valid slug, so it can never match a category.
 const NO_CATEGORIES = "__none__";
@@ -13,7 +18,9 @@ const NO_CATEGORIES = "__none__";
 export const ensureStatic = "navigation";
 
 export async function generateStaticParams() {
-  const params = (await listCategories()).map((c) => ({ category: c.slug }));
+  // without a database at build time, every category renders on its first request instead
+  const categories = (await databaseReady()) ? await listCategories() : [];
+  const params = categories.map((c) => ({ category: c.slug }));
   // Cache Components needs at least one param; the placeholder renders the 404 page.
   return params.length > 0 ? params : [{ category: NO_CATEGORIES }];
 }

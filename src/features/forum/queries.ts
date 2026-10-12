@@ -28,6 +28,25 @@ export const threadTag = (id: string) => `thread:${id}`;
 
 type Grant = Pick<RoleGrant, "role" | "categoryId">;
 
+/**
+ * Whether the database answers. Forum pages prerender from it, but the site must still build
+ * without one (unconfigured, paused or unreachable; see lib/env.ts). On failure the answer is
+ * cached for seconds only, which turns the caller into a request-time hole during prerendering
+ * instead of failing the build. At request time a false answer means the database is down.
+ */
+export async function databaseReady(): Promise<boolean> {
+  "use cache";
+  try {
+    await query("select 1");
+    cacheLife("hours");
+    return true;
+  } catch (err) {
+    console.warn(`forum: database unavailable (${err instanceof Error ? err.message : err})`);
+    cacheLife("seconds");
+    return false;
+  }
+}
+
 // An author's role grants as JSON: [{ role, categoryId }]
 const GRANTS = (userColumn: string) =>
   `coalesce((select json_agg(json_build_object('role', ur.role, 'categoryId', ur.category_id::text))

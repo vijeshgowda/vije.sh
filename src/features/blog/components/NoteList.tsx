@@ -16,7 +16,7 @@ export function NoteList({ notes }: { notes: NoteRow[] }) {
             <span className={s.id}>{n.id}</span>
             <span className={s.t}>
               {n.title}
-              <span className={s.ex}>{n.summary}</span>
+              {n.summary && <span className={s.ex}>{n.summary}</span>}
             </span>
             <span className={s.c}>{n.category}</span>
             <time className={s.d} dateTime={n.date}>

@@ -1,7 +1,8 @@
 import "server-only";
 import path from "node:path";
-import { cacheLife } from "next/cache";
+import { cacheLife, cacheTag } from "next/cache";
 import { renderMarkdown } from "@/lib/markdown";
+import { noteTag, NOTES_TAG } from "../notes/tags";
 import { CONTENT_DIR, getPost } from "../posts";
 import { rehypePostAssets } from "../rehype-post";
 
@@ -13,4 +14,15 @@ export async function renderPostBody(slug: string) {
   if (!entry) return null;
   const dir = path.join(CONTENT_DIR, slug);
   return renderMarkdown(entry.post.body, { plugins: [[rehypePostAssets, { slug, dir }]] });
+}
+
+/**
+ * A database note's body, through the sanitised pipeline (no raw HTML, user-content- id prefix,
+ * nofollow links). Keyed by the Markdown itself, so an edit never serves the old rendering.
+ */
+export async function renderNoteBody(slug: string, bodyMd: string) {
+  "use cache";
+  cacheLife("max");
+  cacheTag(NOTES_TAG, noteTag(slug));
+  return renderMarkdown(bodyMd, { mode: "sanitised" });
 }

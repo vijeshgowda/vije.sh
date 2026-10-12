@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import { PageIntro, RunFoot, RunHead, Section } from "@/components/ui/Datasheet";
 import { NoteList } from "@/features/blog/components/NoteList";
-import { listedNotes } from "@/features/blog/posts";
+import { blogNoteRows } from "@/features/blog/server/catalog";
 
 export const metadata: Metadata = {
   title: "Blog",
@@ -9,8 +9,8 @@ export const metadata: Metadata = {
   alternates: { canonical: "/blog" },
 };
 
-export default function BlogPage() {
-  const notes = listedNotes();
+export default async function BlogPage() {
+  const notes = await blogNoteRows();
   return (
     <>
       <RunHead label="Application notes" />

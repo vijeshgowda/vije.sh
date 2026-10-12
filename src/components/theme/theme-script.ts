@@ -15,7 +15,10 @@ const INLINE_SCRIPT_UNSAFE_CHARS: Record<string, string> = {
 };
 
 function escapeForInlineScript(value: string): string {
-  return JSON.stringify(value).replace(/[<>/\u2028\u2029]/g, (ch) => INLINE_SCRIPT_UNSAFE_CHARS[ch]);
+  return JSON.stringify(value).replace(
+    /[<>/\u2028\u2029]/g,
+    (ch) => INLINE_SCRIPT_UNSAFE_CHARS[ch],
+  );
 }
 
 /** Inline, render-blocking on purpose: runs before first paint so dark mode never flashes light. */

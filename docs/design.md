@@ -39,11 +39,11 @@ self-hosted by `next/font`. Light is the default and ignores the OS; dark is opt
 | Firmware flash + tagline patch | `src/features/overview/components/Firmware.tsx` | Done |
 | Skills ticker, Features, Cluster (`mountCluster`), Peripherals + RTC (`mountRtc`), Ratings | `src/features/overview/components/*` | Done |
 | Live telemetry + Live page, 19 feeds, globe, pins, filters | `src/features/live/**` | Done (server-cached, see below) |
-| Latest application notes (overview section 5) | `src/features/blog/posts.ts`, `components/NoteList.tsx` | Done (git posts; DB notes join with PR4 `feat/notes-admin`, draft #38) |
+| Latest application notes (overview section 5) | `src/features/blog/server/catalog.ts`, `components/NoteList.tsx` | Done (git posts and published DB notes) |
 | Work: rack, timing diagram, KPIs (`pWork`, `timingSVG`) | `src/features/work` | Done ("now" marker cached daily) |
 | Lab: memory calculator, bit register (`pLab`) | `src/features/lab` | Done |
 | Photo: procedural gallery, viewfinder, lightbox (`pPhoto`) | `src/features/photo` | To do |
-| Blog index and post (`pBlog`, `pPost`) | `src/features/blog`, `src/lib/markdown.ts` | Done for git posts (Markdown + images, application.md section 9); DB notes in progress (draft #38) |
+| Blog index and post (`pBlog`, `pPost`) | `src/features/blog`, `src/lib/markdown.ts` | Done: git posts (Markdown + images) and DB notes (sanitised), application.md section 9; `/admin/notes` editor to do |
 | Forum (`pForum`, `pThread`) | `src/features/forum` (`ThreadList`, `ForumBar`, `FrameList`, `ThreadIntro`) | Reading done: `/forum`, `/forum/[category]` (chips as links), `/forum/[category]/[thread]` with frames and sanitised Markdown; posting, the new-thread dialog and `form.reply` to do (PR6); staff-only categories are hidden from every read for now |
 | Sign-in, onboarding, user menu (not in the prototype) | `src/features/auth` (`/login`, `/welcome`, `/guidelines`, `UserMenu` in the header) | Done (OAuth via Supabase; Turnstile on `/welcome`) |
 | Admin area (not in the prototype; nav uses the forum's category chips) | `src/app/(site)/admin`, `src/features/admin` (`AdminNav`, `AdminStub`) | Skeleton: role-gated stub pages; overview stats and members (PR5), notes (PR4), categories (PR7), reports and log (PR9) to do |

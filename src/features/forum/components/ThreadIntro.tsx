@@ -1,0 +1,23 @@
+import Link from "next/link";
+import { categoryHref, plural } from "../format";
+import type { ThreadDetail } from "../types";
+import { ThreadBadges } from "./ThreadBadges";
+import s from "./Forum.module.css";
+
+/** Thread page intro (prototype `pThread`): back link, category and frame count, title. */
+export function ThreadIntro({ thread }: { thread: ThreadDetail }) {
+  return (
+    <div className={s.threadIntro}>
+      <Link className={s.back} href={categoryHref(thread.category.slug)}>
+        &larr; {thread.category.name}
+      </Link>
+      <p className={s.pn}>
+        {thread.category.name} &middot; {plural(thread.frames.length, "frame", "frames")}
+        <ThreadBadges pinned={thread.pinned} locked={thread.locked} />
+      </p>
+      <h1 className={s.title} tabIndex={-1}>
+        {thread.title}
+      </h1>
+    </div>
+  );
+}

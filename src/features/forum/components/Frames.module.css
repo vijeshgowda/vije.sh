@@ -1,0 +1,170 @@
+/* Thread frames from V18.1.1 (.frames, .role) */
+.frames {
+  list-style: none;
+  padding: 0;
+  margin: 1.5rem 0;
+  max-width: 46rem;
+}
+.frames > li {
+  border: 1px solid var(--line2);
+  margin-bottom: 0.75rem;
+  background: var(--card);
+  box-shadow: var(--sh1);
+  scroll-margin-top: 5rem;
+}
+.frames header {
+  display: flex;
+  gap: 0.75rem;
+  align-items: center;
+  flex-wrap: wrap;
+  padding: 0.5rem 0.8rem;
+  border-bottom: 1px solid var(--line);
+  font: 400 0.7rem var(--font-mono);
+  color: var(--mute);
+  background: var(--faint);
+}
+.author {
+  color: var(--ink);
+  font-weight: 700;
+}
+.t {
+  margin-left: auto;
+}
+.role {
+  padding: 0.05rem 0.4rem;
+  border: 1px solid var(--line2);
+}
+.admin {
+  background: var(--red);
+  border-color: var(--red);
+  color: #fff;
+}
+.moderator {
+  border-color: var(--ink);
+  color: var(--ink);
+}
+.hidden {
+  box-shadow: none;
+  background: none;
+  border-style: dashed;
+}
+.placeholder {
+  margin: 0;
+  padding: 0.85rem;
+  color: var(--mute);
+  font: 400 0.8rem var(--font-mono);
+}
+.actions {
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+  padding: 0 0.85rem 0.85rem;
+}
+
+/* Sanitised Markdown body: the prototype's plain paragraph, plus the rest of Markdown */
+.body {
+  padding: 0.85rem;
+  overflow-wrap: break-word;
+}
+.body > :first-child {
+  margin-top: 0;
+}
+.body > :last-child {
+  margin-bottom: 0;
+}
+.body p,
+.body ul,
+.body ol {
+  margin: 0 0 0.75rem;
+  line-height: 1.6;
+}
+.body ul,
+.body ol {
+  padding-left: 1.4rem;
+}
+.body li::marker {
+  color: var(--red-t);
+}
+.body h1,
+.body h2,
+.body h3,
+.body h4,
+.body h5,
+.body h6 {
+  font-size: 1.05rem;
+  margin: 1.25rem 0 0.4rem;
+  letter-spacing: -0.01em;
+  scroll-margin-top: 5rem;
+}
+.body a {
+  color: var(--red-t);
+  text-underline-offset: 3px;
+}
+.body blockquote {
+  margin: 1rem 0;
+  padding: 0.1rem 0 0.1rem 1rem;
+  border-left: 3px solid var(--red);
+  color: var(--mute);
+}
+.body hr {
+  border: 0;
+  border-top: 1px solid var(--line2);
+  margin: 1.25rem 0;
+}
+.body code {
+  font-family: var(--font-mono);
+  font-size: 0.88em;
+}
+.body :not(pre) > code {
+  background: var(--faint);
+  border: 1px solid var(--line);
+  padding: 0.05rem 0.3rem;
+}
+.body pre {
+  margin: 1rem 0;
+  padding: 0.8rem 1rem;
+  overflow-x: auto;
+  background: var(--bg);
+  border: 1px solid var(--line2);
+  font-size: 0.85rem;
+  line-height: 1.6;
+}
+.body pre code {
+  font-size: inherit;
+}
+/* Shiki writes both themes' colours as variables; the site theme picks one. */
+.body pre span {
+  color: var(--shiki-light, inherit);
+}
+:global([data-theme="dark"]) .body pre span {
+  color: var(--shiki-dark, inherit);
+}
+.body img {
+  display: block;
+  max-width: 100%;
+  height: auto;
+  margin: 1rem 0;
+  border: 1px solid var(--line);
+}
+.body table {
+  display: block;
+  max-width: 100%;
+  overflow-x: auto;
+  border-collapse: collapse;
+  margin: 1rem 0;
+  font-size: 0.92rem;
+}
+.body th,
+.body td {
+  border-bottom: 1px solid var(--line);
+  padding: 0.4rem 0.8rem 0.4rem 0;
+  text-align: left;
+  vertical-align: top;
+}
+.body th {
+  font: 500 0.68rem var(--font-mono);
+  color: var(--mute);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  border-bottom-color: var(--ink);
+}

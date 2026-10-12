@@ -44,7 +44,7 @@ self-hosted by `next/font`. Light is the default and ignores the OS; dark is opt
 | Lab: memory calculator, bit register (`pLab`) | `src/features/lab` | Done |
 | Photo: procedural gallery, viewfinder, lightbox (`pPhoto`) | `src/features/photo` | To do |
 | Blog index and post (`pBlog`, `pPost`) | `src/features/blog`, `src/lib/markdown.ts` | Done for git posts (Markdown + images, application.md section 9); DB notes to do |
-| Forum (`pForum`, `pThread`) | `src/features/forum` | To do (auth is in place) |
+| Forum (`pForum`, `pThread`) | `src/features/forum` (`ThreadList`, `ForumBar`, `FrameList`, `ThreadIntro`) | Reading done: `/forum`, `/forum/[category]` (chips as links), `/forum/[category]/[thread]` with frames and sanitised Markdown; posting, the new-thread dialog and `form.reply` to do |
 | Sign-in, onboarding, user menu (not in the prototype) | `src/features/auth` (`/login`, `/welcome`, `/guidelines`, `UserMenu` in the header) | Done (OAuth via Supabase; Turnstile on `/welcome`) |
 | Admin area (not in the prototype; nav uses the forum's category chips) | `src/app/(site)/admin`, `src/features/admin` (`AdminNav`, `AdminStub`) | Skeleton: role-gated stub pages; members, reports, log, notes and categories to do |
 | Jump-to palette, Ctrl K (`palItems`, `goTo`) | `src/features/palette` (header "Jump to" + footer "Search", mounted by `SiteFooter`) | Done (forum threads join with the forum feature) |

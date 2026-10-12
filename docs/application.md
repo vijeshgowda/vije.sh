@@ -4,7 +4,7 @@ Status: building (phase 0 and 1 scaffold landed). This doc covers the stack, str
 The database is specified in [database.md](database.md). The visual design is specified separately
 (the chosen design variation, its spec and its HTML are added later as `docs/design.md`).
 
-Last updated: 10 Oct 2026.
+Last updated: 12 Oct 2026.
 
 ---
 
@@ -195,17 +195,18 @@ storing a dev database credential outside Vercel, which isn't worth it.
 │   │   │   ├── u/[handle]/page.tsx          # member profile
 │   │   │   ├── login/page.tsx               # our own sign-in UI (static + island)
 │   │   │   ├── welcome/page.tsx             # onboarding: handle + Turnstile (own CSP)
-│   │   │   └── guidelines/page.tsx          # community guidelines, accepted on /welcome
+│   │   │   ├── guidelines/page.tsx          # community guidelines, accepted on /welcome
+│   │   │   └── admin/                       # staff only, noindex (section 8.7)
 │   │   ├── auth/callback/route.ts           # OAuth code exchange
 │   │   ├── auth/signout/route.ts
 │   │   ├── api/me/route.ts                  # signed-in user for client islands (no-store)
-│   │   ├── admin/                           # dynamic, admin only, noindex
 │   │   ├── api/cron/keepalive/route.ts
 │   │   ├── rss.xml/route.ts
 │   │   ├── sitemap.ts
 │   │   └── robots.ts
 │   ├── features/                # one folder per feature
-│   │   ├── auth/                # session helpers, login buttons, onboarding
+│   │   ├── auth/                # session helpers, guards, login buttons, onboarding
+│   │   ├── admin/               # /admin sections, nav and page guard (admin pages only)
 │   │   ├── blog/                # git post loader, notes queries, admin actions
 │   │   ├── forum/               # queries, actions, components, limits
 │   │   ├── moderation/
@@ -216,7 +217,7 @@ storing a dev database credential outside Vercel, which isn't worth it.
 │   │   ├── db.ts                # pg Pool + withTransaction() (server-only)
 │   │   ├── env.ts               # zod-validated environment variables
 │   │   ├── supabase/            # server and browser auth clients
-│   │   ├── authz.ts             # roles, can(), requireRole()
+│   │   ├── authz.ts             # roles, can(), isOwner(), isSuperuser(), ROLE_LABEL
 │   │   ├── turnstile.ts         # verifyTurnstile()
 │   │   ├── rate-limit.ts
 │   │   ├── markdown.ts          # the one Markdown → HTML pipeline (trusted and sanitised modes)
@@ -279,7 +280,7 @@ prerendered into a static shell; data comes from `'use cache'` functions (with `
 | `/forum/[category]/[thread]` | Cached for everyone | Tag `thread:<id>` on reply or moderation |
 | `/u/[handle]` | Cached | Tag `profile:<id>` |
 | `/login`, `/welcome` | Static shell + client island | — |
-| `/admin/**` | Dynamic, never cached, `noindex` | — |
+| `/admin/**` | Dynamic (`instant = false`, waits for the session check), never cached, `noindex` | — |
 
 - **Pages never read the auth cookie.** That would make them dynamic. Signed-in UI (user menu,
   reply box, "New thread" button) is a small client island. It reads the session in the browser and
@@ -392,7 +393,7 @@ signs up:
 
 - **Closing sign-ups:** Supabase Dashboard → Authentication → Settings → "Allow new users to sign
   up" = off. Existing users (you) can still sign in. Keep it **off until the forum opens**
-  (phase 4), so only the admin account exists while the blog is built.
+  (phase 4), so only the owner's account exists while the blog is built.
 - **A second provider:** signing in with Google using the same verified email as an existing GitHub
   login links to the same user (same `sub`), so there is no duplicate account.
 
@@ -408,32 +409,68 @@ author shown as "[deleted]" ([database.md](database.md#2-conventions)).
 
 ### 8.7 Authorisation
 Roles live in `app.user_roles` (see [database.md](database.md#4-roles)). "Member" is implicit: any
-onboarded user who isn't banned. "Guest" means not signed in.
+onboarded user who isn't banned. "Guest" means not signed in. The stored roles, highest first:
 
-`src/lib/authz.ts` holds all permission rules in one place:
+- **Owner**: stored as `admin` and labelled "Owner" in the UI (`ROLE_LABEL`). Exactly one, granted
+  by hand in SQL (see [database.md](database.md#granting-the-first-admin)); the database stops the
+  app's role from creating, changing or removing it.
+- **Superuser**: global. Runs the forum day to day and sees `/admin` except notes and categories.
+- **Moderator**: global (`category_id` null) or for one category. Moderates inline; no `/admin`.
+
+`src/lib/authz.ts` holds all permission rules in one place. It is pure (no server imports), so client
+islands use the same helpers to decide which controls to show:
 
 ```ts
 type Action =
-  | "thread.create" | "reply.create" | "post.edit_own" | "post.hide"
-  | "thread.lock" | "thread.pin" | "user.ban" | "blog.write" | "report.review";
+  | "thread.create" | "reply.create" | "post.edit_own" | "report.create"
+  | "post.hide" | "thread.lock" | "thread.pin" | "thread.move"
+  | "admin.view" | "report.review" | "user.ban" | "role.grant"
+  | "blog.write" | "category.manage";
 
-export function can(user: CurrentUser | null, action: Action, ctx?: { categoryId?: string; authorId?: string; locked?: boolean; staffOnly?: boolean }): boolean;
-export async function requireRole(role: Role): Promise<CurrentUser>; // throws / redirects
+export function can(user: CurrentUser | null, action: Action, ctx?: Ctx): boolean;
+// Ctx: categoryId, authorId, locked, staffOnly, createdAt/now (edit window),
+//      targetId + targetRoles (user.ban, role.grant), grantRole (role.grant)
+export const isOwner, isSuperuser /* superuser or owner */, isGlobalModerator, moderates, isMember;
+export const ROLE_LABEL, ROLE_ORDER; export function highestRole(roles): Role | null;
 ```
 
-| Action | Guest | Member | Moderator (global or that category) | Admin |
-|---|---|---|---|---|
-| Read public content | yes | yes | yes | yes |
-| Create a thread (not in a staff-only category) | — | yes | yes | yes |
-| Reply (thread not locked) | — | yes | yes | yes |
-| Edit own post (within 30 min) | — | yes | yes | yes |
-| Report | — | yes | yes | yes |
-| Hide or unhide, lock, pin, move | — | — | yes | yes |
-| Ban a user | — | — | global moderators only | yes |
-| Blog, roles, categories | — | — | — | yes |
+| Action | Guest | Member | Moderator (global or that category) | Superuser | Owner |
+|---|---|---|---|---|---|
+| Read public content | yes | yes | yes | yes | yes |
+| Create a thread, reply, report | — | yes | yes | yes | yes |
+| Thread in a staff-only category, reply in a locked thread | — | — | yes | yes | yes |
+| Edit own post (within 30 min) | — | yes | yes | yes | yes (any post) |
+| Hide or unhide, lock, pin, move | — | — | yes | yes | yes |
+| Ban or unban (`user.ban`) | — | — | — | members and moderators | anyone but the owner |
+| Grant or revoke moderator (`role.grant`) | — | — | — | members and moderators | yes |
+| Grant or revoke superuser (`role.grant`) | — | — | — | — | yes |
+| `/admin`: overview, members, bans, reports, log (`admin.view`, `report.review`) | — | — | — | yes | yes |
+| `/admin`: notes, categories (`blog.write`, `category.manage`) | — | — | — | — | yes |
 
-The first admin is granted by hand in SQL (see [database.md](database.md#granting-the-first-admin)).
-Admin rights are never self-service.
+Nobody bans, grants to or revokes from themselves, and nobody can grant the owner role. `user.ban`
+and `role.grant` fail closed: without `targetId` and `targetRoles` (the target's current roles) they
+return false. Banned users can do nothing a guest can't, whatever their roles.
+
+**Guards** (`src/features/auth/guards.ts`, server-only) for pages that read the session (under
+`<Suspense>`, or in a segment with `instant = false` like `/admin`):
+- `requireUser(next)`: the signed-in user, or a redirect to `/login?next=<next>`.
+- `requireCan(action, ctx?)`: the user if `can()` allows it, otherwise `notFound()`, so staff pages
+  don't reveal that they exist.
+- `requirePage(next, action, ctx?)`: both; guests sign in first, everyone else not allowed gets a 404.
+
+**`/admin`** lives in `src/app/(site)/admin/` with its code in `src/features/admin/`. Proxy sends
+visitors without a session cookie to sign-in with a real redirect. The layout sets
+`instant = false`, so it may wait for the session instead of streaming a static shell (a
+`notFound()` inside `<Suspense>` makes React log a client-rendering error), checks `admin.view` and
+shows `AdminNav` with only the sections the user may open (`adminLinksFor()`). Every page exports
+`instant = false` too and calls `requireAdminSection(key)` itself, because layouts don't run again
+on client-side navigation.
+Refusals show the 404 page marked `noindex`; the HTTP status is still 200, because Cache Components
+reads the session after the response has started. `/admin` is also disallowed in `robots.txt`.
+
+`/api/me` gives islands the user's `handle`, `onboarded`, `banned`, distinct `roles` and `grants`
+(role plus `categoryId`); never the user id. `UserMenu` shows an "Admin" link to superusers and the
+owner. Admin rights are never self-service.
 
 ---
 
@@ -772,7 +809,10 @@ Only mock what leaves the app; the database is always real.
 ### 13.4 Signing in during feature tests
 Real OAuth can't run in CI. When `AUTH_MODE=test`, `getCurrentUser()` reads a `test_session` cookie,
 signed with `TEST_AUTH_SECRET` (HMAC), instead of asking Supabase. Playwright fixtures `asMember`,
-`asModerator`, `asAdmin` and `asBanned` create the user in the test database and set the cookie.
+`asUnonboarded`, `asBanned`, `asModerator`, `asCategoryModerator`, `asSuperuser` and `asOwner`
+(`tests/e2e/fixtures.ts`) create the user in the test database and set the cookie;
+`createUser({ roles, banned })` makes others, with a moderator scoped by category slug. There is one
+owner (`ensureOwner()`): created on first use and never deleted, since the database allows only one.
 
 **Guard:** `src/lib/env.ts` refuses to start if `AUTH_MODE=test` while `VERCEL` is set (Vercel sets
 it on every build and deployment), and a unit test covers that guard. The real OAuth flow is covered
@@ -798,8 +838,8 @@ each provider on the preview deploy before a release.
   new user-facing flow.
 - Bug fix: write a failing test first.
 - New migration: integration tests for its constraints and triggers.
-- New permission: a `can()` table test with a row for every kind of user (guest, unonboarded,
-  member, banned, category moderator, global moderator, admin).
+- New permission: a `can()` table test with a column for every kind of user (guest, unonboarded,
+  member, banned, category moderator, global moderator, superuser, owner, banned owner).
 - No `.only` and no skipped tests without a linked issue (enforced by ESLint).
 - Playwright retries once in CI only; a flaky test is fixed or quarantined the same day.
 

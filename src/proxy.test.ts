@@ -43,6 +43,22 @@ describe("proxy", () => {
     expect(getClaims).not.toHaveBeenCalled();
   });
 
+  it("sends visitors without a session from /admin to sign-in, keeping the path", async () => {
+    for (const path of ["/admin", "/admin/members?q=a"]) {
+      const res = await proxy(new NextRequest(`https://vije.sh${path}`));
+      expect(res.status).toBe(307);
+      const to = new URL(res.headers.get("location")!);
+      expect(to.pathname).toBe("/login");
+      expect(to.searchParams.get("next")).toBe(path);
+    }
+    vi.stubEnv("AUTH_MODE", "test");
+    const signedIn = new NextRequest("https://vije.sh/admin", {
+      headers: { cookie: "test_session=x" },
+    });
+    expect((await proxy(signedIn)).headers.get("location")).toBeNull();
+    expect((await proxy(new NextRequest("https://vije.sh/administrator"))).status).toBe(200);
+  });
+
   it("refreshes the session and writes the new cookies with no-store", async () => {
     vi.stubEnv("NEXT_PUBLIC_SUPABASE_URL", "https://ref.supabase.co");
     vi.stubEnv("NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY", "pk");

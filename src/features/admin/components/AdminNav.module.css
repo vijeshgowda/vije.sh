@@ -1,0 +1,31 @@
+/* the forum's category chips (prototype .chips), as links */
+.nav {
+  margin-top: 1rem;
+}
+.nav ul {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.nav a {
+  display: inline-flex;
+  align-items: center;
+  min-height: 2.3rem;
+  padding: 0.35rem 0.7rem;
+  font: 400 0.72rem var(--font-mono);
+  color: var(--mute);
+  text-decoration: none;
+  border: 1px solid var(--line2);
+}
+.nav a:hover {
+  color: var(--ink);
+  border-color: var(--ink);
+}
+.nav a[aria-current="page"] {
+  color: var(--bg);
+  background: var(--ink);
+  border-color: var(--ink);
+}

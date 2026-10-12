@@ -40,6 +40,7 @@ describe("auth queries and mutations", () => {
       displayName: "Ada",
       onboarded: false,
       banned: false,
+      createdAt: expect.any(Date),
       roles: [],
     });
   });

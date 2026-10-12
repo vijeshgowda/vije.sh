@@ -12,7 +12,16 @@ for (const handle of [null, "abcdefghijklmnopqrstuvwx"]) {
       await context.addCookies([{ name: "test_session", value: "x", url: baseURL! }]);
       await page.route("**/api/me", (route) =>
         route.fulfill({
-          json: { user: { handle, displayName: null, onboarded: true, roles: [] } },
+          json: {
+            user: {
+              handle,
+              displayName: null,
+              onboarded: true,
+              banned: false,
+              roles: [],
+              grants: [],
+            },
+          },
         }),
       );
     }

@@ -1,3 +1,4 @@
+import type { Page } from "@playwright/test";
 import { expect, expectAccessible, test } from "./fixtures";
 
 // Every route in the app (docs/application.md 13.5): a route without a feature test fails here.
@@ -15,18 +16,42 @@ const ROUTES = [
   { path: "/guidelines", h1: "Community guidelines" },
 ];
 
+// Staff routes, checked as the owner; tests/e2e/admin.spec.ts covers who may open them.
+const ADMIN_ROUTES = [
+  { path: "/admin", h1: "Overview" },
+  { path: "/admin/members", h1: "Members" },
+  { path: "/admin/reports", h1: "Reports" },
+  { path: "/admin/log", h1: "Moderation log" },
+  { path: "/admin/notes", h1: "Notes" },
+  { path: "/admin/categories", h1: "Categories" },
+];
+
+async function expectRoute(page: Page, r: { path: string; h1: string }) {
+  // intro animations fade text in; axe would measure contrast mid-fade
+  await page.emulateMedia({ reducedMotion: "reduce" });
+  const res = await page.goto(r.path);
+  expect(res?.status()).toBe(200);
+  await expect(page.getByRole("heading", { level: 1, name: r.h1 })).toBeVisible();
+  await expect(page.getByRole("banner")).toBeVisible();
+  expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(
+    true,
+  );
+  await expectAccessible(page);
+}
+
 for (const r of ROUTES) {
   test(`${r.path} renders, has no a11y violations and no horizontal scroll`, async ({ page }) => {
-    // intro animations fade text in; axe would measure contrast mid-fade
-    await page.emulateMedia({ reducedMotion: "reduce" });
-    const res = await page.goto(r.path);
-    expect(res?.status()).toBe(200);
-    await expect(page.getByRole("heading", { level: 1, name: r.h1 })).toBeVisible();
-    await expect(page.getByRole("banner")).toBeVisible();
-    expect(
-      await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth),
-    ).toBe(true);
-    await expectAccessible(page);
+    await expectRoute(page, r);
+  });
+}
+
+for (const r of ADMIN_ROUTES) {
+  test(`${r.path} (owner) renders, has no a11y violations and no horizontal scroll`, async ({
+    page,
+    asOwner,
+  }) => {
+    expect(asOwner.handle).toBeTruthy();
+    await expectRoute(page, r);
   });
 }
 

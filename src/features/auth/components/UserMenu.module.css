@@ -40,17 +40,22 @@
   background: var(--bg);
   box-shadow: var(--sh2);
 }
+.pop a,
 .pop button {
+  display: flex;
+  align-items: center;
   width: 100%;
   min-height: 2.4rem;
   padding: 0 0.6rem;
   text-align: left;
   font: 500 0.75rem var(--font-mono);
   color: var(--ink);
+  text-decoration: none;
   background: none;
   border: 0;
   cursor: pointer;
 }
+.pop a:hover,
 .pop button:hover {
   background: var(--faint);
 }

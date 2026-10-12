@@ -1,0 +1,181 @@
+/* Forum lists from V18.1.1 (.fbar, .chips, .threads, .addr, .tt, .pinb, .rc) */
+.fbar {
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+  align-items: center;
+  flex-wrap: wrap;
+  margin-bottom: 1rem;
+}
+.chips {
+  display: flex;
+  gap: 0.35rem;
+  flex-wrap: wrap;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+.chips a {
+  display: inline-flex;
+  align-items: center;
+  font: 400 0.72rem var(--font-mono);
+  padding: 0.35rem 0.7rem;
+  min-height: 2.3rem;
+  border: 1px solid var(--line2);
+  color: var(--mute);
+  text-decoration: none;
+}
+.chips a:hover {
+  border-color: var(--ink);
+  color: var(--ink);
+}
+.chips a[aria-current="page"] {
+  border-color: var(--ink);
+  background: var(--ink);
+  color: var(--bg);
+}
+
+.threads {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  border-top: 1px solid var(--ink);
+}
+.threads a {
+  display: grid;
+  grid-template-columns: 3rem 1fr auto auto;
+  gap: 1rem;
+  align-items: center;
+  padding: 0.9rem 0.75rem;
+  border-bottom: 1px solid var(--line);
+  text-decoration: none;
+  position: relative;
+}
+.threads a:hover {
+  background: var(--card);
+  box-shadow: var(--sh2);
+  z-index: 1;
+}
+.threads a:hover b {
+  color: var(--red-t);
+}
+.addr {
+  font: 400 0.74rem var(--font-mono);
+  color: var(--mute);
+}
+.tt {
+  min-width: 0;
+}
+.tt b {
+  display: block;
+  font-weight: 600;
+  overflow-wrap: anywhere;
+}
+.tt small {
+  font: 400 0.7rem var(--font-mono);
+  color: var(--mute);
+}
+.badges {
+  display: inline-flex;
+  gap: 0.35rem;
+  flex-wrap: wrap;
+}
+.pinb,
+.lockb {
+  font: 500 0.62rem var(--font-mono);
+  padding: 0.15rem 0.45rem;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+.pinb {
+  background: var(--red);
+  color: #fff;
+}
+.lockb {
+  border: 1px solid var(--ink);
+  color: var(--ink);
+}
+.rc {
+  font: 700 0.85rem var(--font-mono);
+  min-width: 2.3rem;
+  height: 2.3rem;
+  display: grid;
+  place-items: center;
+  border: 1.5px solid var(--red);
+  color: var(--red-t);
+}
+.empty {
+  color: var(--mute);
+  margin: 0;
+  padding: 1rem 0.75rem;
+  border-top: 1px solid var(--ink);
+}
+
+/* Thread page intro (prototype pThread .intro) */
+.threadIntro {
+  max-width: 46rem;
+  padding-bottom: 0.5rem;
+}
+.back {
+  display: inline-block;
+  font: 400 0.75rem var(--font-mono);
+  color: var(--mute);
+  text-decoration: none;
+  margin: 2rem 0 1.25rem;
+}
+.back:hover {
+  color: var(--red-t);
+}
+.pn {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.6rem;
+  font: 500 0.72rem var(--font-mono);
+  color: var(--red-t);
+  letter-spacing: 0.08em;
+  margin: 0;
+  text-transform: uppercase;
+}
+.title {
+  font-size: clamp(2rem, 5vw, 3rem);
+  letter-spacing: -0.05em;
+  line-height: 0.95;
+  margin: 0.6rem 0 0.8rem;
+  font-weight: 700;
+  overflow-wrap: anywhere;
+}
+.title:focus {
+  outline: none;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .threads a {
+    transition:
+      background-color 0.2s,
+      box-shadow 0.25s,
+      transform 0.25s;
+  }
+  .threads a:hover {
+    transform: translateX(4px);
+  }
+}
+
+@media (max-width: 48rem) {
+  .threads a {
+    grid-template-columns: 1fr auto;
+    gap: 0.5rem;
+  }
+  .addr {
+    display: none;
+  }
+  /* the prototype drops the badges on phones; keep them for screen readers */
+  .threads .badges {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+    white-space: nowrap;
+  }
+}

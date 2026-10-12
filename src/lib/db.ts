@@ -29,17 +29,24 @@ export async function query<R extends pg.QueryResultRow>(sql: string, params: un
   return getPool().query<R>(sql, params);
 }
 
+/**
+ * Runs `fn` in a transaction. On failure the original error is rethrown; if the rollback fails too,
+ * the connection is broken and is discarded instead of going back to the pool.
+ */
 export async function withTransaction<T>(fn: (client: pg.PoolClient) => Promise<T>): Promise<T> {
   const client = await getPool().connect();
+  let broken: Error | undefined;
   try {
     await client.query("begin");
     const result = await fn(client);
     await client.query("commit");
     return result;
   } catch (err) {
-    await client.query("rollback");
+    await client.query("rollback").catch((e: unknown) => {
+      broken = e instanceof Error ? e : new Error(String(e));
+    });
     throw err;
   } finally {
-    client.release();
+    client.release(broken);
   }
 }

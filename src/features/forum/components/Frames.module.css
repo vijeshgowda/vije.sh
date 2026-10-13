@@ -27,6 +27,13 @@
   color: var(--ink);
   font-weight: 700;
 }
+a.author {
+  text-decoration: none;
+}
+a.author:hover {
+  color: var(--red-t);
+  text-decoration: underline;
+}
 .t {
   margin-left: auto;
 }

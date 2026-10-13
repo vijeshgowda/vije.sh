@@ -68,7 +68,7 @@ are global or scoped to one category; superusers are global; the owner is the si
 | PR2 | `feat/markdown-sanitize` | `renderMarkdown(..., { mode: "sanitised" })`, pure rate-limit rules (`src/lib/rate-limit.ts`) | Merged (#37) |
 | PR3 | `feat/forum-read` | `/forum`, `/forum/[category]`, `/forum/[category]/[thread]`, cached queries with `forum` / `category:<slug>` / `thread:<id>` tags | Merged (#39) |
 | PR4 | `feat/notes-admin` | Part 1: notes data layer, git slug manifest, `/blog` merges notes. Part 2: `/admin/notes` list, new, editor with preview (owner only), publish e2e | Draft (#38): part 1 done, needs a rebase onto `main`; part 2 to do |
-| PR5 | `feat/admin-members` | `/admin` stats, `/admin/members` search (50 per page), member page: grant/revoke roles, ban/lift, each with a `moderation_log` row in one transaction | In review |
+| PR5 | `feat/admin-members` | `/admin` stats, `/admin/members` search (50 per page), member page: grant/revoke roles, ban/lift, each with a `moderation_log` row in one transaction | In review (#43) |
 | PR6 | `feat/forum-write` | New thread, reply, edit own (30 min); limits in `forum/limits.ts`; new-thread dialog, `form.reply`, `FrameToolbar` island | To do (after PR3) |
 | PR7 | `feat/admin-categories` | Create, rename, reorder, staff-only toggle, delete empty categories; logged; revalidates `forum` | To do (after PR4) |
 | PR8 | `feat/moderation-inline` | Hide/unhide, lock, pin, move with log rows; staff reveal of hidden text as plain `<pre>`; `StaffControls` | To do (after PR6) |

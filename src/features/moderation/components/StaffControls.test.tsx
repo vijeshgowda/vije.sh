@@ -117,9 +117,13 @@ describe("StaffControls in the frame toolbar", () => {
   it.each([
     ["a member", member],
     ["a moderator of another category", moderatorOf("4")],
-    ["a banned moderator", { ...moderatorOf(null), banned: true }],
-  ])("shows nothing to %s", async (_, me) => {
+  ])("shows no staff tools to %s (only Report)", async (_, me) => {
     session(me);
+    expect(buttons(await toolbar(opening))).toEqual(["Report thread"]);
+  });
+
+  it("shows nothing to a banned moderator", async () => {
+    session({ ...moderatorOf(null), banned: true });
     const { container } = render(<FrameToolbar frame={opening} thread={thread} />);
     await act(async () => {});
     expect(container).toBeEmptyDOMElement();

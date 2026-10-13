@@ -1,0 +1,262 @@
+/* /admin pieces, ported from the prototype: KPI grid (work), .tbl, form.reply fields, role pills */
+
+/* cells draw their own right and bottom rules (clipped at the edges), so a part-filled last row
+   has no gap showing through */
+.kpis {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(10.5rem, 1fr));
+  margin: 1rem 0 0;
+  padding: 0;
+  list-style: none;
+  overflow: hidden;
+  background: var(--card);
+  border: 1px solid var(--ink);
+  box-shadow: var(--sh1);
+}
+.kpis li {
+  margin: 0 -1px -1px 0;
+  border-right: 1px solid var(--line);
+  border-bottom: 1px solid var(--line);
+  padding: 1rem 1.1rem;
+  font: 400 0.68rem var(--font-mono);
+  color: var(--mute);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+.kpis b {
+  display: block;
+  font: 700 2rem var(--font-sans);
+  letter-spacing: -0.03em;
+  color: var(--ink);
+  text-transform: none;
+  margin-bottom: 0.3rem;
+  overflow-wrap: anywhere;
+}
+.kpis .alert b {
+  color: var(--red-t);
+}
+
+.tw {
+  overflow-x: auto;
+  overflow-y: hidden;
+  margin-top: 1rem;
+  background: var(--card);
+  border: 1px solid var(--line);
+  box-shadow: var(--sh1);
+}
+.tbl {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.9rem;
+}
+.tbl caption {
+  padding: 0.6rem 0.75rem;
+  font: 400 0.72rem var(--font-mono);
+  color: var(--mute);
+  text-align: left;
+  caption-side: bottom;
+}
+.tbl th {
+  font: 500 0.66rem var(--font-mono);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--mute);
+  text-align: left;
+  border-bottom: 1px solid var(--ink);
+  padding: 0.6rem 0.75rem;
+  white-space: nowrap;
+}
+.tbl td {
+  padding: 0.6rem 0.75rem;
+  border-bottom: 1px solid var(--line);
+  vertical-align: top;
+}
+.tbl tbody th {
+  font: 600 0.9rem var(--font-sans);
+  text-transform: none;
+  letter-spacing: normal;
+  color: var(--ink);
+  border-bottom-color: var(--line);
+  white-space: normal;
+}
+.tbl tbody tr:hover {
+  background: var(--faint);
+}
+.tbl td.n {
+  font: 400 0.8rem var(--font-mono);
+  white-space: nowrap;
+}
+.tbl a {
+  color: var(--ink);
+  font-weight: 600;
+  text-underline-offset: 0.2em;
+}
+.tbl a:hover {
+  color: var(--red-t);
+}
+.wide {
+  min-width: 38rem;
+}
+
+/* role pills (prototype .role, .r-admin, .r-moderator) and status pills */
+.pills {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.3rem;
+}
+.pill {
+  display: inline-block;
+  padding: 0.05rem 0.4rem;
+  font: 400 0.7rem var(--font-mono);
+  border: 1px solid var(--line2);
+  color: var(--mute);
+  white-space: nowrap;
+}
+.r-admin,
+.banned {
+  background: var(--red);
+  border-color: var(--red);
+  color: #fff;
+}
+.r-superuser {
+  background: var(--ink);
+  border-color: var(--ink);
+  color: var(--bg);
+}
+.r-moderator {
+  border-color: var(--ink);
+  color: var(--ink);
+}
+
+/* search + pager */
+.search {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.6rem;
+  align-items: flex-end;
+  margin-top: 1rem;
+}
+.search .field {
+  flex: 1 1 16rem;
+}
+.pager {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  align-items: center;
+  gap: 0.6rem;
+  margin-top: 1rem;
+  font: 400 0.75rem var(--font-mono);
+  color: var(--mute);
+}
+.pager ul {
+  display: flex;
+  gap: 0.4rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+/* forms (prototype form.reply) */
+.form {
+  display: grid;
+  gap: 0.6rem;
+  max-width: 32rem;
+  margin-top: 1rem;
+}
+.row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.6rem;
+  align-items: flex-end;
+}
+.field {
+  display: grid;
+  gap: 0.35rem;
+}
+.label {
+  font: 500 0.7rem var(--font-mono);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--mute);
+}
+.input {
+  font: inherit;
+  width: 100%;
+  min-height: 2.6rem;
+  padding: 0.55rem 0.7rem;
+  border: 1px solid var(--ink);
+  border-radius: 0;
+  background: var(--bg);
+  color: var(--ink);
+}
+textarea.input {
+  min-height: 5rem;
+  resize: vertical;
+}
+.hint {
+  margin: 0;
+  font-size: 0.85rem;
+  color: var(--mute);
+}
+.error {
+  margin: 0;
+  padding: 0.5rem 0.75rem;
+  border: 1px solid var(--red);
+  border-left-width: 4px;
+  color: var(--red-t);
+  background: var(--card);
+}
+.ok {
+  margin: 0;
+  color: var(--mute);
+}
+
+/* member facts */
+.facts {
+  display: grid;
+  grid-template-columns: max-content 1fr;
+  gap: 0.4rem 1.2rem;
+  margin: 1rem 0 0;
+}
+.facts dt {
+  font: 500 0.7rem var(--font-mono);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--mute);
+  padding-top: 0.15rem;
+}
+.facts dd {
+  margin: 0;
+}
+.locked {
+  margin-top: 1rem;
+  padding: 0.6rem 0.8rem;
+  border: 1px solid var(--line2);
+  border-left: 4px solid var(--ink);
+  background: var(--card);
+}
+.back {
+  display: inline-block;
+  margin-top: 1rem;
+  font: 400 0.75rem var(--font-mono);
+  color: var(--mute);
+}
+.back:hover {
+  color: var(--red-t);
+}
+.skeleton {
+  min-height: 12rem;
+}
+.pager a {
+  display: inline-flex;
+  align-items: center;
+  min-height: 2.3rem;
+  padding: 0.35rem 0.7rem;
+  color: var(--ink);
+  text-decoration: none;
+  border: 1px solid var(--line2);
+}
+.pager a:hover {
+  border-color: var(--ink);
+}

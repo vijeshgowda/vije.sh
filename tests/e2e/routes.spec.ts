@@ -1,5 +1,6 @@
 import type { Page } from "@playwright/test";
 import { expect, expectAccessible, test } from "./fixtures";
+import { createUser, deleteUser } from "./fixtures";
 
 // Every route in the app (docs/application.md 13.5): a route without a feature test fails here.
 const ROUTES = [
@@ -83,5 +84,19 @@ test("coastline data is cached by the browser", async ({ request }) => {
     const r = await request.get(`/data/land-${res}.json`);
     expect(r.status()).toBe(200);
     expect(r.headers()["cache-control"]).toContain("max-age=604800");
+  }
+});
+
+test("/admin/members/[handle] and a member search (owner) render accessibly", async ({
+  page,
+  asOwner,
+}) => {
+  expect(asOwner.handle).toBeTruthy();
+  const member = await createUser({ roles: [{ role: "moderator", category: "games" }] });
+  try {
+    await expectRoute(page, { path: `/admin/members/${member.handle}`, h1: `@${member.handle}` });
+    await expectRoute(page, { path: `/admin/members?q=${member.handle}`, h1: "Members" });
+  } finally {
+    await deleteUser(member.id);
   }
 });

@@ -167,6 +167,8 @@ test("a superuser works through the queue: hide, mark actioned, dismiss", async 
   ).toHaveAttribute("href", `/forum/games/${id}#reply-${replyId}`);
   await expectAccessible(page);
 
+  // let every request from loading the page finish before a write (see moderation.spec.ts)
+  await page.waitForLoadState("networkidle");
   await replyCard.getByRole("button", { name: "Hide reply" }).click();
   await expect(page.getByText("Reply hidden")).toBeVisible();
   await expect(replyCard.getByText("Hidden", { exact: true })).toBeVisible();
@@ -231,6 +233,7 @@ test("/admin/log lists staff actions and unhides a hidden thread", async ({
   );
   await expectAccessible(page);
 
+  await page.waitForLoadState("networkidle");
   await row.getByRole("button", { name: `Unhide thread \u201c${title}\u201d` }).click();
   await expect(page.getByText("Thread visible again")).toBeVisible();
   await expect(row.getByRole("button")).toHaveCount(0);

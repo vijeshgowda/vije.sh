@@ -29,12 +29,14 @@ export default defineConfig({
   projects: [
     { name: "chromium", use: { ...devices["Desktop Chrome"] }, testIgnore: CONTENT_SPECS },
     { name: "mobile", use: { ...devices["Pixel 7"] }, testIgnore: CONTENT_SPECS },
-    // Specs that publish content other specs count (blog lists, AN numbers) run after them.
+    // Specs that publish content other specs count (blog lists, AN numbers) run after them, one at
+    // a time: a publish racing another spec's /blog render can leave that render stale.
     {
       name: "content",
       use: { ...devices["Desktop Chrome"] },
       testMatch: CONTENT_SPECS,
       dependencies: ["chromium", "mobile"],
+      workers: 1,
     },
   ],
   webServer: {

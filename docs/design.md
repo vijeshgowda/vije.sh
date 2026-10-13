@@ -71,7 +71,7 @@ are global or scoped to one category; superusers are global; the owner is the si
 | PR5 | `feat/admin-members` | `/admin` stats, `/admin/members` search (50 per page), member page: grant/revoke roles, ban/lift, each with a `moderation_log` row in one transaction | In review (#43) |
 | PR6 | `feat/forum-write` | New thread, reply, edit own (30 min); limits in `forum/limits.ts`; new-thread dialog, `form.reply`, `FrameToolbar` island; staff-only categories readable by everyone | In review (#44) |
 | PR7 | `feat/admin-categories` | Create, rename, reorder, staff-only toggle, delete empty categories; logged; revalidates `forum` | To do (after PR4) |
-| PR8 | `feat/moderation-inline` | Hide/unhide, lock, pin, move with log rows; staff reveal of hidden text as plain `<pre>`; `StaffControls` | In review (stacked on PR6) |
+| PR8 | `feat/moderation-inline` | Hide/unhide, lock, pin, move with log rows; staff reveal of hidden text as plain `<pre>`; `StaffControls` | In review (#47, stacked on #44) |
 | PR9 | `feat/reports` | Report button (thread, reply, profile), `/admin/reports` queue, `/admin/log` with unhide | To do (after PR5 and PR8) |
 | PR10 | `feat/profiles` | `/u/[handle]` (tag `profile:<id>`), forum threads in the palette and sitemap, this table | In review (#46, stacked on #44) |
 

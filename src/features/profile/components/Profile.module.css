@@ -1,0 +1,51 @@
+/* Member profile: the register strip (prototype .regs, here a <dl>) and the post list rows */
+.regs {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  /* 1px gaps over the line colour draw the cell borders at any column count */
+  gap: 1px;
+  background: var(--line);
+  border: 1px solid var(--line);
+  margin: 0 0 2rem;
+  max-width: 46rem;
+  box-shadow: var(--sh1);
+}
+.regs div {
+  padding: 0.5rem 0.7rem;
+  background: var(--card);
+  min-width: 0;
+}
+.regs dt {
+  font: 400 0.58rem var(--font-mono);
+  color: var(--mute);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+.regs dd {
+  margin: 0;
+  font: 500 0.8rem var(--font-mono);
+  font-variant-numeric: tabular-nums;
+  overflow-wrap: anywhere;
+}
+
+/* Posts reuse the forum's ol.threads rows, without the badge and reply-count columns */
+ol.posts a {
+  grid-template-columns: 3rem 1fr;
+}
+.kind {
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+@media (max-width: 30rem) {
+  .regs {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (max-width: 48rem) {
+  /* the forum hides the address column on phones */
+  ol.posts a {
+    grid-template-columns: 1fr;
+  }
+}

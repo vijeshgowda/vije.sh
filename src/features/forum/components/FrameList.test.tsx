@@ -61,7 +61,7 @@ describe("FrameList", () => {
     const op = items[0]!;
     expect(op).toHaveAttribute("id", "thread-42");
     expect(op).toHaveTextContent("FRAME 00");
-    expect(within(op).getByText("vijesh").tagName).toBe("B");
+    expect(within(op).getByRole("link", { name: "vijesh" })).toHaveAttribute("href", "/u/vijesh");
     expect(within(op).getByText("Owner")).toHaveAttribute("data-role", "admin");
     expect(within(op).getByText("5 Oct 2026, 12:30 UTC")).toHaveAttribute(
       "datetime",
@@ -118,7 +118,13 @@ describe("ThreadIntro", () => {
   const thread: ThreadDetail = {
     id: "42",
     title: "Pooling with pg",
-    category: { id: "2", slug: "engineering", name: "Engineering", description: null },
+    category: {
+      id: "2",
+      slug: "engineering",
+      name: "Engineering",
+      description: null,
+      staffOnly: false,
+    },
     createdAt: at,
     pinned: true,
     locked: true,

@@ -47,11 +47,11 @@ self-hosted by `next/font`. Light is the default and ignores the OS; dark is opt
 | Forum (`pForum`, `pThread`) | `src/features/forum` (`ThreadList`, `ForumBar`, `FrameList`, `ThreadIntro`, `NewThread`, `ReplyForm`, `FrameToolbar`) | Done: `/forum`, `/forum/[category]` (chips as links), `/forum/[category]/[thread]` with frames and sanitised Markdown; new-thread dialog, `form.reply` and edit own post (30 min) as client islands, rate-limited (PR6). Everyone reads staff-only categories; only their staff start threads there |
 | Sign-in, onboarding, user menu (not in the prototype) | `src/features/auth` (`/login`, `/welcome`, `/guidelines`, `UserMenu` in the header) | Done (OAuth via Supabase; Turnstile on `/welcome`) |
 | Admin area (not in the prototype; nav uses the forum's category chips) | `src/app/(site)/admin`, `src/features/admin` (`AdminNav`, `AdminStats`, `MemberTable`, `MemberProfile`, `MemberForms`) | Role-gated; overview stats and members (search, roles, bans) done (PR5); notes (PR4), categories (PR7), reports and log (PR9) to do |
-| Jump-to palette, Ctrl K (`palItems`, `goTo`) | `src/features/palette` (header "Jump to" + footer "Search", mounted by `SiteFooter`) | Done (forum threads join with PR10) |
+| Jump-to palette, Ctrl K (`palItems`, `goTo`) | `src/features/palette` (header "Jump to" + footer "Search", mounted by `SiteFooter`) | Done, including the 50 latest forum threads, fetched from `/api/palette/threads` (cached, forum tags) when the palette opens so pages don't carry them (PR10) |
 | Scroll reveals (`reveal`), card spotlight (`spotlight`), number scramble | `src/components/motion` (`Reveal` / `useReveal`, `Spotlight`, `scramble`) | Done (only content below the fold on mount is hidden; `data-scramble` marks numbers) |
 | Inline moderation: hide/unhide, lock, pin, move, reveal hidden text (not in the prototype) | `src/features/moderation` | To do (PR8) |
 | Reports: Report button, `/admin/reports` queue, `/admin/log` (not in the prototype) | `src/features/moderation/reports` | To do (PR9) |
-| Public profiles `/u/[handle]` (not in the prototype) | `src/features/forum` or `src/features/profile` | To do (PR10, with forum threads in the palette and sitemap) |
+| Public profiles `/u/[handle]` (not in the prototype; built from the page intro, the `.regs` strip and `ol.threads` rows) | `src/features/profile` (`getProfile`, `ProfileRegs`, `PostList`); `AuthorName` in frames links to it | Done (PR10): handle (any casing redirects to the stored one), highest global role, joined date, counts and the 20 latest visible posts; unknown or unfinished accounts 404, banned members keep theirs, empty profiles are `noindex`. The provider-prefilled display name isn't shown until members can edit it. Visible threads are in `sitemap.xml` |
 | Back to top, toasts, offline LED | `src/components/layout` (`BackToTop`, `Toaster` + `toast()`, `NetStatus`) | Done |
 | "launch" easter egg (typed word + footer button, rocket) | `src/features/launch` (`launch()`, `<Launch />` in the footer) | Done |
 
@@ -73,7 +73,7 @@ are global or scoped to one category; superusers are global; the owner is the si
 | PR7 | `feat/admin-categories` | Create, rename, reorder, staff-only toggle, delete empty categories; logged; revalidates `forum` | To do (after PR4) |
 | PR8 | `feat/moderation-inline` | Hide/unhide, lock, pin, move with log rows; staff reveal of hidden text as plain `<pre>`; `StaffControls` | To do (after PR6) |
 | PR9 | `feat/reports` | Report button (thread, reply, profile), `/admin/reports` queue, `/admin/log` with unhide | To do (after PR5 and PR8) |
-| PR10 | `feat/profiles` | `/u/[handle]` (tag `profile:<id>`), forum threads in the palette and sitemap, this table | To do (after PR6) |
+| PR10 | `feat/profiles` | `/u/[handle]` (tag `profile:<id>`), forum threads in the palette and sitemap, this table | In review (#46, stacked on #44) |
 
 Owner steps outside the code:
 

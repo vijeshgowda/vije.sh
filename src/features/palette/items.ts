@@ -1,10 +1,14 @@
 import type { Route } from "next";
 import { PAGES } from "@/config/site";
+import { isCategorySlug, parseThreadId, threadAddress, threadHref } from "@/features/forum/format";
 import { FEEDS } from "@/features/live/catalog";
 
-/** Jump-to palette entries (prototype `palItems`): pages, overview sections, notes, feeds, commands. */
+/**
+ * Jump-to palette entries (prototype `palItems`): pages, overview sections, notes, feeds, commands,
+ * then the latest forum threads (fetched when the palette opens).
+ */
 
-export type Group = "Page" | "Section" | "Note" | "Feed" | "Command";
+export type Group = "Page" | "Section" | "Note" | "Feed" | "Command" | "Thread";
 
 export type CommandId = "theme" | "launch" | "copy" | "feeds" | "top";
 
@@ -14,7 +18,7 @@ export type Action =
 
 export interface PaletteItem {
   group: Group;
-  /** Short code in the first column: P1, §2, AN-003, LF-07, PWR... */
+  /** Short code in the first column: P1, §2, AN-003, LF-07, PWR, 0x2A... */
   code: string;
   title: string;
   sub: string;
@@ -29,6 +33,46 @@ export interface PaletteNote {
   date: string;
 }
 
+/** A recently active forum thread, as served by /api/palette/threads */
+export interface PaletteThread {
+  id: string;
+  title: string;
+  slug: string;
+  category: string;
+  /** Last activity, "2026-10-05" */
+  date: string;
+}
+
+/** Threads the palette fetches when it opens (application.md 7: bounded, cached on the server) */
+export const PALETTE_THREADS = 50;
+
+const DAY = /^\d{4}-\d{2}-\d{2}$/;
+
+function isThread(v: unknown): v is PaletteThread {
+  if (typeof v !== "object" || v === null) return false;
+  const { id, title, slug, category, date } = v as Record<string, unknown>;
+  return (
+    typeof id === "string" &&
+    parseThreadId(id) !== null &&
+    typeof title === "string" &&
+    typeof slug === "string" &&
+    isCategorySlug(slug) &&
+    typeof category === "string" &&
+    typeof date === "string" &&
+    DAY.test(date)
+  );
+}
+
+/** The /api/palette/threads body, keeping only well-formed entries; [] for anything else. */
+export function readThreads(body: unknown): PaletteThread[] {
+  const list = (body as { threads?: unknown } | null)?.threads;
+  if (!Array.isArray(list)) return [];
+  return list
+    .filter(isThread)
+    .slice(0, PALETTE_THREADS)
+    .map(({ id, title, slug, category, date }) => ({ id, title, slug, category, date }));
+}
+
 export const SECTIONS = [
   ["features", "Features"],
   ["cluster", "Cluster"],
@@ -40,12 +84,14 @@ export const SECTIONS = [
 
 export function buildItems({
   notes,
+  threads = [],
   pinned,
   dark,
   path,
   formatDate,
 }: {
   notes: PaletteNote[];
+  threads?: PaletteThread[];
   pinned: readonly string[];
   dark: boolean;
   path: string;
@@ -107,7 +153,15 @@ export function buildItems({
     sub,
     action,
   }));
-  return [...pages, ...sections, ...posts, ...feeds, ...commands];
+  // last, so an empty query still opens on pages, notes, feeds and commands
+  const forum = threads.map<PaletteItem>((t) => ({
+    group: "Thread",
+    code: threadAddress(t.id),
+    title: t.title,
+    sub: `${t.category} \u00b7 ${formatDate(t.date)}`,
+    action: { type: "go", href: threadHref(t.slug, t.id) },
+  }));
+  return [...pages, ...sections, ...posts, ...feeds, ...commands, ...forum];
 }
 
 export const MAX_RESULTS = 60;

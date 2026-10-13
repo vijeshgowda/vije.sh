@@ -65,3 +65,14 @@ export async function revalidateTags(request: APIRequestContext, tags: string[])
   });
   if (res.status() !== 204) throw new Error(`revalidate failed: HTTP ${res.status()}`);
 }
+
+/** Cleanup for notes a spec created through the editor (no id known if it failed midway). */
+export async function deleteNoteBySlug(slug: string) {
+  const db = testClient();
+  await db.connect();
+  try {
+    await db.query("delete from app.posts where slug = $1", [slug]);
+  } finally {
+    await db.end();
+  }
+}

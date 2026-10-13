@@ -210,7 +210,7 @@ storing a dev database credential outside Vercel, which isn't worth it.
 │   │   ├── blog/                # git post loader, notes queries, admin actions
 │   │   ├── forum/               # queries, actions, components, limits
 │   │   ├── profile/             # /u/[handle]: profile query, register strip, post list
-│   │   ├── moderation/
+│   │   ├── moderation/          # inline hide/lock/pin/move; reports/: Report, queue, log
 │   │   └── uploads/
 │   ├── components/
 │   │   └── ui/                  # design-system primitives (Button, Cell, Stamp, Tabs...)
@@ -482,6 +482,20 @@ needs scope over both categories, and the old URL keeps redirecting to the new o
 reply stays a placeholder frame; a hidden thread is a 404 for everyone, and its staff get a notice
 there to reveal or unhide it. Reveal returns the stored Markdown as plain text for a `<pre>`
 (never rendered) and isn't logged, because reading changes nothing.
+
+**Reports** (`src/features/moderation/reports`): members report a thread (frame 00), a reply or
+a profile with a reason (spam, harassment, illegal or harmful, something else plus details). The
+Report tool comes last in `FRAME_TOOLS` and a "Report profile" island sits on `/u/[handle]`; both
+are hidden on the member's own posts and profile, on hidden posts, from staff who moderate the
+category (they hide it themselves) and, on profiles, from superusers and the owner (they ban from
+`/admin/members`). One open report per member and target: the `reports_no_duplicates` unique
+constraint turns a repeat into "already reported", and reporting a target again after its report
+was resolved reopens that row with the new reason. Limited to 5 or 20 a day (10.3).
+`/admin/reports` (superuser and owner; moderators never see it) groups open reports by target,
+oldest first, with Hide for visible posts and Mark actioned / Dismiss for the target's reports;
+each resolution writes one `report_resolve` log row per target, naming the reports.
+`/admin/log` pages through `moderation_log` (50 a page, newest first) with Unhide on the hide row
+of a thread that is still hidden.
 
 ---
 

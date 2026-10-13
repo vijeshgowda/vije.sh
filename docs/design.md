@@ -44,7 +44,7 @@ self-hosted by `next/font`. Light is the default and ignores the OS; dark is opt
 | Lab: memory calculator, bit register (`pLab`) | `src/features/lab` | Done |
 | Photo: procedural gallery, viewfinder, lightbox (`pPhoto`) | `src/features/photo` | To do |
 | Blog index and post (`pBlog`, `pPost`) | `src/features/blog`, `src/lib/markdown.ts` | Done for git posts (Markdown + images, application.md section 9); DB notes in progress (draft #38) |
-| Forum (`pForum`, `pThread`) | `src/features/forum` (`ThreadList`, `ForumBar`, `FrameList`, `ThreadIntro`) | Reading done: `/forum`, `/forum/[category]` (chips as links), `/forum/[category]/[thread]` with frames and sanitised Markdown; posting, the new-thread dialog and `form.reply` to do (PR6); staff-only categories are hidden from every read for now |
+| Forum (`pForum`, `pThread`) | `src/features/forum` (`ThreadList`, `ForumBar`, `FrameList`, `ThreadIntro`, `NewThread`, `ReplyForm`, `FrameToolbar`) | Done: `/forum`, `/forum/[category]` (chips as links), `/forum/[category]/[thread]` with frames and sanitised Markdown; new-thread dialog, `form.reply` and edit own post (30 min) as client islands, rate-limited (PR6). Everyone reads staff-only categories; only their staff start threads there |
 | Sign-in, onboarding, user menu (not in the prototype) | `src/features/auth` (`/login`, `/welcome`, `/guidelines`, `UserMenu` in the header) | Done (OAuth via Supabase; Turnstile on `/welcome`) |
 | Admin area (not in the prototype; nav uses the forum's category chips) | `src/app/(site)/admin`, `src/features/admin` (`AdminNav`, `AdminStats`, `MemberTable`, `MemberProfile`, `MemberForms`) | Role-gated; overview stats and members (search, roles, bans) done (PR5); notes (PR4), categories (PR7), reports and log (PR9) to do |
 | Jump-to palette, Ctrl K (`palItems`, `goTo`) | `src/features/palette` (header "Jump to" + footer "Search", mounted by `SiteFooter`) | Done (forum threads join with PR10) |
@@ -69,7 +69,7 @@ are global or scoped to one category; superusers are global; the owner is the si
 | PR3 | `feat/forum-read` | `/forum`, `/forum/[category]`, `/forum/[category]/[thread]`, cached queries with `forum` / `category:<slug>` / `thread:<id>` tags | Merged (#39) |
 | PR4 | `feat/notes-admin` | Part 1: notes data layer, git slug manifest, `/blog` merges notes. Part 2: `/admin/notes` list, new, editor with preview (owner only), publish e2e | Draft (#38): part 1 done, needs a rebase onto `main`; part 2 to do |
 | PR5 | `feat/admin-members` | `/admin` stats, `/admin/members` search (50 per page), member page: grant/revoke roles, ban/lift, each with a `moderation_log` row in one transaction | In review (#43) |
-| PR6 | `feat/forum-write` | New thread, reply, edit own (30 min); limits in `forum/limits.ts`; new-thread dialog, `form.reply`, `FrameToolbar` island | To do (after PR3) |
+| PR6 | `feat/forum-write` | New thread, reply, edit own (30 min); limits in `forum/limits.ts`; new-thread dialog, `form.reply`, `FrameToolbar` island; staff-only categories readable by everyone | In review (#44) |
 | PR7 | `feat/admin-categories` | Create, rename, reorder, staff-only toggle, delete empty categories; logged; revalidates `forum` | To do (after PR4) |
 | PR8 | `feat/moderation-inline` | Hide/unhide, lock, pin, move with log rows; staff reveal of hidden text as plain `<pre>`; `StaffControls` | To do (after PR6) |
 | PR9 | `feat/reports` | Report button (thread, reply, profile), `/admin/reports` queue, `/admin/log` with unhide | To do (after PR5 and PR8) |
@@ -87,9 +87,9 @@ Owner steps outside the code:
 
 Open decisions:
 
-- Staff-only categories (e.g. Announcements): PR3 hides them from every public read. database.md
-  says `staff_only` only limits who starts threads. Settle this before PR6 builds the new-thread
-  picker (the filters are the `not staff_only` clauses in `src/features/forum/queries.ts`).
+- Settled in PR6: staff-only categories (e.g. Announcements) are read by everyone, members reply
+  there, and only staff (global or category moderators, superusers, the owner) start threads; the
+  new-thread picker leaves them out for everyone else (database.md `staff_only`).
 - Reports wait for a superuser or the owner, because moderators have no `/admin`; an inline
   "Reported" badge for moderators can come later.
 - Thread URLs stay id-only (`/forum/engineering/42`).

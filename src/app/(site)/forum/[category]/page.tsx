@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { PageIntro, RunFoot, RunHead, Section } from "@/components/ui/Datasheet";
 import { ForumBar } from "@/features/forum/components/ForumBar";
+import { NewThread } from "@/features/forum/components/NewThread";
 import { ThreadList } from "@/features/forum/components/ThreadList";
 import { categoryHref, isCategorySlug } from "@/features/forum/format";
 import {
@@ -55,7 +56,11 @@ export default async function CategoryPage({ params }: PageProps<"/forum/[catego
         {category.description}
       </PageIntro>
       <Section id="threads" no={11} title="Threads" note={`${threads.length} on the bus`}>
-        <ForumBar categories={categories} current={category.slug} />
+        <ForumBar
+          categories={categories}
+          current={category.slug}
+          actions={<NewThread categories={categories} current={category.slug} />}
+        />
         <ThreadList threads={threads} empty={`No threads in ${category.name} yet.`} />
       </Section>
       <RunFoot page={6} />

@@ -1,0 +1,115 @@
+/* Posting from V18.1.1: form.reply, the new-thread dialog (dialog, dialog form, .row) */
+.reply,
+.form {
+  display: grid;
+  gap: 0.6rem;
+}
+.reply {
+  max-width: 46rem;
+  margin: 0 0 2rem;
+}
+.label {
+  font: 500 0.7rem var(--font-mono);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--mute);
+}
+.input {
+  font: inherit;
+  width: 100%;
+  border: 1px solid var(--ink);
+  background: var(--bg);
+  color: var(--ink);
+  padding: 0.6rem 0.7rem;
+  border-radius: 0;
+}
+textarea.input {
+  resize: vertical;
+  min-height: 6rem;
+}
+.input[aria-invalid="true"] {
+  border-color: var(--red);
+  box-shadow: inset 3px 0 0 var(--red);
+}
+.row {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+}
+.note {
+  font: 400 0.72rem var(--font-mono);
+  color: var(--mute);
+  margin: 0;
+}
+.error {
+  margin: 0;
+  padding: 0.6rem 0.8rem;
+  border: 1px solid var(--red);
+  border-left-width: 4px;
+  color: var(--red-t);
+  background: var(--card);
+}
+.error:empty {
+  display: none;
+}
+
+/* "Can't post" states and the reserved space while the session loads */
+.notice {
+  max-width: 46rem;
+  margin: 0 0 2rem;
+  padding: 0.85rem;
+  border: 1px dashed var(--line2);
+  font: 400 0.8rem var(--font-mono);
+  color: var(--mute);
+}
+.notice a {
+  color: var(--red-t);
+  text-decoration: underline;
+}
+.cant {
+  font: 400 0.72rem var(--font-mono);
+  color: var(--mute);
+}
+.cant a {
+  color: var(--red-t);
+  text-decoration: underline;
+}
+.slot {
+  display: inline-block;
+  min-height: 2.4rem;
+}
+
+.dialog {
+  max-width: 32rem;
+  width: calc(100% - 2rem);
+  /* Tailwind's preflight zeroes the UA's auto margins that centre a modal dialog */
+  margin: auto;
+  padding: 0;
+  border: 1px solid var(--ink);
+  background: var(--bg);
+  color: var(--ink);
+  box-shadow: var(--sh3);
+}
+.dialog::backdrop {
+  background: rgb(10 10 12 / 0.55);
+}
+.dialog .form {
+  padding: 1.25rem;
+}
+.dialog h2 {
+  margin: 0 0 0.4rem;
+  font-size: 1.3rem;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .dialog[open] {
+    animation: dlg 0.3s cubic-bezier(0.2, 0.8, 0.2, 1);
+  }
+}
+@keyframes dlg {
+  from {
+    opacity: 0;
+    transform: translateY(14px) scale(0.98);
+  }
+}

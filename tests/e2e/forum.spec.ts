@@ -140,7 +140,6 @@ test.describe("forum browsing", () => {
       `/forum/${s.slug}/999999999`,
       `/forum/${s.slug}/not-a-number`,
       "/forum/no-such-category",
-      "/forum/announcements",
     ]) {
       const res = await page.goto(path);
       expect(res?.status(), path).toBe(404);
@@ -149,12 +148,13 @@ test.describe("forum browsing", () => {
   });
 });
 
-test("the forum index links every public category with chips", async ({ page }) => {
+test("the forum index links every category with chips", async ({ page }) => {
   await page.goto("/forum");
   await expect(page.getByRole("heading", { level: 1, name: "Forum" })).toBeVisible();
   const chips = page.getByRole("navigation", { name: "Forum categories" });
   await expect(chips.getByRole("link", { name: "All" })).toHaveAttribute("aria-current", "page");
-  await expect(chips.getByRole("link", { name: "Announcements" })).toHaveCount(0);
+  // staff-only categories are read by everyone; only staff start threads there
+  await expect(chips.getByRole("link", { name: "Announcements" })).toBeVisible();
   await chips.getByRole("link", { name: "Local AI" }).click();
   await expect(page).toHaveURL(/\/forum\/local-ai$/);
   await expect(page.getByRole("heading", { level: 1, name: "Local AI" })).toBeVisible();

@@ -1,7 +1,10 @@
 import type { Metadata } from "next";
 import { notFound, redirect } from "next/navigation";
 import { RunFoot, RunHead } from "@/components/ui/Datasheet";
+import { toolbarFrame, toolbarThread } from "@/features/forum/client/toolbar";
 import { FrameList } from "@/features/forum/components/FrameList";
+import { FrameToolbar } from "@/features/forum/components/FrameToolbar";
+import { ReplyForm } from "@/features/forum/components/ReplyForm";
 import { ThreadIntro } from "@/features/forum/components/ThreadIntro";
 import { parseThreadId, threadHref } from "@/features/forum/format";
 import { getThread } from "@/features/forum/queries";
@@ -34,7 +37,7 @@ export async function generateMetadata({
 export default async function ThreadPage({ params }: PageProps<"/forum/[category]/[thread]">) {
   const { category, thread: raw } = await params;
   const thread = await load(raw);
-  // missing, hidden, or in a staff-only category
+  // missing or hidden
   if (!thread) notFound();
   // wrong or old category (moved thread): send to the canonical URL; not permanent, it can move again
   if (thread.category.slug !== category) {
@@ -46,11 +49,17 @@ export default async function ThreadPage({ params }: PageProps<"/forum/[category
       body: f.bodyMd === null ? null : await renderFrameBody(f.bodyMd, f.key),
     })),
   );
+  // what the signed-in islands (toolbar, reply form) need to know about the thread
+  const tools = toolbarThread(thread);
   return (
     <>
       <RunHead label="Community bus" />
       <ThreadIntro thread={thread} />
-      <FrameList frames={frames} />
+      <FrameList
+        frames={frames}
+        renderActions={(f) => <FrameToolbar frame={toolbarFrame(f)} thread={tools} />}
+      />
+      <ReplyForm thread={tools} />
       <RunFoot page={6} />
     </>
   );

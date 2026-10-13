@@ -5,7 +5,7 @@ import { describe, expect, it, vi } from "vitest";
 const cacheTag = vi.fn();
 vi.mock("next/cache", () => ({ cacheLife: vi.fn(), cacheTag }));
 
-const { renderNoteBody, renderPostBody } = await import("./render");
+const { renderNoteBody, renderNotePreview, renderPostBody } = await import("./render");
 
 describe("rendering post bodies", () => {
   it("renders a git post in trusted mode with its images", async () => {
@@ -22,5 +22,13 @@ describe("rendering post bodies", () => {
     expect(html).not.toContain("<script");
     expect(html).toContain('rel="nofollow ugc noopener"');
     expect(cacheTag).toHaveBeenCalledWith("notes", "note:a-note");
+  });
+
+  it("previews unsaved note text through the same sanitised pipeline, uncached", async () => {
+    cacheTag.mockClear();
+    const html = renderToStaticMarkup(await renderNotePreview("# Draft\n\n<img src=x onerror=y>"));
+    expect(html).toContain('<h1 id="user-content-draft">Draft</h1>');
+    expect(html).not.toContain("<img");
+    expect(cacheTag).not.toHaveBeenCalled();
   });
 });

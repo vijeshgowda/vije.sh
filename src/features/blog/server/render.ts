@@ -26,3 +26,11 @@ export async function renderNoteBody(slug: string, bodyMd: string) {
   cacheTag(NOTES_TAG, noteTag(slug));
   return renderMarkdown(bodyMd, { mode: "sanitised" });
 }
+
+/**
+ * Unsaved editor text for the owner's preview: the same sanitised pipeline as renderNoteBody, but
+ * uncached, so throwaway drafts don't fill the cache.
+ */
+export function renderNotePreview(bodyMd: string) {
+  return renderMarkdown(bodyMd, { mode: "sanitised" });
+}

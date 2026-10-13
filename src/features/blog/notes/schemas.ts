@@ -74,3 +74,14 @@ export const noteInputSchema = z.object({
 
 export type NoteInput = z.output<typeof noteInputSchema>;
 export type NoteFormInput = z.input<typeof noteInputSchema>;
+
+/** A slug suggested from a title for a new note: "Hello, World!" -> "hello-world". */
+export function suggestNoteSlug(title: string): string {
+  return title
+    .normalize("NFKD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "-")
+    .slice(0, NOTE_LIMITS.slug)
+    .replace(/^-+|-+$/g, "");
+}

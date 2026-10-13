@@ -8,6 +8,7 @@ import {
   noteIdSchema,
   noteInputSchema,
   noteSlugSchema,
+  suggestNoteSlug,
   tagsSchema,
 } from "./schemas";
 import { NOTES_TAG, noteTag, noteTags } from "./tags";
@@ -38,6 +39,19 @@ describe("note slugs", () => {
     expect(GIT_SLUGS.size).toBe(manifest.slugs.length);
     expect(isGitSlug("not-a-git-post")).toBe(false);
     expect(isGitSlug("x", new Set(["x"]))).toBe(true);
+  });
+});
+
+describe("suggested slugs", () => {
+  it("turns a title into a valid slug", () => {
+    expect(suggestNoteSlug("Hello, World!")).toBe("hello-world");
+    expect(suggestNoteSlug("  Café   déjà vu -- 2026 ")).toBe("cafe-deja-vu-2026");
+    expect(suggestNoteSlug("!!!")).toBe("");
+    const long = suggestNoteSlug(`${"a".repeat(99)} b c`);
+    expect(long).toBe("a".repeat(99));
+    expect(noteSlugSchema.safeParse(suggestNoteSlug("A title: with (punctuation)")).success).toBe(
+      true,
+    );
   });
 });
 

@@ -12,7 +12,9 @@ import s from "./Reports.module.css";
 
 /**
  * /admin/reports: open reports grouped by target, the oldest waiting first, each with a link to
- * the target, its reports and the actions; then the latest resolved reports.
+ * the target, its reports and the actions; then the latest resolved reports. Links to forum pages
+ * and profiles don't prefetch: a queue or log page would otherwise render dozens of cached public
+ * pages (hidden ones included) that staff mostly never open.
  */
 export function ReportQueue({
   groups,
@@ -61,7 +63,7 @@ export function targetName(t: TargetInfo): string {
 
 function Handle({ handle }: { handle: string | null }) {
   return handle ? (
-    <Link href={profileHref(handle)} className={s.handle}>
+    <Link href={profileHref(handle)} className={s.handle} prefetch={false}>
       @{handle}
     </Link>
   ) : (
@@ -86,7 +88,9 @@ function QueuedTarget({ group: { key, target, reports } }: { group: ReportGroup 
           <span className={s.count}>{plural(reports.length, "report", "reports")}</span>
         </header>
         <h3 id={id}>
-          <Link href={targetHref(target)}>{name}</Link>
+          <Link href={targetHref(target)} prefetch={false}>
+            {name}
+          </Link>
         </h3>
         {target.kind === "profile" ? (
           <p className={s.by}>
@@ -161,7 +165,9 @@ function ResolvedTable({ reports }: { reports: ResolvedReport[] }) {
               </td>
               <td>
                 {r.target ? (
-                  <Link href={targetHref(r.target)}>{targetName(r.target)}</Link>
+                  <Link href={targetHref(r.target)} prefetch={false}>
+                    {targetName(r.target)}
+                  </Link>
                 ) : (
                   "\u2014"
                 )}

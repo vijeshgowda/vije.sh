@@ -61,7 +61,9 @@ function LogRow({ item }: { item: LogItem }) {
       </td>
       <td>
         {item.actorHandle ? (
-          <Link href={profileHref(item.actorHandle)}>@{item.actorHandle}</Link>
+          <Link href={profileHref(item.actorHandle)} prefetch={false}>
+            @{item.actorHandle}
+          </Link>
         ) : (
           "[deleted]"
         )}
@@ -69,7 +71,7 @@ function LogRow({ item }: { item: LogItem }) {
       <td>{ACTION_LABEL[item.action]}</td>
       <td>
         {t ? (
-          <Link href={t.kind === "profile" ? memberHref(t.handle) : targetHref(t)}>
+          <Link href={t.kind === "profile" ? memberHref(t.handle) : targetHref(t)} prefetch={false}>
             {targetName(t)}
           </Link>
         ) : (

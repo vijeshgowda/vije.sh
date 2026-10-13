@@ -41,7 +41,7 @@ export async function insertUser(
 /** The seeded category ids by slug. */
 export async function categoryIds(db: pg.Client): Promise<Record<string, string>> {
   const { rows } = await db.query<{ id: string; slug: string }>(
-    "select id::text as id, slug from app.categories",
+    "select id::text as id, slug from app.categories order by position, name",
   );
   return Object.fromEntries(rows.map((r) => [r.slug, r.id]));
 }

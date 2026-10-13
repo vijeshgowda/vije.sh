@@ -1,0 +1,210 @@
+/* The owner's category manager: prototype .tw/.tbl for the list, dialog and form fields. */
+
+.bar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 1rem;
+}
+.count {
+  font: 400 0.7rem var(--font-mono);
+  color: var(--mute);
+}
+
+.tw {
+  overflow-x: auto;
+  overflow-y: hidden;
+  background: var(--card);
+  border: 1px solid var(--line);
+  box-shadow: var(--sh1);
+}
+.tbl {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.9rem;
+  min-width: 44rem;
+}
+.tbl th {
+  font: 500 0.66rem var(--font-mono);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--mute);
+  text-align: left;
+  border-bottom: 1px solid var(--ink);
+  padding: 0.6rem 0.75rem;
+  white-space: nowrap;
+}
+.tbl td {
+  padding: 0.6rem 0.75rem;
+  border-bottom: 1px solid var(--line);
+  vertical-align: top;
+}
+.tbl tbody tr:hover {
+  background: var(--faint);
+}
+.name {
+  font-weight: 600;
+}
+.slug {
+  font: 400 0.75rem var(--font-mono);
+  color: var(--red-t);
+}
+.n {
+  font-family: var(--font-mono);
+  font-size: 0.8rem;
+  white-space: nowrap;
+}
+.hint {
+  font-size: 0.8rem;
+  color: var(--mute);
+}
+.empty {
+  padding: 1rem 0.75rem;
+  color: var(--mute);
+}
+
+/* posting pill: staff only is red like the prototype's .pinb, open is outlined */
+.pill {
+  display: inline-block;
+  font: 500 0.62rem var(--font-mono);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  padding: 0.15rem 0.45rem;
+  border: 1px solid var(--line2);
+  color: var(--mute);
+  white-space: nowrap;
+}
+.pill[data-staff] {
+  background: var(--red);
+  border-color: var(--red);
+  color: #fff;
+}
+
+.actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+  align-items: center;
+}
+.actions > form {
+  display: contents;
+}
+
+/* forms: the prototype's dialog form */
+.form {
+  display: grid;
+  gap: 0.6rem;
+  max-width: 40rem;
+}
+.label {
+  font: 500 0.7rem var(--font-mono);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--mute);
+}
+.grid {
+  display: grid;
+  gap: 0.6rem 1rem;
+}
+@media (min-width: 40rem) {
+  .grid {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+.field {
+  display: grid;
+  gap: 0.35rem;
+  align-content: start;
+}
+.input {
+  font: inherit;
+  width: 100%;
+  border: 1px solid var(--ink);
+  background: var(--bg);
+  color: var(--ink);
+  padding: 0.6rem 0.7rem;
+  border-radius: 0;
+}
+.input[aria-invalid="true"] {
+  border-color: var(--red);
+  box-shadow: inset 3px 0 0 var(--red);
+}
+.check {
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
+  font-size: 0.9rem;
+}
+.check input {
+  accent-color: var(--red);
+  width: 1rem;
+  height: 1rem;
+}
+.row {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+}
+.error {
+  padding: 0.6rem 0.8rem;
+  border: 1px solid var(--red);
+  border-left-width: 4px;
+  color: var(--red-t);
+  background: var(--card);
+}
+.rowError {
+  flex-basis: 100%;
+  font-size: 0.8rem;
+  color: var(--red-t);
+}
+.ok {
+  font: 500 0.75rem var(--font-mono);
+  color: var(--mute);
+}
+
+/* dialogs (prototype dialog) */
+.dialog {
+  /* Tailwind's preflight zeroes the UA's auto margins that centre a modal dialog */
+  margin: auto;
+  border: 1px solid var(--ink);
+  background: var(--bg);
+  color: var(--ink);
+  padding: 0;
+  max-width: 32rem;
+  width: calc(100% - 2rem);
+  box-shadow: var(--sh3);
+}
+.dialog::backdrop {
+  background: rgb(10 10 12 / 0.55);
+}
+.dialog > form,
+.dialog > div {
+  display: grid;
+  gap: 0.6rem;
+  padding: 1.25rem;
+}
+.dialog h2 {
+  margin: 0 0 0.4rem;
+  font-size: 1.3rem;
+}
+@media (prefers-reduced-motion: no-preference) {
+  .dialog[open] {
+    animation: dlg 0.3s cubic-bezier(0.2, 0.8, 0.2, 1);
+  }
+}
+@keyframes dlg {
+  from {
+    opacity: 0;
+    transform: translateY(14px) scale(0.98);
+  }
+}
+
+.heading {
+  margin: 0 0 0.75rem;
+  font: 700 0.75rem var(--font-mono);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}

@@ -472,6 +472,18 @@ on client-side navigation.
 Refusals show the 404 page marked `noindex`; the HTTP status is still 200, because Cache Components
 reads the session after the response has started. `/admin` is also disallowed in `robots.txt`.
 
+**Categories** (`/admin/categories`, owner only, `category.manage`; code in
+`src/features/admin/categories/`): create, rename (name and description), move up or down, toggle
+staff-only posting, and delete. A slug is set once at creation and never edited, because it is the
+URL of the category and of every thread in it; `new`, `search`, `latest` and `all` are reserved.
+New categories go to the end; a move renumbers every position in the current order and swaps two.
+Only a category without threads (hidden ones included) can be deleted: the transaction locks the
+row, counts threads and deletes with a `not exists` check, so a thread posted meanwhile still blocks
+it; category moderator grants go with it. Each change writes a `moderation_log` row
+(`category_create` / `category_update` / `category_delete`, the note names `/forum/<slug>`) in the
+same transaction and calls `updateTag()` for `forum` and `category:<slug>`. Staff-only categories
+stay readable by everyone; the flag only limits who starts threads.
+
 `/api/me` gives islands the user's `handle`, `onboarded`, `banned`, distinct `roles` and `grants`
 (role plus `categoryId`); never the user id. `UserMenu` shows an "Admin" link to superusers and the
 owner. Admin rights are never self-service.

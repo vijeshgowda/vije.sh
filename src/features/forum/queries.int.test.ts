@@ -18,7 +18,7 @@ beforeAll(async () => {
   db = testClient();
   await db.connect();
   const { rows } = await db.query<{ id: string; slug: string }>(
-    "select id::text as id, slug from app.categories",
+    "select id::text as id, slug from app.categories order by position, name",
   );
   for (const r of rows) cats[r.slug] = r.id;
 });

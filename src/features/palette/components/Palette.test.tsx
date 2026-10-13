@@ -32,8 +32,21 @@ beforeAll(() => {
   };
 });
 
+const threads = [
+  {
+    id: "42",
+    title: "Pooling with pg",
+    slug: "engineering",
+    category: "Engineering",
+    date: "2026-10-06",
+  },
+];
+const fetchThreads = vi.fn(async () => Response.json({ threads }));
+
 beforeEach(() => {
   push.mockClear();
+  fetchThreads.mockClear();
+  vi.stubGlobal("fetch", fetchThreads);
   window.matchMedia = vi.fn().mockReturnValue({ matches: true }) as typeof window.matchMedia;
   window.scrollTo = vi.fn() as typeof window.scrollTo;
   act(() => setPaletteOpen(false));
@@ -167,5 +180,35 @@ describe("<Palette>", () => {
     expect(second).toHaveAttribute("aria-selected", "true");
     await user.click(second);
     expect(push).toHaveBeenCalledWith("/work");
+  });
+
+  it("fetches the latest forum threads when it opens and jumps to one", async () => {
+    const user = setup();
+    expect(fetchThreads).not.toHaveBeenCalled();
+    act(() => setPaletteOpen(true));
+    expect(fetchThreads).toHaveBeenCalledWith("/api/palette/threads", expect.anything());
+    await user.type(box(), "pooling");
+    const option = await screen.findByRole("option", { name: /Pooling with pg/ });
+    expect(option).toHaveTextContent("0x2A");
+    expect(option).toHaveTextContent("Engineering \u00b7 6 Oct 2026");
+    await user.keyboard("{Enter}");
+    expect(push).toHaveBeenCalledWith("/forum/engineering/42");
+  });
+
+  it("works without threads when the request fails", async () => {
+    fetchThreads.mockImplementationOnce(async () => new Response("down", { status: 503 }));
+    const user = setup();
+    act(() => setPaletteOpen(true));
+    await waitFor(() => expect(fetchThreads).toHaveBeenCalled());
+    await user.type(box(), "pooling");
+    expect(screen.getByRole("option")).toHaveTextContent("Nothing matches");
+    act(() => setPaletteOpen(false));
+    fetchThreads.mockImplementationOnce(async () => {
+      throw new TypeError("offline");
+    });
+    act(() => setPaletteOpen(true));
+    await waitFor(() => expect(fetchThreads).toHaveBeenCalledTimes(2));
+    await user.type(box(), "dark");
+    expect(screen.getAllByRole("option")[0]).toHaveTextContent("Switch to dark mode");
   });
 });

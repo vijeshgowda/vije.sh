@@ -1,6 +1,7 @@
 import type { Page } from "@playwright/test";
 import { expect, expectAccessible, test } from "./fixtures";
 import { createUser, deleteUser } from "./fixtures";
+import { testClient } from "../helpers/db";
 
 // Every route in the app (docs/application.md 13.5): a route without a feature test fails here.
 const ROUTES = [
@@ -107,4 +108,51 @@ test("/u/[handle] renders, has no a11y violations and no horizontal scroll", asy
   asMember,
 }) => {
   await expectRoute(page, { path: `/u/${asMember.handle}`, h1: asMember.handle! });
+});
+
+// The report queue and the log with something in them: open thread and profile reports, a
+// resolved one, and a hidden thread's log row (with its Unhide button).
+test("/admin/reports and /admin/log with entries (owner) render accessibly", async ({
+  page,
+  asOwner,
+}) => {
+  const author = await createUser();
+  const reporter = await createUser();
+  const db = testClient();
+  await db.connect();
+  let threadId = "0";
+  try {
+    const { rows } = await db.query<{ id: string }>(
+      `insert into app.threads (category_id, author_id, title, body_md, hidden_at)
+       select id, $1, 'Routes report check', 'Body.', now() from app.categories where slug = 'games'
+       returning id::text as id`,
+      [author.id],
+    );
+    threadId = rows[0]!.id;
+    await db.query(
+      `insert into app.reports (reporter_id, thread_id, profile_id, reason)
+       values ($1, $2, null, 'Spam or advertising'), ($1, null, $3, 'Harassment or abuse')`,
+      [reporter.id, threadId, author.id],
+    );
+    await db.query(
+      `insert into app.reports (reporter_id, profile_id, reason, status, resolved_by, resolved_at)
+       values ($1, $2, 'Spam or advertising', 'dismissed', $3, now())`,
+      [author.id, reporter.id, asOwner.id],
+    );
+    await db.query(
+      `insert into app.moderation_log (actor_id, action, thread_id, note)
+       values ($1, 'hide', $2, 'Routes check')`,
+      [asOwner.id, threadId],
+    );
+    await expectRoute(page, { path: "/admin/reports", h1: "Reports" });
+    await expect(page.getByRole("article").first()).toBeVisible();
+    await expect(page.getByRole("region", { name: "Resolved reports" })).toBeVisible();
+    await expectRoute(page, { path: "/admin/log", h1: "Moderation log" });
+    await expect(page.getByRole("button", { name: /^Unhide thread/ }).first()).toBeVisible();
+  } finally {
+    await db.query("delete from app.threads where id = $1", [threadId]);
+    await db.end();
+    await deleteUser(author.id);
+    await deleteUser(reporter.id);
+  }
 });

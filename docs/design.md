@@ -43,10 +43,10 @@ self-hosted by `next/font`. Light is the default and ignores the OS; dark is opt
 | Work: rack, timing diagram, KPIs (`pWork`, `timingSVG`) | `src/features/work` | Done ("now" marker cached daily) |
 | Lab: memory calculator, bit register (`pLab`) | `src/features/lab` | Done |
 | Photo: procedural gallery, viewfinder, lightbox (`pPhoto`) | `src/features/photo` | To do |
-| Blog index and post (`pBlog`, `pPost`) | `src/features/blog`, `src/lib/markdown.ts` | Done: git posts (Markdown + images) and DB notes (sanitised), application.md section 9; `/admin/notes` editor to do |
+| Blog index and post (`pBlog`, `pPost`) | `src/features/blog`, `src/lib/markdown.ts` | Done: git posts (Markdown + images) and DB notes (sanitised), application.md section 9; notes are written in `/admin/notes` |
 | Forum (`pForum`, `pThread`) | `src/features/forum` (`ThreadList`, `ForumBar`, `FrameList`, `ThreadIntro`) | Reading done: `/forum`, `/forum/[category]` (chips as links), `/forum/[category]/[thread]` with frames and sanitised Markdown; posting, the new-thread dialog and `form.reply` to do (PR6); staff-only categories are hidden from every read for now |
 | Sign-in, onboarding, user menu (not in the prototype) | `src/features/auth` (`/login`, `/welcome`, `/guidelines`, `UserMenu` in the header) | Done (OAuth via Supabase; Turnstile on `/welcome`) |
-| Admin area (not in the prototype; nav uses the forum's category chips) | `src/app/(site)/admin`, `src/features/admin` (`AdminNav`, `AdminStub`) | Skeleton: role-gated stub pages; overview stats and members (PR5), notes (PR4), categories (PR7), reports and log (PR9) to do |
+| Admin area (not in the prototype; nav uses the forum's category chips) | `src/app/(site)/admin`, `src/features/admin` (`AdminNav`, `AdminStub`) | Role-gated pages; notes done (`/admin/notes`, new, `[id]` editor with sanitised preview, publish/unpublish/delete; `src/features/blog/notes/components`); overview stats and members (PR5), categories (PR7), reports and log (PR9) to do |
 | Jump-to palette, Ctrl K (`palItems`, `goTo`) | `src/features/palette` (header "Jump to" + footer "Search", mounted by `SiteFooter`) | Done (forum threads join with PR10) |
 | Scroll reveals (`reveal`), card spotlight (`spotlight`), number scramble | `src/components/motion` (`Reveal` / `useReveal`, `Spotlight`, `scramble`) | Done (only content below the fold on mount is hidden; `data-scramble` marks numbers) |
 | Inline moderation: hide/unhide, lock, pin, move, reveal hidden text (not in the prototype) | `src/features/moderation` | To do (PR8) |
@@ -67,7 +67,7 @@ are global or scoped to one category; superusers are global; the owner is the si
 | PR1 | `feat/roles` | Migration 0003 (`superuser`, one-owner index, owner write guard, category log actions), `can()` rules, `requireUser` / `requireCan` guards, `/api/me` grants, admin skeleton, role fixtures | Merged (#40) |
 | PR2 | `feat/markdown-sanitize` | `renderMarkdown(..., { mode: "sanitised" })`, pure rate-limit rules (`src/lib/rate-limit.ts`) | Merged (#37) |
 | PR3 | `feat/forum-read` | `/forum`, `/forum/[category]`, `/forum/[category]/[thread]`, cached queries with `forum` / `category:<slug>` / `thread:<id>` tags | Merged (#39) |
-| PR4 | `feat/notes-admin` | Part 1: notes data layer, git slug manifest, `/blog` merges notes. Part 2: `/admin/notes` list, new, editor with preview (owner only), publish e2e | Draft (#38): part 1 done, needs a rebase onto `main`; part 2 to do |
+| PR4 | `feat/notes-admin` | Part 1: notes data layer, git slug manifest, `/blog` merges notes. Part 2: `/admin/notes` list, new, editor with preview (owner only), publish e2e | Done (#38) |
 | PR5 | `feat/admin-members` | `/admin` stats, `/admin/members` search (50 per page), member page: grant/revoke roles, ban/lift, each with a `moderation_log` row in one transaction | To do |
 | PR6 | `feat/forum-write` | New thread, reply, edit own (30 min); limits in `forum/limits.ts`; new-thread dialog, `form.reply`, `FrameToolbar` island | To do (after PR3) |
 | PR7 | `feat/admin-categories` | Create, rename, reorder, staff-only toggle, delete empty categories; logged; revalidates `forum` | To do (after PR4) |

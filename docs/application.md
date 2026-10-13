@@ -541,6 +541,13 @@ and `img.vije.sh`). Keep images to WebP, PNG, JPEG or SVG at 1600 px wide or les
   matches a published note. If both exist anyway, the git post owns the URL.
 - `/blog` and RSS merge both sources, sorted by date. `unlisted` items are reachable by URL only;
   `private` notes appear only in `/admin`.
+- **Editor** (owner only, `blog.write`): `/admin/notes` lists drafts and published notes,
+  `/admin/notes/new` creates a draft, `/admin/notes/<id>` edits, publishes, unpublishes and deletes
+  (after a confirmation dialog). The components are in `src/features/blog/notes/components/` and
+  the Server Actions in `notes/actions.ts` (zod, current user, `can()`, mutation, then
+  `updateTag()` for every tag in `noteTags(slug, previousSlug)`, so the owner sees the change on
+  the next visit). Preview renders the unsaved body on the server through the same sanitised
+  pipeline (`renderNotePreview`, uncached); the page shows the stored body via `renderNoteBody`.
 - Without a database (no `DATABASE_URL`) the blog shows git posts only. If the database fails
   during a build or revalidation, the notes are left out and retried after a minute.
 

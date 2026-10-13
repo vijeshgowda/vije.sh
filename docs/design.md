@@ -49,7 +49,7 @@ self-hosted by `next/font`. Light is the default and ignores the OS; dark is opt
 | Admin area (not in the prototype; nav uses the forum's category chips) | `src/app/(site)/admin`, `src/features/admin` (`AdminNav`, `AdminStub`) | Skeleton: role-gated stub pages; overview stats and members (PR5), notes (PR4), categories (PR7), reports and log (PR9) to do |
 | Jump-to palette, Ctrl K (`palItems`, `goTo`) | `src/features/palette` (header "Jump to" + footer "Search", mounted by `SiteFooter`) | Done (forum threads join with PR10) |
 | Scroll reveals (`reveal`), card spotlight (`spotlight`), number scramble | `src/components/motion` (`Reveal` / `useReveal`, `Spotlight`, `scramble`) | Done (only content below the fold on mount is hidden; `data-scramble` marks numbers) |
-| Inline moderation: hide/unhide, lock, pin, move, reveal hidden text (not in the prototype) | `src/features/moderation` | To do (PR8) |
+| Inline moderation: hide/unhide, lock, pin, move, reveal hidden text (not in the prototype) | `src/features/moderation` (`STAFF_TOOLS` in `FRAME_TOOLS`, `HiddenThreadNotice`) | Done (PR8): staff in scope get Hide, Reveal, Unhide on frames and Lock, Pin, Move on frame 00; a hidden thread is a 404 with a staff notice to reveal or unhide it |
 | Reports: Report button, `/admin/reports` queue, `/admin/log` (not in the prototype) | `src/features/moderation/reports` | To do (PR9) |
 | Public profiles `/u/[handle]` (not in the prototype) | `src/features/forum` or `src/features/profile` | To do (PR10, with forum threads in the palette and sitemap) |
 | Back to top, toasts, offline LED | `src/components/layout` (`BackToTop`, `Toaster` + `toast()`, `NetStatus`) | Done |
@@ -71,7 +71,7 @@ are global or scoped to one category; superusers are global; the owner is the si
 | PR5 | `feat/admin-members` | `/admin` stats, `/admin/members` search (50 per page), member page: grant/revoke roles, ban/lift, each with a `moderation_log` row in one transaction | To do |
 | PR6 | `feat/forum-write` | New thread, reply, edit own (30 min); limits in `forum/limits.ts`; new-thread dialog, `form.reply`, `FrameToolbar` island; staff-only categories readable by everyone | In review (#44) |
 | PR7 | `feat/admin-categories` | Create, rename, reorder, staff-only toggle, delete empty categories; logged; revalidates `forum` | To do (after PR4) |
-| PR8 | `feat/moderation-inline` | Hide/unhide, lock, pin, move with log rows; staff reveal of hidden text as plain `<pre>`; `StaffControls` | To do (after PR6) |
+| PR8 | `feat/moderation-inline` | Hide/unhide, lock, pin, move with log rows; staff reveal of hidden text as plain `<pre>`; `StaffControls` | In review (stacked on PR6) |
 | PR9 | `feat/reports` | Report button (thread, reply, profile), `/admin/reports` queue, `/admin/log` with unhide | To do (after PR5 and PR8) |
 | PR10 | `feat/profiles` | `/u/[handle]` (tag `profile:<id>`), forum threads in the palette and sitemap, this table | To do (after PR6) |
 

@@ -473,6 +473,14 @@ reads the session after the response has started. `/admin` is also disallowed in
 (role plus `categoryId`); never the user id. `UserMenu` shows an "Admin" link to superusers and the
 owner. Admin rights are never self-service.
 
+**Inline moderation** (`src/features/moderation`): staff who moderate a thread's category get
+Hide, Reveal and Unhide on its frames and Lock, Pin and Move on frame 00 (`STAFF_TOOLS` in the
+forum's `FRAME_TOOLS`). Each change and its `moderation_log` row share one transaction; a move
+needs scope over both categories, and the old URL keeps redirecting to the new one. A hidden
+reply stays a placeholder frame; a hidden thread is a 404 for everyone, and its staff get a notice
+there to reveal or unhide it. Reveal returns the stored Markdown as plain text for a `<pre>`
+(never rendered) and isn't logged, because reading changes nothing.
+
 ---
 
 ## 9. Blog (hybrid)

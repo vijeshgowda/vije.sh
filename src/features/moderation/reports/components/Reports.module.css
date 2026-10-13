@@ -1,0 +1,157 @@
+/* Reports and the moderation log (not in the prototype), in the language of the thread frames
+   (.frames li with a mono header bar) and the admin tables */
+
+/* Report dialog */
+.reasons {
+  display: grid;
+  gap: 0.35rem;
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+.reasons legend {
+  margin-bottom: 0.35rem;
+  padding: 0;
+}
+.reason {
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
+  min-height: 2rem;
+  font-size: 0.9rem;
+}
+.reason input {
+  accent-color: var(--red);
+  width: 1rem;
+  height: 1rem;
+}
+.done {
+  border-style: dashed;
+  cursor: default;
+}
+.profile {
+  max-width: 46rem;
+  margin: -1rem 0 2rem;
+}
+
+/* Queue: one card per reported target */
+.queue {
+  list-style: none;
+  padding: 0;
+  margin: 1rem 0 0;
+  max-width: 52rem;
+}
+.queue > li {
+  margin-bottom: 0.75rem;
+  border: 1px solid var(--line2);
+  background: var(--card);
+  box-shadow: var(--sh1);
+}
+.queue header {
+  display: flex;
+  gap: 0.5rem 0.75rem;
+  align-items: center;
+  flex-wrap: wrap;
+  padding: 0.5rem 0.8rem;
+  border-bottom: 1px solid var(--line);
+  font: 400 0.7rem var(--font-mono);
+  color: var(--mute);
+  background: var(--faint);
+}
+.kind {
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--ink);
+}
+.flag {
+  padding: 0.05rem 0.4rem;
+  border: 1px dashed var(--ink);
+  color: var(--ink);
+}
+.count {
+  margin-left: auto;
+}
+.queue h3 {
+  margin: 0;
+  padding: 0.75rem 0.85rem 0.15rem;
+  font-size: 1.05rem;
+  letter-spacing: -0.01em;
+  overflow-wrap: anywhere;
+}
+.queue h3 a {
+  color: var(--ink);
+  text-underline-offset: 0.2em;
+}
+.queue h3 a:hover {
+  color: var(--red-t);
+}
+.by {
+  margin: 0;
+  padding: 0 0.85rem;
+  font: 400 0.72rem var(--font-mono);
+  color: var(--mute);
+}
+/* links inside a line of text are underlined (axe link-in-text-block) */
+a.handle,
+.by a,
+.who a {
+  color: var(--ink);
+  text-decoration: underline;
+  text-underline-offset: 0.2em;
+}
+a.handle:hover,
+.by a:hover,
+.who a:hover {
+  color: var(--red-t);
+}
+.excerpt {
+  margin: 0.6rem 0.85rem 0;
+  padding: 0.5rem 0.7rem;
+  border-left: 3px solid var(--line2);
+  background: var(--bg);
+  font: 400 0.8rem/1.5 var(--font-mono);
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  max-height: 9rem;
+  overflow: hidden;
+}
+.reports {
+  list-style: none;
+  margin: 0.75rem 0 0;
+  padding: 0;
+  border-top: 1px solid var(--line);
+}
+.reports li {
+  display: grid;
+  gap: 0.15rem;
+  padding: 0.5rem 0.85rem;
+  border-bottom: 1px solid var(--line);
+}
+.why {
+  overflow-wrap: anywhere;
+  white-space: pre-wrap;
+}
+.who {
+  font: 400 0.7rem var(--font-mono);
+  color: var(--mute);
+}
+.tools {
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+  padding: 0.75rem 0.85rem 0.85rem;
+}
+.empty {
+  margin-top: 1rem;
+  padding: 0.6rem 0.8rem;
+  border: 1px dashed var(--line2);
+  font: 400 0.8rem var(--font-mono);
+  color: var(--mute);
+  max-width: 52rem;
+}
+.status {
+  white-space: nowrap;
+}
+.actioned {
+  color: var(--red-t);
+}

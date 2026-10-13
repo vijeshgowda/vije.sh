@@ -51,7 +51,7 @@ npm run format         # Prettier
 | A UART log line | `uart("...")` from `src/lib/uart.ts` |
 
 Feature folders that exist or are planned: `overview`, `live`, `work`, `lab`, `photo`, `blog`,
-`forum`, `auth`, `moderation`, `palette`, `launch`, `system`. Shared files (`src/config/site.ts`,
+`forum`, `profile`, `auth`, `moderation`, `palette`, `launch`, `system`. Shared files (`src/config/site.ts`,
 `src/components/**`, `src/styles/**`, `globals.css`, `next.config.ts`, `package.json`) are merge
 hot spots: change them in small, separate commits and say so in the PR.
 

@@ -1,0 +1,54 @@
+/* Staff-only moderation UI (not in the prototype): the reveal <pre> and the hidden-thread notice,
+   in the language of the frames (.frames li, dashed .hidden) and the dialogs */
+.raw {
+  margin: 0;
+  max-height: 50vh;
+  overflow: auto;
+  padding: 0.8rem 1rem;
+  border: 1px solid var(--line2);
+  background: var(--card);
+  font: 400 0.8rem/1.6 var(--font-mono);
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+.rawTitle {
+  margin: 0;
+  font-weight: 700;
+}
+
+.notice {
+  max-width: 46rem;
+  margin: 0 0 2rem;
+  border: 1px dashed var(--line2);
+}
+.notice header {
+  display: flex;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+  padding: 0.5rem 0.8rem;
+  border-bottom: 1px solid var(--line);
+  font: 400 0.7rem var(--font-mono);
+  color: var(--mute);
+  background: var(--faint);
+}
+.notice h2 {
+  margin: 0;
+  padding: 0.85rem 0.85rem 0.25rem;
+  font-size: 1.1rem;
+  letter-spacing: -0.01em;
+}
+.notice p {
+  margin: 0;
+  padding: 0 0.85rem 0.85rem;
+  font: 400 0.8rem var(--font-mono);
+  color: var(--mute);
+}
+.notice .tools {
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+  padding: 0 0.85rem 0.85rem;
+}
+.notice .error {
+  color: var(--red-t);
+}

@@ -209,7 +209,8 @@ storing a dev database credential outside Vercel, which isn't worth it.
 │   │   ├── admin/               # /admin sections, nav and page guard (admin pages only)
 │   │   ├── blog/                # git post loader, notes queries, admin actions
 │   │   ├── forum/               # queries, actions, components, limits
-│   │   ├── moderation/
+│   │   ├── profile/             # /u/[handle]: profile query, register strip, post list
+│   │   ├── moderation/          # inline hide/lock/pin/move; reports/: Report, queue, log
 │   │   └── uploads/
 │   ├── components/
 │   │   └── ui/                  # design-system primitives (Button, Cell, Stamp, Tabs...)
@@ -275,19 +276,21 @@ prerendered into a static shell; data comes from `'use cache'` functions (with `
 | `/api/feeds/[key]` | Static per feed (`generateStaticParams`, ISR) | Feed `cacheLife`; tags `feeds`, `feed:<key>` |
 | `/blog` | Static | Build (git posts) + tag `notes` |
 | `/blog/[slug]` | Static (`generateStaticParams`; notes published later render on first visit) | Build (git posts); tags `notes`, `note:<slug>` |
-| `/rss.xml`, `/sitemap.xml` | Static | Tag `notes` |
+| `/rss.xml`, `/sitemap.xml` | Static | Tag `notes`; the sitemap's forum threads also `forum`, `category:<slug>` |
 | `/forum`, `/forum/[category]` | Cached | Tags `forum`, `category:<slug>` |
 | `/forum/[category]/[thread]` | Cached for everyone | Tag `thread:<id>` on reply or moderation |
-| `/u/[handle]` | Cached | Tag `profile:<id>` |
+| `/u/[handle]` | Cached (first request; other casings of a handle redirect) | Tag `profile:<id>` on the member's posts and edits; also `forum` and every `category:<slug>`, so role changes and moderation refresh it |
+| `/api/palette/threads` | Static (ISR) | Tags `forum`, `category:<slug>` (the 50 latest threads, fetched when the palette opens) |
 | `/login`, `/welcome` | Static shell + client island | — |
 | `/admin/**` | Dynamic (`instant = false`, waits for the session check), never cached, `noindex` | — |
 
 - **Pages never read the auth cookie.** That would make them dynamic. Signed-in UI (user menu,
   reply box, "New thread" button) is a small client island. It reads the session in the browser and
   shows controls; the server checks permissions again when the action runs.
-- Publishing a note, creating a reply or a moderation action calls `revalidateTag()` with the
-  affected tags. The palette in the site footer lists notes too, so every page carries the `notes`
-  tag.
+- Publishing a note, creating a reply or a moderation action invalidates the affected tags: Server
+  Actions call `updateTag()`, so the author's next read (and the page re-rendered with the
+  action's response) already shows the change; other code calls `revalidateTag(tag, "max")`. The
+  palette in the site footer lists notes too, so every page carries the `notes` tag.
 - Performance budget for `/`: HTML + critical CSS under 30 KB gzipped; client JavaScript only for
   the theme toggle and small islands (target under 50 KB gzipped); LCP under 1.5 s on a fast 4G
   profile. Lighthouse CI will enforce these later.
@@ -472,6 +475,28 @@ reads the session after the response has started. `/admin` is also disallowed in
 `/api/me` gives islands the user's `handle`, `onboarded`, `banned`, distinct `roles` and `grants`
 (role plus `categoryId`); never the user id. `UserMenu` shows an "Admin" link to superusers and the
 owner. Admin rights are never self-service.
+
+**Inline moderation** (`src/features/moderation`): staff who moderate a thread's category get
+Hide, Reveal and Unhide on its frames and Lock, Pin and Move on frame 00 (`STAFF_TOOLS` in the
+forum's `FRAME_TOOLS`). Each change and its `moderation_log` row share one transaction; a move
+needs scope over both categories, and the old URL keeps redirecting to the new one. A hidden
+reply stays a placeholder frame; a hidden thread is a 404 for everyone, and its staff get a notice
+there to reveal or unhide it. Reveal returns the stored Markdown as plain text for a `<pre>`
+(never rendered) and isn't logged, because reading changes nothing.
+
+**Reports** (`src/features/moderation/reports`): members report a thread (frame 00), a reply or
+a profile with a reason (spam, harassment, illegal or harmful, something else plus details). The
+Report tool comes last in `FRAME_TOOLS` and a "Report profile" island sits on `/u/[handle]`; both
+are hidden on the member's own posts and profile, on hidden posts, from staff who moderate the
+category (they hide it themselves) and, on profiles, from superusers and the owner (they ban from
+`/admin/members`). One open report per member and target: the `reports_no_duplicates` unique
+constraint turns a repeat into "already reported", and reporting a target again after its report
+was resolved reopens that row with the new reason. Limited to 5 or 20 a day (10.3).
+`/admin/reports` (superuser and owner; moderators never see it) groups open reports by target,
+oldest first, with Hide for visible posts and Mark actioned / Dismiss for the target's reports;
+each resolution writes one `report_resolve` log row per target, naming the reports.
+`/admin/log` pages through `moderation_log` (50 a page, newest first) with Unhide on the hide row
+of a thread that is still hidden.
 
 ---
 

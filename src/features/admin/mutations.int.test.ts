@@ -219,6 +219,7 @@ describe("banUser() and liftBan()", () => {
   });
 });
 
+// the shared helper (features/moderation/mutations.ts) that every change above logs through
 describe("logModeration()", () => {
   it("writes thread, reply and profile targets", async () => {
     const { rows } = await db.query<{ id: string }>(
@@ -227,8 +228,9 @@ describe("logModeration()", () => {
       [cats.games],
     );
     const { withTransaction } = await import("@/lib/db");
+    const { logModeration } = await import("@/features/moderation/mutations");
     await withTransaction((client) =>
-      m.logModeration(client, { actorId: actor, action: "lock", threadId: rows[0]!.id }),
+      logModeration(client, { actorId: actor, action: "lock", threadId: rows[0]!.id }),
     );
     const { rows: logged } = await db.query(
       "select action, thread_id::text, reply_id, profile_id, note from app.moderation_log",

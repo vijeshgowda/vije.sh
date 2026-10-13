@@ -269,6 +269,32 @@ export async function getThread(id: string): Promise<ThreadDetail | null> {
   };
 }
 
+/** Most threads listed in sitemap.xml, well under its 50,000-URL limit */
+export const SITEMAP_THREADS = 40_000;
+
+export interface SitemapThread {
+  id: string;
+  categorySlug: string;
+  lastActivityAt: Date;
+}
+
+/** Visible threads for sitemap.xml, most recently active first */
+export async function listSitemapThreads(): Promise<SitemapThread[]> {
+  "use cache";
+  cacheLife("hours");
+  const categories = await listCategories();
+  cacheTag(FORUM_TAG, ...categories.map((c) => categoryTag(c.slug)));
+  const { rows } = await query<SitemapThread>(
+    `select t.id::text as id, c.slug as "categorySlug", t.last_activity_at as "lastActivityAt"
+       from app.threads t join app.categories c on c.id = t.category_id
+      where t.hidden_at is null
+      order by t.last_activity_at desc, t.id desc
+      limit $1`,
+    [SITEMAP_THREADS],
+  );
+  return rows;
+}
+
 // ---------------------------------------------------------------------------------------------
 // The write path (actions.ts): uncached reads of what a permission check or rate limit needs.
 

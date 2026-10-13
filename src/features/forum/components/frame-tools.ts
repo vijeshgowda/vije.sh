@@ -1,4 +1,5 @@
 import type { FrameTool } from "../client/toolbar";
+import { STAFF_TOOLS } from "@/features/moderation/components/StaffControls";
 import { editTool } from "./EditPost";
 
 /**
@@ -6,4 +7,4 @@ import { editTool } from "./EditPost";
  * controls (hide/unhide, lock, pin, move) and a Report button are planned next to Edit. Each tool's
  * `show()` decides who sees it; its action re-checks on the server.
  */
-export const FRAME_TOOLS: readonly FrameTool[] = [editTool];
+export const FRAME_TOOLS: readonly FrameTool[] = [editTool, ...STAFF_TOOLS];

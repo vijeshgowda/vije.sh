@@ -85,3 +85,11 @@ test("coastline data is cached by the browser", async ({ request }) => {
     expect(r.headers()["cache-control"]).toContain("max-age=604800");
   }
 });
+
+// Member profiles render on first request; a fresh member's has no posts yet.
+test("/u/[handle] renders, has no a11y violations and no horizontal scroll", async ({
+  page,
+  asMember,
+}) => {
+  await expectRoute(page, { path: `/u/${asMember.handle}`, h1: asMember.handle! });
+});

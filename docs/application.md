@@ -270,13 +270,13 @@ prerendered into a static shell; data comes from `'use cache'` functions (with `
 
 | Route | Mode | Revalidated by |
 |---|---|---|
-| `/` | Static | Build; tag `blog` (for "latest posts"); default-pin feeds by their `cacheLife` |
+| `/` | Static | Build; tag `notes` (for "latest posts"); default-pin feeds by their `cacheLife` |
 | `/work`, `/lab`, `/photo` | Static | Build |
 | `/live` | Static (ISR) | Each feed's `cacheLife` (shortest: 5 min) |
 | `/api/feeds/[key]` | Static per feed (`generateStaticParams`, ISR) | Feed `cacheLife`; tags `feeds`, `feed:<key>` |
-| `/blog` | Static | Build (git posts) + tag `blog` (notes) |
-| `/blog/[slug]` | Static (`generateStaticParams`) | Build (git posts); tag `post:<slug>` (notes) |
-| `/rss.xml`, `/sitemap.xml` | Static | Tag `blog`; the sitemap's forum threads also `forum`, `category:<slug>` |
+| `/blog` | Static | Build (git posts) + tag `notes` |
+| `/blog/[slug]` | Static (`generateStaticParams`; notes published later render on first visit) | Build (git posts); tags `notes`, `note:<slug>` |
+| `/rss.xml`, `/sitemap.xml` | Static | Tag `notes`; the sitemap's forum threads also `forum`, `category:<slug>` |
 | `/forum`, `/forum/[category]` | Cached | Tags `forum`, `category:<slug>` |
 | `/forum/[category]/[thread]` | Cached for everyone | Tag `thread:<id>` on reply or moderation |
 | `/u/[handle]` | Cached (first request; other casings of a handle redirect) | Tag `profile:<id>` on the member's posts and edits; also `forum` and every `category:<slug>`, so role changes and moderation refresh it |
@@ -289,7 +289,8 @@ prerendered into a static shell; data comes from `'use cache'` functions (with `
   shows controls; the server checks permissions again when the action runs.
 - Publishing a note, creating a reply or a moderation action invalidates the affected tags: Server
   Actions call `updateTag()`, so the author's next read (and the page re-rendered with the
-  action's response) already shows the change; other code calls `revalidateTag(tag, "max")`.
+  action's response) already shows the change; other code calls `revalidateTag(tag, "max")`. The
+  palette in the site footer lists notes too, so every page carries the `notes` tag.
 - Performance budget for `/`: HTML + critical CSS under 30 KB gzipped; client JavaScript only for
   the theme toggle and small islands (target under 50 KB gzipped); LCP under 1.5 s on a fast 4G
   profile. Lighthouse CI will enforce these later.
@@ -548,11 +549,32 @@ and `img.vije.sh`). Keep images to WebP, PNG, JPEG or SVG at 1600 px wide or les
 ### 9.4 Merging the two sources
 - `src/features/blog/posts.ts` reads `content/blog/*/index.{md,mdx}` at build time for
   `generateStaticParams`, the index and RSS.
-- **Shared slug space.** A build check fails if a git slug matches a published note. The admin
-  "publish" action rejects a slug that matches a git post (it reads a manifest generated at build
-  time).
+- Notes live in `src/features/blog/notes/`: `queries.ts` (public reads cached with `'use cache'`
+  and the tags `notes` and `note:<slug>`; they only return published notes that aren't private),
+  `mutations.ts` (create, update, publish, unpublish, delete) and `schemas.ts` (zod input for the
+  editor). A note's date is the day it was first published, in the `Europe/London` time zone;
+  unpublishing and publishing again keeps that date.
+- `src/features/blog/server/catalog.ts` merges both for every page that lists or opens posts
+  (`/blog`, `/blog/<slug>`, the overview's latest notes, the sitemap and the palette): one list
+  sorted by date, numbered together (the oldest is AN-001). The design doesn't mark notes
+  differently. Note bodies use the sanitised Markdown mode.
+- **Shared slug space.** A note can't take a git post's slug: `npm run blog:assets` (run by `dev`
+  and `build`) writes every git slug to `src/features/blog/notes/git-slugs.json`, which the note
+  schema and mutations check. The manifest is committed, so typecheck and tests don't need a
+  build; a unit test fails when it's out of date (run `npm run blog:assets` and commit it). The
+  other direction is a build check: `generateStaticParams` for `/blog/[slug]` fails if a git slug
+  matches a published note. If both exist anyway, the git post owns the URL.
 - `/blog` and RSS merge both sources, sorted by date. `unlisted` items are reachable by URL only;
   `private` notes appear only in `/admin`.
+- **Editor** (owner only, `blog.write`): `/admin/notes` lists drafts and published notes,
+  `/admin/notes/new` creates a draft, `/admin/notes/<id>` edits, publishes, unpublishes and deletes
+  (after a confirmation dialog). The components are in `src/features/blog/notes/components/` and
+  the Server Actions in `notes/actions.ts` (zod, current user, `can()`, mutation, then
+  `updateTag()` for every tag in `noteTags(slug, previousSlug)`, so the owner sees the change on
+  the next visit). Preview renders the unsaved body on the server through the same sanitised
+  pipeline (`renderNotePreview`, uncached); the page shows the stored body via `renderNoteBody`.
+- Without a database (no `DATABASE_URL`) the blog shows git posts only. If the database fails
+  during a build or revalidation, the notes are left out and retried after a minute.
 
 ---
 
@@ -845,6 +867,13 @@ owner (`ensureOwner()`): created on first use and never deleted, since the datab
 it on every build and deployment), and a unit test covers that guard. The real OAuth flow is covered
 by integration tests of the callback logic (Supabase client mocked) and a manual sign-in check with
 each provider on the preview deploy before a release.
+
+**Seeding cached content.** Pages are static, so a spec that inserts rows straight into the test
+database (for example a published note, `tests/e2e/notes.ts`) then posts the cache tags to
+`/api/test/revalidate`, the way a Server Action would call `revalidateTag()`. That route answers
+404 unless `AUTH_MODE=test` and needs `TEST_AUTH_SECRET` in the `x-test-secret` header. Specs that
+change what other specs count (blog lists, AN numbers) go in Playwright's `content` project, which
+runs after the others.
 
 ### 13.5 Coverage
 - `@vitest/coverage-v8`, measured across the unit, component and integration projects together.

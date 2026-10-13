@@ -1,6 +1,6 @@
 import type { MetadataRoute } from "next";
 import { PAGES, SITE } from "@/config/site";
-import { listedNotes } from "@/features/blog/posts";
+import { blogNoteRows } from "@/features/blog/server/catalog";
 import { threadHref } from "@/features/forum/format";
 import { databaseReady, listSitemapThreads } from "@/features/forum/queries";
 
@@ -13,7 +13,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       changeFrequency: "weekly" as const,
     })),
     { url: new URL("/guidelines", SITE.url).href, changeFrequency: "monthly" as const },
-    ...listedNotes().map((n) => ({
+    ...(await blogNoteRows()).map((n) => ({
       url: new URL(`/blog/${n.slug}`, SITE.url).href,
       lastModified: n.date,
     })),

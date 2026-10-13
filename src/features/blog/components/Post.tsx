@@ -48,10 +48,12 @@ export function Post({ entry, children }: { entry: PostEntry; children: ReactNod
             <dd>{readMinutes(post.body)} min</dd>
           </div>
         </dl>
-        <div className={s.abstract}>
-          <p className={s.label}>Abstract</p>
-          <p>{post.summary}</p>
-        </div>
+        {post.summary && (
+          <div className={s.abstract}>
+            <p className={s.label}>Abstract</p>
+            <p>{post.summary}</p>
+          </div>
+        )}
         <div className={s.body}>{children}</div>
         {(older || newer) && (
           <nav className={s.pager} aria-label="More notes">

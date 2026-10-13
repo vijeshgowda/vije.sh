@@ -27,6 +27,7 @@ const ADMIN_ROUTES = [
   { path: "/admin/log", h1: "Moderation log" },
   { path: "/admin/notes", h1: "Notes" },
   { path: "/admin/categories", h1: "Categories" },
+  { path: "/admin/notes/new", h1: "New note" },
 ];
 
 async function expectRoute(page: Page, r: { path: string; h1: string }) {

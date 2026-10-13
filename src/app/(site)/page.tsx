@@ -2,7 +2,7 @@ import { Suspense } from "react";
 import Link from "next/link";
 import { Lede, RunFoot, RunHead, Section } from "@/components/ui/Datasheet";
 import { NoteList } from "@/features/blog/components/NoteList";
-import { latestNotes } from "@/features/blog/posts";
+import { latestBlogNotes } from "@/features/blog/server/catalog";
 import { DEFAULT_PINS, FEEDS, isServerFeedKey } from "@/features/live/catalog";
 import { PinnedFeeds } from "@/features/live/components/PinnedFeeds";
 import { getFeeds } from "@/features/live/server/get-feed";
@@ -17,7 +17,7 @@ async function Telemetry() {
   return <PinnedFeeds initial={await getFeeds(PRERENDERED)} />;
 }
 
-export default function OverviewPage() {
+export default async function OverviewPage() {
   return (
     <>
       <RunHead label="Datasheet" />
@@ -52,7 +52,7 @@ export default function OverviewPage() {
         title="Latest application notes"
         note={<Link href="/blog">All notes &rarr;</Link>}
       >
-        <NoteList notes={latestNotes(3)} />
+        <NoteList notes={await latestBlogNotes(3)} />
       </Section>
       <Section
         id="ratings"

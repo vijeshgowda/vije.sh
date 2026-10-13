@@ -1,14 +1,15 @@
 import Link from "next/link";
 import { PAGES, SITE } from "@/config/site";
-import { listedNotes } from "@/features/blog/posts";
+import { listedNotes, type NoteRow } from "@/features/blog/posts";
 import { Launch } from "@/features/launch/components/Launch";
 import { LaunchButton } from "@/features/launch/components/LaunchButton";
 import { Palette } from "@/features/palette/components/Palette";
 import { PaletteButton } from "@/features/palette/components/PaletteButton";
 import styles from "./SiteFooter.module.css";
 
-export function SiteFooter() {
-  const notes = listedNotes().map(({ id, slug, title, category, date }) => ({
+/** `notes` feeds the palette: pass the merged list (git posts and database notes) where it's available. */
+export function SiteFooter({ notes: rows = listedNotes() }: { notes?: NoteRow[] }) {
+  const notes = rows.map(({ id, slug, title, category, date }) => ({
     id,
     slug,
     title,

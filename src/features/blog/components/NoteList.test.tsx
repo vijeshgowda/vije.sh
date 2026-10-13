@@ -26,6 +26,25 @@ describe("NoteList", () => {
     expect(screen.getByText("20 Sep 2026")).toHaveAttribute("datetime", "2026-09-20");
   });
 
+  it("leaves out the excerpt of a note without a summary", () => {
+    const { container } = render(
+      <NoteList
+        notes={[
+          {
+            id: "AN-001",
+            slug: "a",
+            title: "A",
+            summary: "",
+            category: "Notes",
+            date: "2026-10-01",
+          },
+        ]}
+      />,
+    );
+    // the excerpt is the only span nested inside the title
+    expect(container.querySelector("a span span")).toBeNull();
+  });
+
   it("says so when there are no notes", () => {
     render(<NoteList notes={[]} />);
     expect(screen.queryByRole("list")).toBeNull();

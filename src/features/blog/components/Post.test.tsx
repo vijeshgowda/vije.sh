@@ -66,6 +66,15 @@ describe("Post", () => {
     expect(screen.queryByRole("navigation", { name: "More notes" })).toBeNull();
   });
 
+  it("leaves out the abstract when a note has no summary", () => {
+    render(
+      <Post entry={{ post: { ...post, summary: "" }, id: "AN-001" }}>
+        <p>x</p>
+      </Post>,
+    );
+    expect(screen.queryByText("Abstract")).toBeNull();
+  });
+
   it("tracks reading progress as the page scrolls", () => {
     const { container } = render(
       <Post entry={{ post, id: "AN-001" }}>

@@ -112,13 +112,18 @@ export type PostEntry = {
   older?: NoteRow;
 };
 
+/** A post's number and neighbours in a numbered list; unlisted posts aren't in it. */
+export function entryFor(post: Post, rows: NoteRow[]): PostEntry {
+  const i = rows.findIndex((r) => r.slug === post.slug);
+  if (i < 0) return { post, id: null };
+  return { post, id: rows[i].id, newer: rows[i - 1], older: rows[i + 1] };
+}
+
+/** A git post with its place among git posts only (server/catalog.ts adds database notes). */
 export function getPost(slug: string, dir = CONTENT_DIR): PostEntry | null {
   const drafts = showDrafts();
   const posts = readPosts(dir);
   const post = posts.find((p) => p.slug === slug && (drafts || !p.draft));
   if (!post) return null;
-  const rows = toNoteRows(listedPosts(posts, { drafts }));
-  const i = rows.findIndex((r) => r.slug === slug);
-  if (i < 0) return { post, id: null };
-  return { post, id: rows[i].id, newer: rows[i - 1], older: rows[i + 1] };
+  return entryFor(post, toNoteRows(listedPosts(posts, { drafts })));
 }

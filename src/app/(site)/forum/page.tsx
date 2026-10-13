@@ -2,6 +2,7 @@ import { Suspense } from "react";
 import type { Metadata } from "next";
 import { PageIntro, RunFoot, RunHead, Section } from "@/components/ui/Datasheet";
 import { ForumBar } from "@/features/forum/components/ForumBar";
+import { NewThread } from "@/features/forum/components/NewThread";
 import { ThreadList } from "@/features/forum/components/ThreadList";
 import { databaseReady, listCategories, listLatestThreads } from "@/features/forum/queries";
 
@@ -17,7 +18,7 @@ async function Threads() {
   const [categories, threads] = await Promise.all([listCategories(), listLatestThreads()]);
   return (
     <Section id="threads" no={11} title="Threads" note={`${threads.length} on the bus`}>
-      <ForumBar categories={categories} />
+      <ForumBar categories={categories} actions={<NewThread categories={categories} />} />
       <ThreadList threads={threads} />
     </Section>
   );

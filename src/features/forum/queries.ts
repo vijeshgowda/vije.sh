@@ -4,6 +4,7 @@ import { query } from "@/lib/db";
 import type { RoleGrant } from "@/lib/authz";
 import { THREADS_PER_LIST } from "./format";
 import { displayRole } from "./roles";
+import type { PostKind } from "./schemas";
 import type { ForumCategory, Frame, ThreadDetail, ThreadSummary } from "./types";
 
 /**
@@ -18,8 +19,12 @@ import type { ForumCategory, Frame, ThreadDetail, ThreadSummary } from "./types"
  * The latest-threads list on /forum is tagged with every category, so any of the above refreshes
  * it. `cacheLife("hours")` is a safety net in case a write misses a tag.
  *
- * Staff-only categories are left out of every public read for now; staff visibility comes with
- * the write path.
+ * Everyone reads every category. `staffOnly` (e.g. Announcements) only limits who starts threads
+ * there (database.md): the new-thread picker hides those categories from members and the action
+ * checks again.
+ *
+ * The write path's reads at the end of this file are not cached: permissions and rate limits must
+ * see the database as it is now.
  */
 
 export const FORUM_TAG = "forum";
@@ -57,35 +62,37 @@ interface CategoryRow {
   slug: string;
   name: string;
   description: string | null;
+  staff_only: boolean;
 }
 
-/** Public categories in display order */
+const CATEGORY_SELECT = `select id::text as id, slug, name, description, staff_only
+                           from app.categories`;
+
+const toCategory = (r: CategoryRow): ForumCategory => ({
+  id: r.id,
+  slug: r.slug,
+  name: r.name,
+  description: r.description,
+  staffOnly: r.staff_only,
+});
+
+/** Every category in display order */
 export async function listCategories(): Promise<ForumCategory[]> {
   "use cache";
   cacheLife("hours");
   cacheTag(FORUM_TAG);
-  const { rows } = await query<CategoryRow>(
-    `select id::text as id, slug, name, description
-       from app.categories
-      where not staff_only
-      order by position, name`,
-  );
-  return rows.map((r) => ({ ...r }));
+  const { rows } = await query<CategoryRow>(`${CATEGORY_SELECT} order by position, name`);
+  return rows.map(toCategory);
 }
 
-/** A public category by slug, or null */
+/** A category by slug, or null */
 export async function getCategory(slug: string): Promise<ForumCategory | null> {
   "use cache";
   cacheLife("hours");
   cacheTag(FORUM_TAG, categoryTag(slug));
-  const { rows } = await query<CategoryRow>(
-    `select id::text as id, slug, name, description
-       from app.categories
-      where slug = $1 and not staff_only`,
-    [slug],
-  );
+  const { rows } = await query<CategoryRow>(`${CATEGORY_SELECT} where slug = $1`, [slug]);
   const row = rows[0];
-  return row ? { ...row } : null;
+  return row ? toCategory(row) : null;
 }
 
 interface SummaryRow {
@@ -108,7 +115,7 @@ const SUMMARY_SELECT = `
     from app.threads t
     join app.categories c on c.id = t.category_id
     left join app.profiles p on p.id = t.author_id
-   where t.hidden_at is null and not c.staff_only`;
+   where t.hidden_at is null`;
 
 const toSummary = (r: SummaryRow): ThreadSummary => ({
   id: r.id,
@@ -122,7 +129,7 @@ const toSummary = (r: SummaryRow): ThreadSummary => ({
   locked: r.locked,
 });
 
-/** The most recently active visible threads across public categories (/forum) */
+/** The most recently active visible threads across every category (/forum) */
 export async function listLatestThreads(): Promise<ThreadSummary[]> {
   "use cache";
   cacheLife("hours");
@@ -137,7 +144,7 @@ export async function listLatestThreads(): Promise<ThreadSummary[]> {
   return rows.map(toSummary);
 }
 
-/** Visible threads in one public category: pinned first, then by latest activity */
+/** Visible threads in one category: pinned first, then by latest activity */
 export async function listCategoryThreads(slug: string): Promise<ThreadSummary[]> {
   "use cache";
   cacheLife("hours");
@@ -163,6 +170,7 @@ interface ThreadRow {
   category_slug: string;
   category_name: string;
   category_description: string | null;
+  category_staff_only: boolean;
   author_handle: string | null;
   author_exists: boolean;
   author_grants: Grant[];
@@ -180,8 +188,7 @@ interface ReplyRow {
 }
 
 /**
- * A visible thread in a public category with all its frames, or null (missing, hidden, or in a
- * staff-only category). `id` must already be a valid id (parseThreadId). Hidden replies keep their
+ * A visible thread with all its frames, or null (missing or hidden). `id` must already be a valid id (parseThreadId). Hidden replies keep their
  * place as frames without author or body; the body never leaves the database here.
  */
 export async function getThread(id: string): Promise<ThreadDetail | null> {
@@ -192,13 +199,13 @@ export async function getThread(id: string): Promise<ThreadDetail | null> {
     `select t.id::text as id, t.title, t.body_md, t.created_at, t.edited_at,
             t.pinned_at is not null as pinned, t.locked_at is not null as locked,
             c.id::text as category_id, c.slug as category_slug, c.name as category_name,
-            c.description as category_description,
+            c.description as category_description, c.staff_only as category_staff_only,
             p.handle::text as author_handle, p.id is not null as author_exists,
             ${GRANTS("p.id")} as author_grants
        from app.threads t
        join app.categories c on c.id = t.category_id
        left join app.profiles p on p.id = t.author_id
-      where t.id = $1 and t.hidden_at is null and not c.staff_only`,
+      where t.id = $1 and t.hidden_at is null`,
     [id],
   );
   const t = rows[0];
@@ -253,10 +260,99 @@ export async function getThread(id: string): Promise<ThreadDetail | null> {
       slug: t.category_slug,
       name: t.category_name,
       description: t.category_description,
+      staffOnly: t.category_staff_only,
     },
     createdAt: t.created_at,
     pinned: t.pinned,
     locked: t.locked,
     frames,
   };
+}
+
+// ---------------------------------------------------------------------------------------------
+// The write path (actions.ts): uncached reads of what a permission check or rate limit needs.
+
+/** A category a thread may be started in, as it is now */
+export interface CategoryForPost {
+  id: string;
+  slug: string;
+  name: string;
+  staffOnly: boolean;
+}
+
+export async function categoryForPost(slug: string): Promise<CategoryForPost | null> {
+  const { rows } = await query<CategoryForPost>(
+    `select id::text as id, slug, name, staff_only as "staffOnly"
+       from app.categories where slug = $1`,
+    [slug],
+  );
+  return rows[0] ?? null;
+}
+
+/** A visible thread that may take a reply, as it is now */
+export interface ThreadForReply {
+  id: string;
+  categoryId: string;
+  categorySlug: string;
+  locked: boolean;
+}
+
+export async function threadForReply(id: string): Promise<ThreadForReply | null> {
+  const { rows } = await query<ThreadForReply>(
+    `select t.id::text as id, c.id::text as "categoryId", c.slug as "categorySlug",
+            t.locked_at is not null as locked
+       from app.threads t join app.categories c on c.id = t.category_id
+      where t.id = $1 and t.hidden_at is null`,
+    [id],
+  );
+  return rows[0] ?? null;
+}
+
+/** A visible post (in a visible thread) with what the edit rule and form need. Server only. */
+export interface PostForEdit {
+  kind: PostKind;
+  id: string;
+  threadId: string;
+  categoryId: string;
+  categorySlug: string;
+  authorId: string | null;
+  createdAt: Date;
+  /** The thread's title; null for a reply */
+  title: string | null;
+  body: string;
+}
+
+export async function postForEdit(kind: PostKind, id: string): Promise<PostForEdit | null> {
+  const sql =
+    kind === "thread"
+      ? `select 'thread' as kind, t.id::text as id, t.id::text as "threadId",
+                c.id::text as "categoryId", c.slug as "categorySlug", t.author_id as "authorId",
+                t.created_at as "createdAt", t.title, t.body_md as body
+           from app.threads t join app.categories c on c.id = t.category_id
+          where t.id = $1 and t.hidden_at is null`
+      : `select 'reply' as kind, r.id::text as id, t.id::text as "threadId",
+                c.id::text as "categoryId", c.slug as "categorySlug", r.author_id as "authorId",
+                r.created_at as "createdAt", null as title, r.body_md as body
+           from app.replies r
+           join app.threads t on t.id = r.thread_id
+           join app.categories c on c.id = t.category_id
+          where r.id = $1 and r.hidden_at is null and t.hidden_at is null`;
+  const { rows } = await query<PostForEdit>(sql, [id]);
+  return rows[0] ?? null;
+}
+
+// Rate limits (limits.ts): rows by this author in the last `windowMs`, by the database's clock,
+// hidden ones included.
+const recent = (table: "threads" | "replies") =>
+  `select count(*)::int as n from app.${table}
+    where author_id = $1 and created_at > now() - $2::int * interval '1 millisecond'`;
+
+export async function countRecentThreads(authorId: string, windowMs: number): Promise<number> {
+  const { rows } = await query<{ n: number }>(recent("threads"), [authorId, windowMs]);
+  return rows[0]!.n;
+}
+
+export async function countRecentReplies(authorId: string, windowMs: number): Promise<number> {
+  const { rows } = await query<{ n: number }>(recent("replies"), [authorId, windowMs]);
+  return rows[0]!.n;
 }

@@ -10,6 +10,8 @@ export interface ForumCategory {
   slug: string;
   name: string;
   description: string | null;
+  /** Only staff (moderators of it, superusers, the owner) start threads here; everyone reads it */
+  staffOnly: boolean;
 }
 
 /** A thread row in a list (prototype `ol.threads`) */

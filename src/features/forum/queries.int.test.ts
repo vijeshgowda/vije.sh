@@ -115,22 +115,37 @@ describe("databaseReady", () => {
 });
 
 describe("categories", () => {
-  it("lists public categories in order, without staff-only ones", async () => {
+  it("lists every category in order, staff-only ones marked", async () => {
     const list = await q.listCategories();
-    expect(list.map((c) => c.slug)).toEqual(["engineering", "local-ai", "games", "off-topic"]);
-    expect(list[0]).toEqual({
+    expect(list.map((c) => c.slug)).toEqual([
+      "announcements",
+      "engineering",
+      "local-ai",
+      "games",
+      "off-topic",
+    ]);
+    expect(list[0]).toMatchObject({ slug: "announcements", staffOnly: true });
+    expect(list[1]).toEqual({
       id: cats.engineering,
       slug: "engineering",
       name: "Engineering",
       description: "Backend, infrastructure, tooling.",
+      staffOnly: false,
     });
     expect(cacheTag).toHaveBeenCalledWith("forum");
   });
 
-  it("finds a public category by slug and nothing else", async () => {
-    expect(await q.getCategory("games")).toMatchObject({ id: cats.games, name: "Games" });
+  it("finds a category by slug, staff-only ones included", async () => {
+    expect(await q.getCategory("games")).toMatchObject({
+      id: cats.games,
+      name: "Games",
+      staffOnly: false,
+    });
     expect(cacheTag).toHaveBeenCalledWith("forum", "category:games");
-    expect(await q.getCategory("announcements")).toBeNull();
+    expect(await q.getCategory("announcements")).toMatchObject({
+      id: cats.announcements,
+      staffOnly: true,
+    });
     expect(await q.getCategory("nope")).toBeNull();
   });
 });
@@ -164,18 +179,19 @@ describe("thread lists", () => {
     expect(cacheTag).toHaveBeenCalledWith("forum", "category:engineering");
   });
 
-  it("lists the latest visible threads across public categories", async () => {
+  it("lists the latest visible threads across every category", async () => {
     const a = await thread({ slug: "games", at: "2026-10-02T10:00:00Z", locked: true });
     const b = await thread({ slug: "local-ai", at: "2026-10-03T10:00:00Z", pinned: true });
     const c = await thread({ slug: "engineering", at: "2026-10-01T10:00:00Z" });
-    await thread({ slug: "announcements", at: "2026-10-04T10:00:00Z" });
+    const news = await thread({ slug: "announcements", at: "2026-10-04T10:00:00Z" });
     await thread({ slug: "off-topic", at: "2026-10-05T10:00:00Z", hidden: true });
 
     const list = await q.listLatestThreads();
-    expect(list.map((t) => t.id)).toEqual([b, a, c]);
-    expect(list[1]).toMatchObject({ locked: true, category: { slug: "games", name: "Games" } });
+    expect(list.map((t) => t.id)).toEqual([news, b, a, c]);
+    expect(list[2]).toMatchObject({ locked: true, category: { slug: "games", name: "Games" } });
     expect(cacheTag).toHaveBeenCalledWith(
       "forum",
+      "category:announcements",
       "category:engineering",
       "category:local-ai",
       "category:games",
@@ -231,6 +247,7 @@ describe("getThread", () => {
         slug: "engineering",
         name: "Engineering",
         description: "Backend, infrastructure, tooling.",
+        staffOnly: false,
       },
       createdAt: new Date("2026-10-01T10:00:00Z"),
       pinned: true,
@@ -281,9 +298,100 @@ describe("getThread", () => {
     expect(JSON.stringify(t)).not.toContain("Spam body");
   });
 
-  it("returns null for missing, hidden and staff-only threads", async () => {
+  it("returns threads in staff-only categories to everyone", async () => {
+    const id = await thread({ slug: "announcements", title: "Site news" });
+    expect(await q.getThread(id)).toMatchObject({
+      title: "Site news",
+      category: { slug: "announcements", staffOnly: true },
+    });
+  });
+
+  it("returns null for missing and hidden threads", async () => {
     expect(await q.getThread("999")).toBeNull();
     expect(await q.getThread(await thread({ hidden: true }))).toBeNull();
-    expect(await q.getThread(await thread({ slug: "announcements" }))).toBeNull();
+  });
+});
+
+describe("the write path's reads (uncached)", () => {
+  it("finds a category to post in, with its staff-only flag", async () => {
+    expect(await q.categoryForPost("announcements")).toEqual({
+      id: cats.announcements,
+      slug: "announcements",
+      name: "Announcements",
+      staffOnly: true,
+    });
+    expect(await q.categoryForPost("games")).toMatchObject({ staffOnly: false });
+    expect(await q.categoryForPost("nope")).toBeNull();
+    expect(cacheTag).not.toHaveBeenCalled();
+  });
+
+  it("finds a visible thread to reply to, with its lock and category", async () => {
+    const open = await thread({ slug: "games" });
+    const locked = await thread({ locked: true });
+    expect(await q.threadForReply(open)).toEqual({
+      id: open,
+      categoryId: cats.games,
+      categorySlug: "games",
+      locked: false,
+    });
+    expect(await q.threadForReply(locked)).toMatchObject({ locked: true });
+    expect(await q.threadForReply(await thread({ hidden: true }))).toBeNull();
+    expect(await q.threadForReply("999")).toBeNull();
+  });
+
+  it("loads a visible post with its author and source for editing", async () => {
+    const ada = await user("ada");
+    const t = await thread({ author: ada, title: "Mine", body: "**raw**" });
+    const r = await reply(t, ada, "a *reply*", "2026-10-01T11:00:00Z");
+    const hiddenReply = await reply(t, ada, "gone", "2026-10-01T12:00:00Z", { hidden: true });
+    expect(await q.postForEdit("thread", t)).toEqual({
+      kind: "thread",
+      id: t,
+      threadId: t,
+      categoryId: cats.engineering,
+      categorySlug: "engineering",
+      authorId: ada,
+      createdAt: new Date("2026-10-01T10:00:00Z"),
+      title: "Mine",
+      body: "**raw**",
+    });
+    expect(await q.postForEdit("reply", r)).toEqual({
+      kind: "reply",
+      id: r,
+      threadId: t,
+      categoryId: cats.engineering,
+      categorySlug: "engineering",
+      authorId: ada,
+      createdAt: new Date("2026-10-01T11:00:00Z"),
+      title: null,
+      body: "a *reply*",
+    });
+    expect(await q.postForEdit("reply", hiddenReply)).toBeNull();
+    expect(await q.postForEdit("thread", "999")).toBeNull();
+    // a reply in a hidden thread can't be edited either
+    await db.query("update app.threads set hidden_at = now() where id = $1", [t]);
+    expect(await q.postForEdit("thread", t)).toBeNull();
+    expect(await q.postForEdit("reply", r)).toBeNull();
+  });
+
+  it("counts an author's threads and replies inside the window, hidden ones included", async () => {
+    const ada = await user("ada");
+    const bob = await user("bob");
+    const now = new Date();
+    const ago = (ms: number) => new Date(now.getTime() - ms).toISOString();
+    const t = await thread({ author: ada, at: ago(10 * 60_000) });
+    await thread({ author: ada, at: ago(20 * 60_000), hidden: true });
+    await thread({ author: ada, at: ago(2 * 3_600_000) });
+    await thread({ author: bob, at: ago(60_000) });
+    await reply(t, ada, "1", ago(60_000));
+    await reply(t, ada, "2", ago(59 * 60_000), { hidden: true });
+    await reply(t, ada, "3", ago(61 * 60_000));
+    await reply(t, bob, "4", ago(60_000));
+
+    expect(await q.countRecentThreads(ada, 3_600_000)).toBe(2);
+    expect(await q.countRecentThreads(ada, 3 * 3_600_000)).toBe(3);
+    expect(await q.countRecentReplies(ada, 3_600_000)).toBe(2);
+    expect(await q.countRecentReplies(bob, 3_600_000)).toBe(1);
+    expect(await q.countRecentReplies(await user("cyd"), 3_600_000)).toBe(0);
   });
 });

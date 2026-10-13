@@ -118,7 +118,13 @@ describe("ThreadIntro", () => {
   const thread: ThreadDetail = {
     id: "42",
     title: "Pooling with pg",
-    category: { id: "2", slug: "engineering", name: "Engineering", description: null },
+    category: {
+      id: "2",
+      slug: "engineering",
+      name: "Engineering",
+      description: null,
+      staffOnly: false,
+    },
     createdAt: at,
     pinned: true,
     locked: true,

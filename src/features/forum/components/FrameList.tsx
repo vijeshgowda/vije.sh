@@ -13,15 +13,15 @@ export interface RenderedFrame extends Frame {
 
 export interface FrameActions {
   /**
-   * Per-frame controls under the body (edit, report, staff tools). Return null for none.
-   * Server-rendered; interactive controls go in a client island returned from here.
+   * Per-frame controls under the body, rendered as returned (the thread page returns a
+   * FrameToolbar, which lays itself out and renders nothing when no tool applies). Return null
+   * for none. Interactive controls go in a client island returned from here.
    */
   renderActions?: (frame: Frame) => ReactNode;
 }
 
 /** One frame (prototype `ol.frames li`): FRAME nn, author, role pill, time, body. */
 export function ThreadFrame({ frame, renderActions }: { frame: RenderedFrame } & FrameActions) {
-  const actions = renderActions?.(frame) ?? null;
   return (
     <li id={frame.key} className={frame.hidden ? s.hidden : undefined}>
       <header>
@@ -46,7 +46,7 @@ export function ThreadFrame({ frame, renderActions }: { frame: RenderedFrame } &
       ) : (
         <div className={s.body}>{frame.body}</div>
       )}
-      {actions && <div className={s.actions}>{actions}</div>}
+      {renderActions?.(frame)}
     </li>
   );
 }

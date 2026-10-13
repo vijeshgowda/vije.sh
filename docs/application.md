@@ -285,8 +285,9 @@ prerendered into a static shell; data comes from `'use cache'` functions (with `
 - **Pages never read the auth cookie.** That would make them dynamic. Signed-in UI (user menu,
   reply box, "New thread" button) is a small client island. It reads the session in the browser and
   shows controls; the server checks permissions again when the action runs.
-- Publishing a note, creating a reply or a moderation action calls `revalidateTag()` with the
-  affected tags.
+- Publishing a note, creating a reply or a moderation action invalidates the affected tags: Server
+  Actions call `updateTag()`, so the author's next read (and the page re-rendered with the
+  action's response) already shows the change; other code calls `revalidateTag(tag, "max")`.
 - Performance budget for `/`: HTML + critical CSS under 30 KB gzipped; client JavaScript only for
   the theme toggle and small islands (target under 50 KB gzipped); LCP under 1.5 s on a fast 4G
   profile. Lighthouse CI will enforce these later.

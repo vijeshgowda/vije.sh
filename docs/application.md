@@ -209,6 +209,7 @@ storing a dev database credential outside Vercel, which isn't worth it.
 │   │   ├── admin/               # /admin sections, nav and page guard (admin pages only)
 │   │   ├── blog/                # git post loader, notes queries, admin actions
 │   │   ├── forum/               # queries, actions, components, limits
+│   │   ├── profile/             # /u/[handle]: profile query, register strip, post list
 │   │   ├── moderation/
 │   │   └── uploads/
 │   ├── components/
@@ -275,10 +276,11 @@ prerendered into a static shell; data comes from `'use cache'` functions (with `
 | `/api/feeds/[key]` | Static per feed (`generateStaticParams`, ISR) | Feed `cacheLife`; tags `feeds`, `feed:<key>` |
 | `/blog` | Static | Build (git posts) + tag `blog` (notes) |
 | `/blog/[slug]` | Static (`generateStaticParams`) | Build (git posts); tag `post:<slug>` (notes) |
-| `/rss.xml`, `/sitemap.xml` | Static | Tag `blog` |
+| `/rss.xml`, `/sitemap.xml` | Static | Tag `blog`; the sitemap's forum threads also `forum`, `category:<slug>` |
 | `/forum`, `/forum/[category]` | Cached | Tags `forum`, `category:<slug>` |
 | `/forum/[category]/[thread]` | Cached for everyone | Tag `thread:<id>` on reply or moderation |
-| `/u/[handle]` | Cached | Tag `profile:<id>` |
+| `/u/[handle]` | Cached (first request; other casings of a handle redirect) | Tag `profile:<id>` on the member's posts and edits; also `forum` and every `category:<slug>`, so role changes and moderation refresh it |
+| `/api/palette/threads` | Static (ISR) | Tags `forum`, `category:<slug>` (the 50 latest threads, fetched when the palette opens) |
 | `/login`, `/welcome` | Static shell + client island | — |
 | `/admin/**` | Dynamic (`instant = false`, waits for the session check), never cached, `noindex` | — |
 

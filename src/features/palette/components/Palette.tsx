@@ -17,6 +17,7 @@ import {
   type PaletteNote,
 } from "../items";
 import { setPaletteOpen, usePaletteOpen, useShortcutLabel } from "../palette";
+import { usePaletteThreads } from "../use-threads";
 import s from "./Palette.module.css";
 
 function runCommand(command: CommandId) {
@@ -43,12 +44,16 @@ function runCommand(command: CommandId) {
   }
 }
 
-/** Jump-to palette (Ctrl/Cmd K): search pages, overview sections, notes, feeds and commands. */
+/**
+ * Jump-to palette (Ctrl/Cmd K): search pages, overview sections, notes, feeds, commands and the
+ * latest forum threads.
+ */
 export function Palette({ notes }: { notes: PaletteNote[] }) {
   const open = usePaletteOpen();
   const router = useRouter();
   const pinned = pins.use();
   const shortcut = useShortcutLabel();
+  const threads = usePaletteThreads(open);
   const dialog = useRef<HTMLDialogElement>(null);
   const input = useRef<HTMLInputElement>(null);
   const [query, setQuery] = useState("");
@@ -68,13 +73,14 @@ export function Palette({ notes }: { notes: PaletteNote[] }) {
       open
         ? buildItems({
             notes,
+            threads,
             pinned,
             path: window.location.pathname,
             dark: document.documentElement.dataset.theme === "dark",
             formatDate: fmtDate,
           })
         : [],
-    [open, notes, pinned],
+    [open, notes, threads, pinned],
   );
   const results = useMemo(() => filterItems(items, query), [items, query]);
 
@@ -143,8 +149,8 @@ export function Palette({ notes }: { notes: PaletteNote[] }) {
               aria-controls="pal-list"
               aria-autocomplete="list"
               aria-activedescendant={results.length ? `pal-o${sel}` : undefined}
-              aria-label="Search pages, notes, feeds and commands"
-              placeholder="Pages, notes, feeds, commands"
+              aria-label="Search pages, notes, threads, feeds and commands"
+              placeholder="Pages, notes, threads, feeds, commands"
               autoComplete="off"
               spellCheck={false}
               value={query}

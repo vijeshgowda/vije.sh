@@ -5,6 +5,7 @@ import { redirect } from "next/navigation";
 import type { z } from "zod";
 import { getCurrentUser } from "@/features/auth/session";
 import type { SessionUser } from "@/features/auth/queries";
+import { profileTag } from "@/features/profile/format";
 import { can, isMember, moderates } from "@/lib/authz";
 import { threadHref } from "./format";
 import type { EditSource, PostFormState } from "./form-state";
@@ -84,6 +85,7 @@ export async function createThread(prev: PostFormState, form: FormData): Promise
   if (!id) return { seq, error: staffOnly, field: "category", values };
 
   updateTag(categoryTag(category.slug));
+  updateTag(profileTag(user.id));
   redirect(threadHref(category.slug, id));
 }
 
@@ -119,6 +121,7 @@ export async function createReply(prev: PostFormState, form: FormData): Promise<
 
   updateTag(threadTag(threadId));
   updateTag(categoryTag(thread.categorySlug));
+  updateTag(profileTag(user.id));
   return { seq, ok: true, id };
 }
 
@@ -178,5 +181,7 @@ export async function editPost(prev: PostFormState, form: FormData): Promise<Pos
   updateTag(threadTag(r.post.threadId));
   // a new title shows in the lists
   if (input.kind === "thread") updateTag(categoryTag(r.post.categorySlug));
+  // and on the author's profile (the owner may edit someone else's post)
+  if (input.kind === "thread" && r.post.authorId) updateTag(profileTag(r.post.authorId));
   return { seq, ok: true };
 }

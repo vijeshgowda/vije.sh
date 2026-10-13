@@ -100,3 +100,11 @@ test("/admin/members/[handle] and a member search (owner) render accessibly", as
     await deleteUser(member.id);
   }
 });
+
+// Member profiles render on first request; a fresh member's has no posts yet.
+test("/u/[handle] renders, has no a11y violations and no horizontal scroll", async ({
+  page,
+  asMember,
+}) => {
+  await expectRoute(page, { path: `/u/${asMember.handle}`, h1: asMember.handle! });
+});

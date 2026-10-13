@@ -1,7 +1,8 @@
 import "server-only";
 import type * as pg from "pg";
 import { withTransaction } from "@/lib/db";
-import type { ModerationAction, Role } from "@/db/types";
+import type { Role } from "@/db/types";
+import { logModeration } from "@/features/moderation/mutations";
 import type { StaffRole } from "./members";
 import { ACTIVE_BAN_SQL } from "./queries";
 
@@ -16,31 +17,6 @@ export type MutationResult = "ok" | "forbidden" | "unchanged" | "invalid";
 
 /** Re-checks permission with the target's current roles. */
 export type TargetCheck = (targetRoles: Role[]) => boolean;
-
-export interface LogEntry {
-  actorId: string;
-  action: ModerationAction;
-  profileId?: string | null;
-  threadId?: string | null;
-  replyId?: string | null;
-  note?: string | null;
-}
-
-/** Writes one moderation_log row on `client` (call it inside the change's own transaction). */
-export async function logModeration(client: pg.PoolClient, e: LogEntry): Promise<void> {
-  await client.query(
-    `insert into app.moderation_log (actor_id, action, profile_id, thread_id, reply_id, note)
-     values ($1, $2, $3, $4, $5, $6)`,
-    [
-      e.actorId,
-      e.action,
-      e.profileId ?? null,
-      e.threadId ?? null,
-      e.replyId ?? null,
-      e.note ?? null,
-    ],
-  );
-}
 
 /** Locks the target's profile row and returns their roles, or null when the profile is gone. */
 export async function lockTarget(client: pg.PoolClient, userId: string): Promise<Role[] | null> {

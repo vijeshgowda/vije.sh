@@ -68,6 +68,7 @@ export default defineConfig({
         // security-critical files (application.md 13.5); the limits only ever go up
         "src/lib/{authz,rate-limit,turnstile,markdown}.ts": { lines: 95, branches: 95 },
         "src/features/*/{limits,schemas,actions}.ts": { lines: 95, branches: 95 },
+        "src/features/moderation/reports/{limits,schemas,actions}.ts": { lines: 95, branches: 95 },
       },
     },
   },

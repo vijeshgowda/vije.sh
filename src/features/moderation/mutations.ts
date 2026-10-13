@@ -17,18 +17,19 @@ export type Outcome = "ok" | "unchanged" | "stale";
 export interface LogEntry {
   actorId: string;
   action: ModerationAction;
-  /** The thread acted on (hide/unhide of frame 00, lock, pin, move) */
+  /** The thread acted on (hide/unhide of frame 00, lock, pin, move, a report on it) */
   threadId?: string | null;
   /** The reply acted on (hide/unhide); a reply row leaves threadId null */
   replyId?: string | null;
+  /** The member acted on (ban, unban, role grant or revoke, a report on their profile) */
   profileId?: string | null;
   note?: string | null;
 }
 
 /**
- * Writes one moderation_log row on `client`, inside the change's own transaction.
- * Same shape as logModeration in features/admin/mutations.ts (PR5, not on this branch's base yet):
- * fold the two into one shared helper once both are on main.
+ * Writes one moderation_log row on `client`, inside the change's own transaction. The one shared
+ * helper for every staff change: inline moderation here, role and ban changes in
+ * features/admin/mutations.ts, report resolutions in reports/mutations.ts.
  */
 export async function logModeration(client: pg.PoolClient, e: LogEntry): Promise<void> {
   await client.query(

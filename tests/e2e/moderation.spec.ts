@@ -233,7 +233,8 @@ test("lock blocks member replies; pin lists the thread first", async ({
   await page.goto(path);
   await expect(page.getByText("This thread is locked. Only moderators can reply.")).toBeVisible();
   await expect(page.getByLabel("Reply")).toHaveCount(0);
-  await expect(page.locator(`#thread-${older}`).getByRole("button")).toHaveCount(0);
+  // no staff controls; members (and staff out of scope) only get Report (reports.spec.ts)
+  await expect(page.locator(`#thread-${older}`).getByRole("button")).toHaveText(["Report thread"]);
 
   await page.goto(`/forum/${slug}`);
   const rows = page.getByRole("link", { name: new RegExp(`(Older|Newer) ${tag}`) });
@@ -293,10 +294,12 @@ test("a category moderator moderates only their category; members get no control
   await expect(ownTools.getByRole("button", { name: "Move" })).toHaveCount(0);
 
   await signedInView(page, `/forum/games/${other}`, asCategoryModerator);
-  await expect(page.locator(`#thread-${other}`).getByRole("button")).toHaveCount(0);
+  // no staff controls; members (and staff out of scope) only get Report (reports.spec.ts)
+  await expect(page.locator(`#thread-${other}`).getByRole("button")).toHaveText(["Report thread"]);
 
   const reader = await member();
   await signInAs(context, baseURL!, reader);
   await signedInView(page, `/forum/${MODERATED_CATEGORY}/${own}`, reader);
-  await expect(page.locator(`#thread-${own}`).getByRole("button")).toHaveCount(0);
+  // no staff controls; members (and staff out of scope) only get Report (reports.spec.ts)
+  await expect(page.locator(`#thread-${own}`).getByRole("button")).toHaveText(["Report thread"]);
 });

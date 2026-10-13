@@ -319,13 +319,17 @@ describe("FrameToolbar", () => {
     expect(screen.queryByRole("group")).toBeNull();
   });
 
-  it("offers nothing on someone else's post, and everything to the owner", async () => {
+  it("offers only Report on someone else's post, and Edit to the owner", async () => {
     session(member);
-    const { container, unmount } = render(
+    const { unmount } = render(
       <FrameToolbar frame={frame({ authorHandle: "bob" })} thread={thread} />,
     );
-    await act(async () => {});
-    expect(container).toBeEmptyDOMElement();
+    const group = await screen.findByRole("group");
+    expect(
+      within(group)
+        .getAllByRole("button")
+        .map((b) => b.textContent),
+    ).toEqual(["Report thread"]);
     unmount();
     resetMe();
     session(owner);

@@ -5,6 +5,7 @@ import { PostList } from "@/features/profile/components/PostList";
 import { ProfileRegs } from "@/features/profile/components/ProfileRegs";
 import { parseHandle, profileHref, RECENT_POSTS } from "@/features/profile/format";
 import { getProfile } from "@/features/profile/queries";
+import { ProfileReport } from "@/features/moderation/reports/components/ProfileReport";
 
 // Profiles render on first request and are cached (tag profile:<id>); the placeholder is a 404.
 export const ensureStatic = "navigation";
@@ -46,6 +47,8 @@ export default async function ProfilePage({ params }: PageProps<"/u/[handle]">) 
         Threads and replies on the community bus, newest first.
       </PageIntro>
       <ProfileRegs profile={profile} />
+      {/* client island: reads /api/me, so the cached page is the same for everyone */}
+      <ProfileReport handle={profile.handle} />
       <Section
         id="posts"
         no={11}

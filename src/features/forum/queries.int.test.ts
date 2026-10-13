@@ -395,3 +395,23 @@ describe("the write path's reads (uncached)", () => {
     expect(await q.countRecentReplies(await user("cyd"), 3_600_000)).toBe(0);
   });
 });
+
+describe("listSitemapThreads", () => {
+  it("lists visible threads by latest activity with their category, tagged for every category", async () => {
+    const old = await thread({ slug: "games", at: "2026-10-01T10:00:00Z" });
+    const recent = await thread({ slug: "announcements", at: "2026-10-03T10:00:00Z" });
+    await thread({ at: "2026-10-04T10:00:00Z", hidden: true });
+    expect(await q.listSitemapThreads()).toEqual([
+      {
+        id: recent,
+        categorySlug: "announcements",
+        lastActivityAt: new Date("2026-10-03T10:00:00Z"),
+      },
+      { id: old, categorySlug: "games", lastActivityAt: new Date("2026-10-01T10:00:00Z") },
+    ]);
+    expect(cacheTag).toHaveBeenCalledWith(
+      "forum",
+      ...Object.keys(cats).map((s) => `category:${s}`),
+    );
+  });
+});

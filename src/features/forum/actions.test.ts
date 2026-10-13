@@ -85,7 +85,7 @@ describe("createThread", () => {
   const fields = { category: "games", title: "Pooling with pg", body: "Use **one**." };
   const values = { category: "games", title: "Pooling with pg", body: "Use **one**." };
 
-  it("posts, refreshes the category and goes to the new thread", async () => {
+  it("posts, refreshes the category and profile and goes to the new thread", async () => {
     q.categoryForPost.mockResolvedValue(games);
     m.insertThread.mockResolvedValue("42");
     expect(await redirectOf(createThread(PREV, form(fields)))).toBe("/forum/games/42");
@@ -99,6 +99,7 @@ describe("createThread", () => {
       staff: false,
     });
     expect(updateTag).toHaveBeenCalledWith("category:games");
+    expect(updateTag).toHaveBeenCalledWith("profile:u-member");
   });
 
   it("returns the first invalid field with what was typed", async () => {
@@ -190,7 +191,7 @@ describe("createReply", () => {
   const thread = { id: "42", categoryId: "2", categorySlug: "engineering", locked: false };
   const fields = { threadId: "42", body: "Me too\r\n" };
 
-  it("replies and refreshes the thread and its category", async () => {
+  it("replies and refreshes the thread, its category and the author's profile", async () => {
     q.threadForReply.mockResolvedValue(thread);
     m.insertReply.mockResolvedValue("99");
     expect(await createReply(PREV, form(fields))).toEqual({ seq: 5, ok: true, id: "99" });
@@ -203,6 +204,7 @@ describe("createReply", () => {
     });
     expect(updateTag).toHaveBeenCalledWith("thread:42");
     expect(updateTag).toHaveBeenCalledWith("category:engineering");
+    expect(updateTag).toHaveBeenCalledWith("profile:u-member");
   });
 
   it("validates before reading the session", async () => {
@@ -329,7 +331,7 @@ describe("editing", () => {
   });
 
   describe("editPost", () => {
-    it("saves a thread's title and body and refreshes the thread and its category", async () => {
+    it("saves a thread's title and body and refreshes the thread, category and profile", async () => {
       q.postForEdit.mockResolvedValue(threadPost());
       m.updateThread.mockResolvedValue(true);
       const res = await editPost(
@@ -342,6 +344,22 @@ describe("editing", () => {
         title: "New title",
         body: "New body",
       });
+      expect(updateTag.mock.calls).toEqual([
+        ["thread:42"],
+        ["category:engineering"],
+        ["profile:u-member"],
+      ]);
+    });
+
+    it("skips the profile of a deleted author when the owner edits their thread", async () => {
+      getCurrentUser.mockResolvedValueOnce(owner);
+      q.postForEdit.mockResolvedValue(threadPost({ authorId: null, createdAt: old }));
+      m.updateThread.mockResolvedValue(true);
+      const res = await editPost(
+        PREV,
+        form({ kind: "thread", id: "42", title: "Fixed title", body: "Body" }),
+      );
+      expect(res).toEqual({ seq: 5, ok: true });
       expect(updateTag.mock.calls).toEqual([["thread:42"], ["category:engineering"]]);
     });
 

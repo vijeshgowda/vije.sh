@@ -5,6 +5,11 @@ updates:
     schedule:
       interval: cron
       cronjob: "0 9 * * *"
+    groups:
+      npm-dependencies:
+        applies-to: version-updates
+        patterns:
+          - "*"
     ignore:
       - dependency-name: "*"
         update-types:

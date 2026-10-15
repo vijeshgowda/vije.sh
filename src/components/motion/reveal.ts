@@ -11,8 +11,8 @@ export type RevealOptions = {
   rule?: boolean;
 };
 
-const STEP_MS = 70;
-const MAX_STEPS = 8;
+const STEP_MS = 30;
+const MAX_STEPS = 4;
 const EASE = "cubic-bezier(.2,.8,.2,1)";
 
 export const revealDelay = (index: number) => Math.min(index, MAX_STEPS) * STEP_MS;
@@ -57,16 +57,16 @@ export function setupReveal(root: HTMLElement, { self = false, rule = false }: R
     el.style.opacity = "";
     el.animate?.(
       [
-        { opacity: 0, translate: "0 18px" },
+        { opacity: 0, translate: "0 10px" },
         { opacity: 1, translate: "0 0" },
       ],
-      { duration: 650, delay, easing: EASE, fill: "backwards" },
+      { duration: 280, delay, easing: EASE, fill: "backwards" },
     );
     if (rule) {
       el.animate?.([{ width: "0" }, { width: "4rem" }], {
         pseudoElement: "::after",
-        duration: 1000,
-        delay: delay + 200,
+        duration: 500,
+        delay: delay + 100,
         easing: "cubic-bezier(.6,0,.2,1)",
         fill: "backwards",
       });
@@ -86,7 +86,8 @@ export function setupReveal(root: HTMLElement, { self = false, rule = false }: R
         show(el, delays.get(el) ?? 0);
         delays.delete(el);
       }),
-    { threshold: 0.12, rootMargin: "0px 0px -6% 0px" },
+    // start just before an element scrolls in, so fast scrolling never lands on blank space
+    { threshold: 0, rootMargin: "0px 0px 10% 0px" },
   );
   delays.forEach((_, el) => io.observe(el));
 

@@ -6,6 +6,7 @@ import { Spotlight } from "./Spotlight";
 
 let fire: (targets: Element[]) => void = () => {};
 const observed = new Set<Element>();
+let ioOptions: IntersectionObserverInit | undefined;
 
 function mockMedia(matches: (q: string) => boolean) {
   window.matchMedia = vi.fn((q: string) => ({ matches: matches(q) })) as never;
@@ -21,7 +22,8 @@ beforeEach(() => {
   Object.defineProperty(window, "innerHeight", { configurable: true, value: 800 });
   Element.prototype.animate = vi.fn() as never;
   globalThis.IntersectionObserver = class {
-    constructor(cb: IntersectionObserverCallback) {
+    constructor(cb: IntersectionObserverCallback, opts?: IntersectionObserverInit) {
+      ioOptions = opts;
       fire = (targets) =>
         cb(
           targets.map((target) => ({ target, isIntersecting: true }) as IntersectionObserverEntry),
@@ -57,8 +59,8 @@ function group(tops: number[]) {
 }
 
 describe("revealDelay", () => {
-  it("staggers by 70 ms and caps at the eighth item", () => {
-    expect([0, 1, 2, 8, 20].map(revealDelay)).toEqual([0, 70, 140, 560, 560]);
+  it("staggers by 30 ms and caps at the fourth item", () => {
+    expect([0, 1, 2, 4, 20].map(revealDelay)).toEqual([0, 30, 60, 120, 120]);
   });
 });
 
@@ -71,13 +73,15 @@ describe("setupReveal", () => {
     expect(b!.style.opacity).toBe("0");
     expect(c!.style.opacity).toBe("0");
     expect(observed).toEqual(new Set([b, c]));
+    // fires as soon as any pixel is within 10% of the viewport below the fold
+    expect(ioOptions).toEqual({ threshold: 0, rootMargin: "0px 0px 10% 0px" });
 
     fire([c!]);
     expect(c!.style.opacity).toBe("");
     expect(observed).toEqual(new Set([b]));
     expect(c!.animate).toHaveBeenCalledWith(
       expect.any(Array),
-      expect.objectContaining({ delay: 140, fill: "backwards" }),
+      expect.objectContaining({ delay: 60, duration: 280, fill: "backwards" }),
     );
   });
 
@@ -98,7 +102,7 @@ describe("setupReveal", () => {
     fire([el]);
     expect(el.animate).toHaveBeenCalledWith(
       [{ width: "0" }, { width: "4rem" }],
-      expect.objectContaining({ pseudoElement: "::after", delay: 200 }),
+      expect.objectContaining({ pseudoElement: "::after", delay: 100, duration: 500 }),
     );
   });
 

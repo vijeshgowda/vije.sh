@@ -31,4 +31,16 @@ describe("rendering post bodies", () => {
     expect(html).not.toContain("<img");
     expect(cacheTag).not.toHaveBeenCalled();
   });
+
+  it("renders mermaid blocks as diagram islands that show their source until hydrated", async () => {
+    const md = '```mermaid\ngraph TD\n  accTitle: Flow\n  A["<script>x()</script>"] --> B\n```\n';
+    for (const body of [await renderNoteBody("d-note", md), await renderNotePreview(md)]) {
+      const html = renderToStaticMarkup(body);
+      expect(html).toContain('role="img" aria-label="Flow" aria-hidden="true"');
+      expect(html).toMatch(/<pre[^>]*><code>graph TD/);
+      expect(html).toContain("&lt;script&gt;x()&lt;/script&gt;");
+      expect(html).not.toContain("<script");
+      expect(html).not.toContain("data-mermaid");
+    }
+  });
 });

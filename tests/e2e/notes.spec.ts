@@ -128,3 +128,67 @@ test("unlisted notes render by URL only; drafts and private notes don't render",
     await deleteUser(owner.id);
   }
 });
+
+const DIAGRAMS = `Two diagrams.
+
+\`\`\`mermaid
+flowchart LR
+  accTitle: Request path
+  accDescr: Browser to proxy to page
+  A[Browser] --> B["Proxy <script>window.__pwned = true</script>"] --> C[Page]
+\`\`\`
+
+\`\`\`mermaid
+this is not a diagram
+\`\`\`
+`;
+
+test("mermaid blocks in a note render as SVG diagrams under the production CSP", async ({
+  page,
+  request,
+}) => {
+  await page.addInitScript(() => {
+    const seen: string[] = [];
+    Object.assign(window, { __csp: seen });
+    document.addEventListener("securitypolicyviolation", (e) => seen.push(e.violatedDirective));
+  });
+  const owner = await createUser();
+  const slug = `e2e-mermaid-${randomBytes(4).toString("hex")}`;
+  const tags = ["notes", `note:${slug}`];
+  // unlisted: reachable by URL, so it doesn't change the lists other specs count
+  const note = await seedNote({
+    slug,
+    title: "Diagram note",
+    bodyMd: DIAGRAMS,
+    authorId: owner.id,
+    visibility: "unlisted",
+  });
+  try {
+    await revalidateTags(request, tags);
+    await page.goto(`/blog/${slug}`);
+    const article = page.locator("article");
+
+    const diagram = article.getByRole("img", {
+      name: "Request path. Browser to proxy to page",
+    });
+    // the first diagram on a page waits for the Mermaid chunk
+    await expect(diagram.locator("svg")).toBeVisible({ timeout: 15_000 });
+    await expect(diagram).toContainText("Browser");
+    await expect(article.getByText("Diagram failed to render; showing its source.")).toBeVisible();
+    await expect(article.locator("pre code")).toHaveText("this is not a diagram");
+
+    await expect(article.locator("script, [onerror]")).toHaveCount(0);
+    expect(await page.evaluate(() => "__pwned" in window)).toBe(false);
+    expect(await page.evaluate(() => (window as unknown as { __csp: string[] }).__csp)).toEqual([]);
+    await expectAccessible(page);
+
+    const svg = await diagram.locator("svg").innerHTML();
+    await page.getByRole("button", { name: "Dark" }).first().click();
+    await expect.poll(() => diagram.locator("svg").innerHTML(), { timeout: 15_000 }).not.toBe(svg);
+    await expect(diagram.locator("svg")).toBeVisible();
+  } finally {
+    await deleteNote(note.id);
+    await revalidateTags(request, tags);
+    await deleteUser(owner.id);
+  }
+});

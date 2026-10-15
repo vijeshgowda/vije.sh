@@ -1,0 +1,58 @@
+.diagram {
+  position: relative;
+  margin: 1.5rem 0;
+}
+
+.svg {
+  padding: 1rem 1.1rem;
+  overflow-x: auto;
+  text-align: center;
+  background: var(--card);
+  border: 1px solid var(--line2);
+  box-shadow: var(--sh1);
+}
+.svg svg {
+  max-width: 100%;
+  height: auto;
+}
+
+/* Laid out but invisible while Mermaid measures in it; the source shows meanwhile. */
+.pending {
+  position: absolute;
+  inset: 0 0 auto;
+  visibility: hidden;
+  pointer-events: none;
+}
+
+/* Labels are HTML paragraphs: keep the post body's paragraph and wrapping rules out of them. */
+.diagram svg {
+  overflow-wrap: normal;
+}
+.diagram svg p {
+  margin: 0;
+  font-size: inherit;
+  line-height: 1.5;
+}
+
+.source {
+  margin: 0;
+  white-space: pre;
+}
+
+.note {
+  margin: 0.5rem 0 0;
+  font-family: var(--font-mono);
+  font-size: 0.75rem;
+  color: var(--mute);
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .svg:not(.pending) {
+    animation: fade-in 0.3s var(--ease-out);
+  }
+  @keyframes fade-in {
+    from {
+      opacity: 0;
+    }
+  }
+}

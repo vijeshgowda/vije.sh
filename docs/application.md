@@ -152,7 +152,7 @@ storing a dev database credential outside Vercel, which isn't worth it.
 | Validation | `zod` | Every form input and route parameter |
 | Auth | `@supabase/ssr` + `@supabase/supabase-js` (auth only) | Cookie-based sessions with PKCE |
 | Bot protection | Cloudflare Turnstile | Widget on the client; `siteverify` on the server |
-| Markdown (all posts and notes) | `unified`: `remark-parse`, `remark-frontmatter`, `remark-gfm`, `remark-rehype`, `@shikijs/rehype` (code highlighting at build time), `rehype-slug`, `rehype-sanitize` (database notes only), `rehype-stringify` | One pipeline for git posts and database notes |
+| Markdown (all posts and notes) | `unified`: `remark-parse`, `remark-frontmatter`, `remark-gfm`, `remark-rehype`, `@shikijs/rehype` (code highlighting at build time), `rehype-slug`, `rehype-sanitize` (database notes only), `rehype-stringify`; `mermaid` renders diagrams in the browser (9.3.1) | One pipeline for git posts and database notes |
 | MDX (opt-in) | `@next/mdx` with the same remark and rehype plugins | Only for git posts that need an interactive component |
 | Object storage | `@aws-sdk/client-s3` + `@aws-sdk/s3-request-presigner` → R2 | Presigned uploads |
 | Image resizing | `sharp` in the upload Server Action | A few widths created at upload |
@@ -558,6 +558,29 @@ width and height, and lazy-loads it. An image alone on its line with a title
 missing, sits outside the post folder, or comes from another site (the CSP only allows this origin
 and `img.vije.sh`). Keep images to WebP, PNG, JPEG or SVG at 1600 px wide or less.
 
+### 9.3.1 Diagrams (Mermaid)
+Write a fenced code block with the language `mermaid`, in a git post or a note:
+
+````md
+```mermaid
+flowchart LR
+  accTitle: Request path
+  accDescr: The browser asks the proxy, which serves the page.
+  Browser --> Proxy --> Page
+```
+````
+
+- Give every diagram an `accTitle` (and an `accDescr` when the picture says more than the title):
+  they become its accessible name. Without them screen readers hear only "Diagram".
+- The server leaves the source as a code block, so it reads fine without JavaScript and on GitHub.
+  `src/features/blog/rehype-mermaid.ts` marks the block (after `rehype-sanitize` for notes, so the
+  allow-list is unchanged), and `components/MermaidDiagram.tsx`, a client island, loads Mermaid
+  only on pages with a diagram and swaps in the SVG. It uses `securityLevel: "strict"` (labels
+  and the SVG pass through DOMPurify, no click handlers; `%%{init}%%` directives can't loosen it)
+  and the `base` theme coloured from `tokens.css`, re-rendering when the site theme changes.
+- A diagram that fails to parse keeps showing its source with a "failed to render" note; check
+  the preview (`npm run dev`, or the note editor's Preview) before publishing.
+
 ### 9.4 Merging the two sources
 - `src/features/blog/posts.ts` reads `content/blog/*/index.{md,mdx}` at build time for
   `generateStaticParams`, the index and RSS.
@@ -930,6 +953,8 @@ npm run db:test:setup   # bootstrap + migrations + seed on the test database
   raw HTML is dropped, `rehype-sanitize` runs before Shiki (links limited to http, https and
   mailto), ids get a `user-content-` prefix and links get `rel="nofollow ugc noopener"`. Only git
   posts (Markdown and MDX from the repo) are trusted (the default mode).
+  Mermaid diagrams render in the browser with `securityLevel: "strict"` (section 9.3.1); they
+  need no CSP change (`style-src` already allows the `<style>` Mermaid puts in each SVG).
 - **SQL:** `pg` parameterised queries only (`$1`, `$2`). Never build SQL by joining strings;
   dynamic identifiers come from a fixed allow-list in code.
 - **Cookies:** HttpOnly, Secure, SameSite=Lax (set by `@supabase/ssr`).

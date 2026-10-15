@@ -1,3 +1,4 @@
+import { createElement } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 import type { Root } from "hast";
 import { describe, expect, it } from "vitest";
@@ -34,6 +35,13 @@ describe("renderMarkdown", () => {
       tree.children.unshift({ type: "text", value: "PLUGIN " });
     };
     expect(await html("hi\n", { plugins: [shout] })).toBe("PLUGIN <p>hi</p>");
+  });
+
+  it("renders chosen elements with the given components", async () => {
+    const out = await html("hi\n", {
+      components: { p: ({ children }) => createElement("section", null, children) },
+    });
+    expect(out).toBe("<section>hi</section>");
   });
 });
 

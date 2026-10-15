@@ -3,7 +3,7 @@ import type { Element, Root } from "hast";
 import type { ReactElement } from "react";
 import { Fragment, jsx, jsxs } from "react/jsx-runtime";
 import rehypeShiki, { type RehypeShikiOptions } from "@shikijs/rehype";
-import { toJsxRuntime } from "hast-util-to-jsx-runtime";
+import { toJsxRuntime, type Components } from "hast-util-to-jsx-runtime";
 import rehypeRaw from "rehype-raw";
 import rehypeSanitize, { defaultSchema, type Options as SanitizeSchema } from "rehype-sanitize";
 import rehypeSlug from "rehype-slug";
@@ -31,6 +31,8 @@ export interface RenderMarkdownOptions {
   idPrefix?: string;
   /** Extra rehype plugins. They are code, so trusted; in sanitised mode they run after sanitising. */
   plugins?: PluggableList;
+  /** Components to render chosen elements with, e.g. a `pre` a plugin marked for a client island. */
+  components?: Partial<Components>;
 }
 
 export const UGC_LINK_REL = "nofollow ugc noopener";
@@ -77,7 +79,12 @@ const SHIKI_OPTIONS: RehypeShikiOptions = {
  */
 export async function renderMarkdown(
   source: string,
-  { mode = "trusted", idPrefix = DEFAULT_ID_PREFIX, plugins = [] }: RenderMarkdownOptions = {},
+  {
+    mode = "trusted",
+    idPrefix = DEFAULT_ID_PREFIX,
+    plugins = [],
+    components,
+  }: RenderMarkdownOptions = {},
 ): Promise<ReactElement> {
   const processor =
     mode === "sanitised"
@@ -102,7 +109,7 @@ export async function renderMarkdown(
           .use(plugins)
           .use(rehypeShiki, SHIKI_OPTIONS);
   const tree = await processor.run(processor.parse(source));
-  return toJsxRuntime(tree, { Fragment, jsx, jsxs });
+  return toJsxRuntime(tree, { Fragment, jsx, jsxs, components });
 }
 
 /** Minutes to read at 220 words a minute, at least 1. */

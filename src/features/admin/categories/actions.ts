@@ -5,6 +5,7 @@ import { z } from "zod";
 import { getCurrentUser } from "@/features/auth/session";
 import { categoryTag, FORUM_TAG } from "@/features/forum/queries";
 import { can } from "@/lib/authz";
+import { actionFailed } from "../action-errors";
 import { ADMIN_SECTIONS } from "../sections";
 import {
   CategorySlugTakenError,
@@ -26,7 +27,8 @@ import {
  * The owner's category manager: parse -> current user -> can() with the categories section's
  * action ("category.manage") -> mutation (with its log row) -> updateTag(FORUM_TAG) and
  * updateTag(categoryTag(slug)), so the owner sees the forum change on the next visit, then
- * refresh() for the admin table itself.
+ * refresh() for the admin table itself. A mutation that throws (other than a taken slug) becomes a
+ * form error and a server log line instead of an unhandled 500.
  */
 
 export type CategoryField = keyof Pick<NewCategory, "slug" | "name" | "description">;
@@ -94,15 +96,16 @@ export async function createCategoryAction(
   const user = await owner();
   if (!user) return { error: DENIED };
 
+  let slug: string;
   try {
-    const { slug } = await createCategory(user.id, parsed.data);
-    refreshForum(slug);
+    ({ slug } = await createCategory(user.id, parsed.data));
   } catch (err) {
     if (err instanceof CategorySlugTakenError) {
       return { field: "slug", error: "Slug is already used by another category." };
     }
-    throw err;
+    return actionFailed("create category", err);
   }
+  refreshForum(slug);
   return { message: `Created ${parsed.data.name}.` };
 }
 
@@ -121,7 +124,12 @@ export async function updateCategoryAction(
   const user = await owner();
   if (!user) return { error: DENIED };
 
-  const saved = await updateCategory(user.id, id, parsed.data);
+  let saved: Awaited<ReturnType<typeof updateCategory>>;
+  try {
+    saved = await updateCategory(user.id, id, parsed.data);
+  } catch (err) {
+    return actionFailed("update category", err);
+  }
   if (!saved) return { error: MISSING };
   if (!saved.changed) return { message: "Nothing changed." };
   refreshForum(saved.slug);
@@ -139,7 +147,12 @@ export async function moveCategoryAction(
   const user = await owner();
   if (!user) return { error: DENIED };
 
-  const done = await moveCategory(user.id, id, move.data);
+  let done: Awaited<ReturnType<typeof moveCategory>>;
+  try {
+    done = await moveCategory(user.id, id, move.data);
+  } catch (err) {
+    return actionFailed("move category", err);
+  }
   if (!done) return { error: MISSING };
   if (!done.moved) return { message: `Already at the ${move.data === "up" ? "top" : "bottom"}.` };
   refreshForum(done.slug);
@@ -159,7 +172,12 @@ export async function setStaffOnlyAction(
   const user = await owner();
   if (!user) return { error: DENIED };
 
-  const done = await setCategoryStaffOnly(user.id, id, staffOnly.data);
+  let done: Awaited<ReturnType<typeof setCategoryStaffOnly>>;
+  try {
+    done = await setCategoryStaffOnly(user.id, id, staffOnly.data);
+  } catch (err) {
+    return actionFailed("set staff-only", err);
+  }
   if (!done) return { error: MISSING };
   if (done.changed) refreshForum(done.slug);
   return {
@@ -177,7 +195,12 @@ export async function deleteCategoryAction(
   const user = await owner();
   if (!user) return { error: DENIED };
 
-  const done = await deleteCategory(user.id, id);
+  let done: Awaited<ReturnType<typeof deleteCategory>>;
+  try {
+    done = await deleteCategory(user.id, id);
+  } catch (err) {
+    return actionFailed("delete category", err);
+  }
   if (!done) return { error: MISSING };
   if (done.status === "not-empty") return { error: NOT_EMPTY };
   refreshForum(done.slug);

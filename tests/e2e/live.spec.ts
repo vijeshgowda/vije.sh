@@ -197,3 +197,75 @@ test("category filter and pins drive the overview", async ({ page }) => {
   await page.goto("/");
   await expect(page.locator("#telemetry [data-feed]")).toHaveCount(3);
 });
+
+test("the overview warms /live while the hero plays", async ({ page }) => {
+  // stand-ins for the browser-fetched APIs; registered after the fixture's blocker, so they win
+  const calls = { iss: 0, track: 0, geo: 0, wx: 0, land: [] as string[] };
+  await page.route("https://api.wheretheiss.at/**", (route) => {
+    const track = route.request().url().includes("/positions");
+    calls[track ? "track" : "iss"]++;
+    return route.fulfill({
+      json: track
+        ? [{ latitude: 10, longitude: 20 }]
+        : { latitude: 51.5, longitude: -0.1, altitude: 420, velocity: 27_600 },
+    });
+  });
+  await page.route("https://geocoding-api.open-meteo.com/**", (route) => {
+    calls.geo++;
+    return route.fulfill({
+      json: { results: [{ latitude: 48.85, longitude: 2.35, name: "Paris" }] },
+    });
+  });
+  await page.route("https://api.open-meteo.com/**", (route) => {
+    calls.wx++;
+    return route.fulfill({
+      json: {
+        current: {
+          temperature_2m: 18.4,
+          relative_humidity_2m: 60,
+          wind_speed_10m: 12,
+          weather_code: 3,
+          pressure_msl: 1015,
+        },
+        daily: {
+          sunrise: ["2026-10-15T07:30"],
+          sunset: ["2026-10-15T18:40"],
+          temperature_2m_max: [20],
+          temperature_2m_min: [11],
+        },
+      },
+    });
+  });
+  page.on("request", (r) => {
+    const m = /\/data\/land-(\w+)\.json$/.exec(r.url());
+    if (m) calls.land.push(m[1]!);
+  });
+
+  await page.goto("/");
+  const { width, height } = page.viewportSize()!;
+  const res = Math.min(width, height) >= 700 ? "50m" : "110m";
+  await expect
+    .poll(() => ({ ...calls, land: calls.land.includes(res), track: calls.track > 0 }))
+    .toMatchObject({ geo: 1, wx: 1, land: true, track: true });
+  const before = structuredClone(calls);
+
+  // client-side navigation keeps the warmed caches
+  await page
+    .locator("#telemetry")
+    .getByRole("link", { name: /Pick feeds/ })
+    .click();
+  await expect(page).toHaveURL(/\/live$/);
+  // the overview stays in the DOM (hidden) after a client navigation: look inside /live only
+  const live = page.locator("#catalogue");
+  const wx = live.locator('[data-feed="wx"]');
+  await wx.scrollIntoViewIfNeeded();
+  await expect(wx).toContainText("18.4");
+  await expect(wx).toContainText("Paris");
+  await expect(live.locator('[data-feed="iss"]')).not.toContainText("ACQUIRING");
+  expect(calls).toMatchObject({
+    geo: before.geo,
+    wx: before.wx,
+    track: before.track,
+    land: before.land,
+  });
+});

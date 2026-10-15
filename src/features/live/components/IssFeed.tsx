@@ -3,32 +3,23 @@
 import { useEffect, useRef, useState, useSyncExternalStore } from "react";
 import { Button } from "@/components/ui/Button";
 import { ago, fmtDay, latLon } from "../format";
-import { createGlobe, type Globe, type IssPosition, type Layers } from "../client/globe";
+import { createGlobe, type Globe, type Layers } from "../client/globe";
 import { ensureQuakes, globeBus } from "../client/globe-bus";
+import { cachedIss, cachedTrack, fetchIss, fetchTrack, issStore } from "../client/iss";
 import { useNow } from "../client/use-now";
 import { Ago, Ext } from "./bodies/parts";
 import type { FeedStatus } from "./FeedCard";
 import s from "./Feeds.module.css";
 
-const API = "https://api.wheretheiss.at/v1/satellites/25544";
 let motionQuery: MediaQueryList | undefined;
 // one MediaQueryList: the globe asks every animation frame
 const reduceMotion = () => (motionQuery ??= matchMedia("(prefers-reduced-motion: reduce)")).matches;
-
-interface Reading extends IssPosition {
-  altitude: number;
-  velocity: number;
-}
-
-async function getJSON<T>(url: string, ms: number): Promise<T> {
-  const r = await fetch(url, { signal: AbortSignal.timeout(ms) });
-  if (!r.ok) throw new Error(`HTTP ${r.status}`);
-  return (await r.json()) as T;
-}
+const noReading = () => null;
 
 /**
  * LF-01. Polled from the browser (wheretheiss.at allows ~1 request/s per IP); 5 s while the globe
- * is on screen.
+ * is on screen. The last position and track (client/iss.ts, shared with the overview preload)
+ * show at once while the first poll is in flight.
  * `wide` (Live page): a bigger, more detailed globe with readouts, layers and view controls beside it.
  */
 export function IssFeed({
@@ -43,7 +34,7 @@ export function IssFeed({
   const [follow, setFollow] = useState(false);
   const [paused, setPaused] = useState(false);
   const [layers, setLayers] = useState<Layers>({ iss: true, pads: true, quakes: true });
-  const [r, setR] = useState<Reading | null>(null);
+  const r = useSyncExternalStore(issStore.subscribe, issStore.get, noReading)?.d ?? null;
 
   useEffect(() => {
     const wrap = wrapRef.current;
@@ -92,29 +83,37 @@ export function IssFeed({
       if (document.hidden || !visible) return;
       lastPoll = Date.now();
       try {
-        const d = await getJSON<Reading>(API, 6000);
+        const d = await fetchIss();
         if (!alive) return;
         fails = 0;
         g.setIss(d);
-        setR(d);
         onStatus({ kind: "live", at: Date.now() });
       } catch {
         if (alive && ++fails > 1) onStatus({ kind: "nosignal" });
       }
     };
     const track = async () => {
-      const t = Math.floor(Date.now() / 1000);
-      const ts = Array.from({ length: 10 }, (_, k) => t + k * 600).join(",");
       try {
-        const p = await getJSON<IssPosition[]>(`${API}/positions?timestamps=${ts}`, 8000);
+        const p = await fetchTrack();
         if (alive) g.setTrack(p);
       } catch {
         // the ground track is optional
       }
     };
-    onStatus({ kind: "acquiring" });
+    const last = issStore.get();
+    const fresh = cachedIss();
+    if (last) g.setIss(last.d);
+    onStatus(
+      fresh
+        ? { kind: "live", at: fresh.at }
+        : last
+          ? { kind: "stale", at: last.at }
+          : { kind: "acquiring" },
+    );
     void poll();
-    void track();
+    const seedTrack = cachedTrack();
+    if (seedTrack) g.setTrack(seedTrack);
+    else void track();
     const i1 = setInterval(poll, 5000);
     const i2 = setInterval(track, 5 * 60_000);
     return () => {

@@ -1,10 +1,14 @@
 import "server-only";
 import { query } from "@/lib/db";
 import type { Role } from "@/db/types";
+import { CONTENT_DIR, listedNotes } from "@/features/blog/posts";
 import { MEMBERS_PER_PAGE, type Target } from "./members";
 import { containsPattern } from "./search";
 
-/** /admin overview numbers. Uncached: read on every visit, "new" counted from now() in SQL. */
+/**
+ * /admin overview numbers. Uncached: read on every visit, "new" counted from now() in SQL. Git
+ * posts come from content/blog, which next.config.ts traces into every route (the "/" include).
+ */
 export interface AdminStats {
   members: number;
   onboarded: number;
@@ -14,7 +18,8 @@ export interface AdminStats {
   replies: number;
   openReports: number;
   activeBans: number;
-  notes: number;
+  /** git: posts listed on /blog (no drafts in production); db: every row in app.posts */
+  notes: { git: number; db: number };
   databaseBytes: number;
   categories: { slug: string; name: string; threads: number }[];
 }
@@ -25,7 +30,7 @@ export interface AdminStats {
  */
 export const ACTIVE_BAN_SQL = `b.lifted_at is null and (b.expires_at is null or b.expires_at > now())`;
 
-export async function loadAdminStats(): Promise<AdminStats> {
+export async function loadAdminStats(contentDir = CONTENT_DIR): Promise<AdminStats> {
   const { rows } = await query<{
     members: number;
     onboarded: number;
@@ -69,7 +74,7 @@ export async function loadAdminStats(): Promise<AdminStats> {
     replies: s.replies,
     openReports: s.open_reports,
     activeBans: s.active_bans,
-    notes: s.notes,
+    notes: { git: listedNotes(contentDir).length, db: s.notes },
     databaseBytes: Number(s.database_bytes),
     categories: categories.rows,
   };

@@ -35,6 +35,12 @@
 .kpis .alert b {
   color: var(--red-t);
 }
+.kpis .sub {
+  display: block;
+  margin-top: 0.25rem;
+  text-transform: none;
+  letter-spacing: 0;
+}
 
 .tw {
   overflow-x: auto;

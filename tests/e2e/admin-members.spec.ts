@@ -51,7 +51,8 @@ test("the overview counts members, posts and the database size", async ({ page, 
     kpis(["Members", "Onboarded", "New, 7 days", "New, 30 days", "Active bans"]),
   );
   await expect(page.getByRole("region", { name: /Content/ }).getByRole("listitem")).toHaveText([
-    ...kpis(["Threads", "Replies", "Open reports", "Notes"]),
+    ...kpis(["Threads", "Replies", "Open reports"]),
+    new RegExp(`^${n}Notes\\s*${n}git · ${n}db$`),
     /^\d+(\.\d)? (B|KB|MB|GB)\s*Database$/,
   ]);
   const perCategory = page.getByRole("region", { name: /Threads per category/ });

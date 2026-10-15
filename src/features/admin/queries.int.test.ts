@@ -12,6 +12,9 @@ const { getPool } = await import("@/lib/db");
 const { MEMBERS_PER_PAGE } = await import("./members");
 const q = await import("./queries");
 
+// git posts are counted in queries.test.ts; here only the database side
+const EMPTY_CONTENT = "/nonexistent/content/blog";
+
 let db: pg.Client;
 let cats: Record<string, string>;
 
@@ -44,7 +47,7 @@ const ban = (userId: string, extra = "") =>
 
 describe("loadAdminStats()", () => {
   it("counts an empty forum", async () => {
-    const s = await q.loadAdminStats();
+    const s = await q.loadAdminStats(EMPTY_CONTENT);
     expect(s).toMatchObject({
       members: 0,
       onboarded: 0,
@@ -54,7 +57,7 @@ describe("loadAdminStats()", () => {
       replies: 0,
       openReports: 0,
       activeBans: 0,
-      notes: 0,
+      notes: { git: 0, db: 0 },
     });
     expect(s.databaseBytes).toBeGreaterThan(0);
     expect(s.categories.map((c) => c.slug)).toEqual([
@@ -100,7 +103,7 @@ describe("loadAdminStats()", () => {
       [a],
     );
 
-    const s = await q.loadAdminStats();
+    const s = await q.loadAdminStats(EMPTY_CONTENT);
     expect(s).toMatchObject({
       members: 4,
       onboarded: 3,
@@ -110,7 +113,7 @@ describe("loadAdminStats()", () => {
       replies: 3,
       openReports: 2,
       activeBans: 1,
-      notes: 2,
+      notes: { git: 0, db: 2 },
     });
     const per = Object.fromEntries(s.categories.map((x) => [x.slug, x.threads]));
     expect(per).toMatchObject({ engineering: 2, games: 1, announcements: 0 });

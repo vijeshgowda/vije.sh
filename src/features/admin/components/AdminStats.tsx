@@ -18,7 +18,11 @@ export function AdminStats({ stats }: { stats: Stats }) {
     { label: "Threads", value: n(stats.threads) },
     { label: "Replies", value: n(stats.replies) },
     { label: "Open reports", value: n(stats.openReports), alert: stats.openReports > 0 },
-    { label: "Notes", value: n(stats.notes) },
+    {
+      label: "Notes",
+      value: n(stats.notes.git + stats.notes.db),
+      sub: `${n(stats.notes.git)} git · ${n(stats.notes.db)} db`,
+    },
     { label: "Database", value: formatBytes(stats.databaseBytes) },
   ];
   return (
@@ -53,13 +57,18 @@ export function AdminStats({ stats }: { stats: Stats }) {
   );
 }
 
-function Kpis({ items }: { items: { label: string; value: string; alert?: boolean }[] }) {
+function Kpis({
+  items,
+}: {
+  items: { label: string; value: string; sub?: string; alert?: boolean }[];
+}) {
   return (
     <ul className={styles.kpis}>
       {items.map((k) => (
         <li key={k.label} className={k.alert ? styles.alert : undefined}>
           <b>{k.value}</b>
           {k.label}
+          {k.sub && <span className={styles.sub}>{k.sub}</span>}
         </li>
       ))}
     </ul>

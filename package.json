@@ -30,6 +30,7 @@
     "@vercel/functions": "^3.9.11",
     "hast-util-to-jsx-runtime": "^2.3.6",
     "image-size": "^2.0.4",
+    "mermaid": "^12.2.0",
     "next": "16.4.0",
     "pg": "^8.23.1",
     "react": "19.3.0",

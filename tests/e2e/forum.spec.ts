@@ -124,7 +124,7 @@ test.describe("forum browsing", () => {
     await expectNoHorizontalScroll(page);
     await expectAccessible(page);
 
-    await page.getByRole("link", { name: `← ${s.name}` }).click();
+    await page.getByRole("main").getByRole("link", { name: s.name, exact: true }).click();
     await expect(page).toHaveURL(new RegExp(`/forum/${s.slug}$`));
   });
 

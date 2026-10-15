@@ -116,16 +116,6 @@
   max-width: 46rem;
   padding-bottom: 0.5rem;
 }
-.back {
-  display: inline-block;
-  font: 400 0.75rem var(--font-mono);
-  color: var(--mute);
-  text-decoration: none;
-  margin: 2rem 0 1.25rem;
-}
-.back:hover {
-  color: var(--red-t);
-}
 .pn {
   display: flex;
   flex-wrap: wrap;

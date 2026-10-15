@@ -1,6 +1,7 @@
 import { Reveal } from "@/components/motion/Reveal";
 import { Card } from "@/components/ui/Card";
 import { identity, outside } from "@/content/profile";
+import { GtaCountdown } from "./GtaCountdown";
 import { Rtc } from "./Rtc";
 import s from "./Overview.module.css";
 
@@ -42,12 +43,13 @@ const CODES = [
 export function Peripherals() {
   return (
     <Reveal className={s.cards}>
+      <GtaCountdown />
+      <Rtc />
       {outside.map((o, i) => (
         <Card key={o.title} code={CODES[i]![0]} meta={CODES[i]![1]} title={o.title}>
           <p>{o.text}</p>
         </Card>
       ))}
-      <Rtc />
     </Reveal>
   );
 }

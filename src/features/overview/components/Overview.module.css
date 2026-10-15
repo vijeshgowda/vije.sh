@@ -46,6 +46,43 @@
 .wide {
   grid-column: span 2;
 }
+.full {
+  grid-column: 1 / -1;
+}
+.gta {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: 1.25rem;
+  align-items: center;
+}
+.gtalogo {
+  display: block;
+  width: 8.5rem;
+  height: auto;
+}
+.cdn {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  border: 1px solid var(--line);
+  background: var(--bg);
+}
+.cdn div {
+  padding: 0.7rem 0.9rem;
+  border-right: 1px solid var(--line);
+}
+.cdn div:last-child {
+  border-right: 0;
+}
+.cdn .clock {
+  display: block;
+}
+.cdn small {
+  display: block;
+  font: 400 0.62rem var(--font-mono);
+  color: var(--mute);
+  letter-spacing: 0.08em;
+  margin-top: 0.35rem;
+}
 .rtc {
   display: grid;
   grid-template-columns: 1fr auto;
@@ -318,6 +355,23 @@
   }
   .wide {
     grid-column: auto;
+  }
+  .gta {
+    grid-template-columns: 1fr;
+    justify-items: center;
+  }
+  /* the logo's colour mass sits ~9% right of its box centre; nudge it to look centred */
+  .gtalogo {
+    translate: -6% 0;
+  }
+  .gta .cdn {
+    justify-self: stretch;
+  }
+  .cdn div {
+    padding: 0.5rem;
+  }
+  .cdn .clock {
+    font-size: 1.8rem;
   }
   .rtc {
     grid-template-columns: 1fr;

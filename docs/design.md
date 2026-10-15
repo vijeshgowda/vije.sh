@@ -37,7 +37,7 @@ self-hosted by `next/font`. Light is the default and ignores the OS; dark is opt
 | Chip pinout: trace draw-in, packets, tilt (`chipSVG`, `landingMotion`, `tiltChip`) | `src/features/overview/components/Chip.tsx` | Done |
 | UART console (`uart`, `boot`) | `src/lib/uart.ts` (any feature can log), `Uart.tsx` | Done |
 | Firmware flash + tagline patch | `src/features/overview/components/Firmware.tsx` | Done |
-| Skills ticker, Features, Cluster (`mountCluster`), Peripherals + RTC (`mountRtc`), Ratings | `src/features/overview/components/*` | Done |
+| Skills ticker, Features, Cluster (`mountCluster`), Peripherals + RTC (`mountRtc`) + GTA VI countdown (TIM card, computed, 00:00 UK on 19 Nov 2026; logo self-hosted from Wikimedia Commons), Ratings | `src/features/overview/components/*` | Done |
 | Live telemetry + Live page, 19 feeds, globe, pins, filters | `src/features/live/**` | Done (server-cached, see below; the overview warms /live's browser data when idle: `LivePreload`) |
 | Latest application notes (overview section 5) | `src/features/blog/server/catalog.ts`, `components/NoteList.tsx` | Done (git posts and published DB notes) |
 | Work: rack, timing diagram, KPIs (`pWork`, `timingSVG`) | `src/features/work` | Done ("now" marker cached daily) |

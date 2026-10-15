@@ -4,6 +4,7 @@ import { SiteFooter } from "../layout/SiteFooter";
 
 // the footer mounts the jump-to palette, which needs the App Router
 vi.mock("next/navigation", () => ({ useRouter: () => ({ push: vi.fn() }) }));
+import { BackLink } from "./BackLink";
 import { Button, ButtonLink } from "./Button";
 import { Card } from "./Card";
 import { Lede, PageIntro, RunFoot, RunHead, Section } from "./Datasheet";
@@ -21,6 +22,18 @@ describe("ui primitives", () => {
     );
     expect(screen.getByRole("button", { name: "Go" })).toHaveAttribute("type", "button");
     expect(screen.getByRole("link", { name: "Work" })).toHaveAttribute("href", "/work");
+  });
+
+  it("BackLink names the link by its label, not the decorative arrow", () => {
+    render(
+      <BackLink href="/blog" className="mt-4">
+        All notes
+      </BackLink>,
+    );
+    const link = screen.getByRole("link", { name: "All notes" });
+    expect(link).toHaveAttribute("href", "/blog");
+    expect(link).toHaveClass("mt-4");
+    expect(link.querySelector('[aria-hidden="true"]')).toHaveTextContent("←");
   });
 
   it("Card renders code, meta and a labelled title", () => {

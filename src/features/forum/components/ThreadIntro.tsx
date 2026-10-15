@@ -1,4 +1,4 @@
-import Link from "next/link";
+import { BackLink } from "@/components/ui/BackLink";
 import { categoryHref, plural } from "../format";
 import type { ThreadDetail } from "../types";
 import { ThreadBadges } from "./ThreadBadges";
@@ -8,9 +8,9 @@ import s from "./Forum.module.css";
 export function ThreadIntro({ thread }: { thread: ThreadDetail }) {
   return (
     <div className={s.threadIntro}>
-      <Link className={s.back} href={categoryHref(thread.category.slug)}>
-        &larr; {thread.category.name}
-      </Link>
+      <BackLink className="mt-8 mb-5" href={categoryHref(thread.category.slug)}>
+        {thread.category.name}
+      </BackLink>
       <p className={s.pn}>
         {thread.category.name} &middot; {plural(thread.frames.length, "frame", "frames")}
         <ThreadBadges pinned={thread.pinned} locked={thread.locked} />

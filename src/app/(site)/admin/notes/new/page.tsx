@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import Link from "next/link";
+import { BackLink } from "@/components/ui/BackLink";
 import { PageIntro } from "@/components/ui/Datasheet";
 import styles from "@/components/ui/Datasheet.module.css";
 import { requireAdminSection } from "@/features/admin/guard";
@@ -15,8 +15,10 @@ export default async function NewNotePage() {
   return (
     <>
       <PageIntro kicker="Admin · Notes" title="New note">
-        Starts as a draft: nothing is public until you publish it.{" "}
-        <Link href="/admin/notes">Back to notes</Link>
+        Starts as a draft: nothing is public until you publish it.
+        <BackLink href="/admin/notes" className="mt-4">
+          All notes
+        </BackLink>
       </PageIntro>
       <section className={styles.sec} aria-label="Editor">
         <NoteEditor />

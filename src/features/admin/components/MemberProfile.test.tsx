@@ -70,6 +70,10 @@ describe("MemberProfile", () => {
       screen.getByText("No staff roles. Members are everyone onboarded and not banned."),
     ).toBeInTheDocument();
     expect(screen.getByText("Active")).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "All members" })).toHaveAttribute(
+      "href",
+      "/admin/members",
+    );
   });
 
   it("gives the owner every control over a plain member", () => {

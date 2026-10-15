@@ -133,7 +133,7 @@ describe("ThreadIntro", () => {
 
   it("links back to the category and shows the frame count and badges", () => {
     render(<ThreadIntro thread={thread} />);
-    expect(screen.getByRole("link", { name: "← Engineering" })).toHaveAttribute(
+    expect(screen.getByRole("link", { name: "Engineering" })).toHaveAttribute(
       "href",
       "/forum/engineering",
     );

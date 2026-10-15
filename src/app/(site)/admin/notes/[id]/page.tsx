@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import Link from "next/link";
+import { BackLink } from "@/components/ui/BackLink";
 import { notFound } from "next/navigation";
 import { PageIntro } from "@/components/ui/Datasheet";
 import styles from "@/components/ui/Datasheet.module.css";
@@ -22,7 +22,10 @@ export default async function EditNotePage({ params }: PageProps<"/admin/notes/[
   return (
     <>
       <PageIntro kicker="Admin · Notes" title={note.title}>
-        Editing /blog/{note.slug}. <Link href="/admin/notes">Back to notes</Link>
+        Editing /blog/{note.slug}.
+        <BackLink href="/admin/notes" className="mt-4">
+          All notes
+        </BackLink>
       </PageIntro>
       <section className={styles.sec} aria-label="Editor">
         <NoteControls

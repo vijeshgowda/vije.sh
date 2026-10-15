@@ -1,0 +1,39 @@
+/* Shared back link: replaces the prototype's tiny muted `.back` text with a 44 px target */
+.back {
+  display: flex;
+  width: fit-content;
+  align-items: center;
+  gap: 0.55rem;
+  min-height: 2.75rem;
+  padding: 0.45rem 0.95rem 0.45rem 0.75rem;
+  border: 1px solid var(--line2);
+  background: var(--card);
+  color: var(--ink);
+  font: 500 0.85rem var(--font-mono);
+  text-decoration: none;
+}
+.back:hover {
+  color: var(--red-t);
+  border-color: var(--red-t);
+}
+.back:focus-visible {
+  outline: 2px solid var(--red);
+  outline-offset: 3px;
+}
+.arrow {
+  font-size: 1.05rem;
+  line-height: 1;
+}
+@media (prefers-reduced-motion: no-preference) {
+  .back {
+    transition:
+      color 0.15s,
+      border-color 0.15s;
+  }
+  .arrow {
+    transition: transform 0.15s var(--ease-out);
+  }
+  .back:hover .arrow {
+    transform: translateX(-3px);
+  }
+}

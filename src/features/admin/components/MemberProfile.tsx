@@ -1,4 +1,4 @@
-import Link from "next/link";
+import { BackLink } from "@/components/ui/BackLink";
 import { PageIntro, Section } from "@/components/ui/Datasheet";
 import type { CurrentUser } from "@/lib/authz";
 import { isoMinute } from "../format";
@@ -54,9 +54,9 @@ export function MemberProfile({
           </dd>
         </dl>
         {locked && <p className={styles.locked}>{locked}</p>}
-        <Link href="/admin/members" className={styles.back}>
-          &larr; All members
-        </Link>
+        <BackLink href="/admin/members" className="mt-4">
+          All members
+        </BackLink>
       </PageIntro>
 
       <Section id="roles" no="1" title="Roles">

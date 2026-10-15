@@ -1,6 +1,7 @@
 import type { ReactNode } from "react";
 import Link from "next/link";
 import type { Route } from "next";
+import { BackLink } from "@/components/ui/BackLink";
 import { readMinutes } from "@/lib/markdown";
 import { fmtDate } from "../format";
 import type { NoteRow, PostEntry } from "../posts";
@@ -16,9 +17,9 @@ export function Post({ entry, children }: { entry: PostEntry; children: ReactNod
     <>
       <ReadProgress />
       <article className={s.post}>
-        <Link className={s.back} href="/blog">
-          &larr; All notes
-        </Link>
+        <BackLink className="mt-8 mb-5" href="/blog">
+          All notes
+        </BackLink>
         <p className={s.pn}>
           {id ? `Application note ${id}` : "Unlisted note"}
           {post.draft && <span className={s.draft}>Draft</span>}

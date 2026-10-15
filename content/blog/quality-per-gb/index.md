@@ -1,6 +1,6 @@
 ---
 title: From 65,536 values to 2
-date: 2026-10-15
+date: 2026-09-20
 summary: How quantization works, what low-bit models actually lose, and the arithmetic behind a 27B model fitting in 3.9 GB.
 tags: [Local AI]
 draft: false

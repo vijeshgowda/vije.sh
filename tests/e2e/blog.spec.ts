@@ -8,7 +8,7 @@ test("the overview lists the three latest application notes, newest first", asyn
   await expect(items).toHaveCount(3);
   await expect(items.first().getByRole("link")).toHaveAttribute("href", "/blog/planning-this-site");
   await expect(items.first()).toContainText("AN-004");
-  await expect(items.nth(2)).toContainText("Quality per GB");
+  await expect(items.nth(2)).toContainText("From 65,536 values to 2");
 
   await notes.getByRole("link", { name: /All notes/ }).click();
   await expect(page).toHaveURL(/\/blog$/);

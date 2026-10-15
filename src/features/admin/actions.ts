@@ -13,6 +13,7 @@ import {
   type MutationResult,
   type TargetCheck,
 } from "./mutations";
+import { actionFailed } from "./action-errors";
 import { getTarget } from "./queries";
 import { banSchema, liftBanSchema, roleChangeSchema } from "./schemas";
 
@@ -33,8 +34,10 @@ const field = (f: FormData, name: string) => f.get(name) ?? undefined;
 /**
  * The part every member action shares, after parsing: current user -> target -> can() ->
  * mutation (which re-checks under a row lock) -> refresh. Staff actions have no rate limit.
+ * A mutation that throws becomes a form error, logged under `action`.
  */
 async function act(
+  action: string,
   handle: string,
   allowed: (user: SessionUser, target: Target) => boolean,
   mutate: (user: SessionUser, target: Target, check: TargetCheck) => Promise<MutationResult>,
@@ -44,7 +47,12 @@ async function act(
   const target = user ? await getTarget(handle) : null;
   if (!user || !target || !allowed(user, target)) return { error: REFUSED };
 
-  const result = await mutate(user, target, (roles) => allowed(user, { id: target.id, roles }));
+  let result: MutationResult;
+  try {
+    result = await mutate(user, target, (roles) => allowed(user, { id: target.id, roles }));
+  } catch (err) {
+    return actionFailed(action, err);
+  }
   if (result === "ok") {
     refresh();
     return { ok: messages.ok, result };
@@ -69,6 +77,7 @@ export async function grantRoleAction(
   const { handle, role, categoryId } = parsed.data;
 
   const { result, ...state } = await act(
+    "grant role",
     handle,
     (user, t) => mayGrant(user, t, role),
     (user, t, check) => grantRole({ actorId: user.id, targetId: t.id, role, categoryId }, check),
@@ -96,6 +105,7 @@ export async function revokeRoleAction(
   const { handle, role, categoryId } = parsed.data;
 
   const { result, ...state } = await act(
+    "revoke role",
     handle,
     (user, t) => mayRevoke(user, t, role),
     (user, t, check) => revokeRole({ actorId: user.id, targetId: t.id, role, categoryId }, check),
@@ -125,6 +135,7 @@ export async function banAction(
   const { handle, reason, days } = parsed.data;
 
   const { result: _, ...state } = await act(
+    "ban",
     handle,
     (user, t) => mayBan(user, t),
     (user, t, check) => banUser({ actorId: user.id, targetId: t.id, reason, days }, check),
@@ -143,6 +154,7 @@ export async function liftBanAction(
   const { handle } = parsed.data;
 
   const { result: _, ...state } = await act(
+    "lift ban",
     handle,
     (user, t) => mayBan(user, t),
     (user, t, check) => liftBan({ actorId: user.id, targetId: t.id }, check),

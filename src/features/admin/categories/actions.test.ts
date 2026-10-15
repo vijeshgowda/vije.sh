@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import type { CurrentUser } from "@/lib/authz";
 
 const updateTag = vi.fn();
@@ -41,6 +41,7 @@ const user = (roles: CurrentUser["roles"]): CurrentUser => ({
 const OWNER = user([{ role: "admin", categoryId: null }]);
 const SUPERUSER = user([{ role: "superuser", categoryId: null }]);
 const DENIED = { error: "Only the site owner can manage categories." };
+const FAILED = { error: "Something went wrong and nothing was saved. Try again." };
 const MISSING = { error: "This category no longer exists." };
 
 const form = (fields: Record<string, string>) => {
@@ -55,6 +56,7 @@ beforeEach(() => {
   vi.clearAllMocks();
   getCurrentUser.mockResolvedValue(OWNER);
 });
+afterEach(() => vi.restoreAllMocks());
 
 describe("createCategoryAction", () => {
   it("creates a category as the owner and refreshes the forum", async () => {
@@ -105,15 +107,18 @@ describe("createCategoryAction", () => {
     expect(m.createCategory).not.toHaveBeenCalled();
   });
 
-  it("reports a taken slug and rethrows anything else", async () => {
+  it("reports a taken slug and turns anything else into a form error", async () => {
     m.createCategory.mockRejectedValueOnce(new CategorySlugTakenError("games"));
     expect(await createCategoryAction({}, form(NEW))).toEqual({
       field: "slug",
       error: "Slug is already used by another category.",
     });
+    const log = vi.spyOn(console, "error").mockImplementation(() => {});
     m.createCategory.mockRejectedValueOnce(new Error("db down"));
-    await expect(createCategoryAction({}, form(NEW))).rejects.toThrow("db down");
+    expect(await createCategoryAction({}, form(NEW))).toEqual(FAILED);
+    expect(log).toHaveBeenCalledWith("admin: create category failed", expect.any(Error));
     expect(updateTag).not.toHaveBeenCalled();
+    expect(refresh).not.toHaveBeenCalled();
   });
 });
 
@@ -232,5 +237,35 @@ describe("deleteCategoryAction", () => {
     expect(m.deleteCategory).not.toHaveBeenCalled();
     m.deleteCategory.mockResolvedValueOnce(null);
     expect(await deleteCategoryAction({}, form({ id: "3" }))).toEqual(MISSING);
+  });
+});
+
+describe("when a mutation throws", () => {
+  // e.g. production before migration 0003: the log row broke moderation_log_action_check (#56)
+  it.each([
+    [
+      "update category",
+      () => updateCategoryAction({}, form({ id: "3", name: "Gaming" })),
+      "updateCategory",
+    ],
+    [
+      "move category",
+      () => moveCategoryAction({}, form({ id: "3", direction: "down" })),
+      "moveCategory",
+    ],
+    [
+      "set staff-only",
+      () => setStaffOnlyAction({}, form({ id: "3", staffOnly: "true" })),
+      "setCategoryStaffOnly",
+    ],
+    ["delete category", () => deleteCategoryAction({}, form({ id: "3" })), "deleteCategory"],
+  ] as const)("%s returns a form error and logs the cause", async (name, run, mutation) => {
+    const log = vi.spyOn(console, "error").mockImplementation(() => {});
+    const err = new Error("violates check constraint");
+    m[mutation].mockRejectedValueOnce(err);
+    expect(await run()).toEqual(FAILED);
+    expect(log).toHaveBeenCalledWith(`admin: ${name} failed`, err);
+    expect(updateTag).not.toHaveBeenCalled();
+    expect(refresh).not.toHaveBeenCalled();
   });
 });

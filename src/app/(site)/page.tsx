@@ -4,6 +4,7 @@ import { Lede, RunFoot, RunHead, Section } from "@/components/ui/Datasheet";
 import { NoteList } from "@/features/blog/components/NoteList";
 import { latestBlogNotes } from "@/features/blog/server/catalog";
 import { DEFAULT_PINS, FEEDS, isServerFeedKey } from "@/features/live/catalog";
+import { LivePreload } from "@/features/live/components/LivePreload";
 import { PinnedFeeds } from "@/features/live/components/PinnedFeeds";
 import { getFeeds } from "@/features/live/server/get-feed";
 import { Cluster } from "@/features/overview/components/Cluster";
@@ -22,6 +23,7 @@ export default async function OverviewPage() {
     <>
       <RunHead label="Datasheet" />
       <Hero />
+      <LivePreload />
       <Ticker />
       <Section id="features" no={1} title="Features">
         <Features />

@@ -38,7 +38,7 @@ self-hosted by `next/font`. Light is the default and ignores the OS; dark is opt
 | UART console (`uart`, `boot`) | `src/lib/uart.ts` (any feature can log), `Uart.tsx` | Done |
 | Firmware flash + tagline patch | `src/features/overview/components/Firmware.tsx` | Done |
 | Skills ticker, Features, Cluster (`mountCluster`), Peripherals + RTC (`mountRtc`), Ratings | `src/features/overview/components/*` | Done |
-| Live telemetry + Live page, 19 feeds, globe, pins, filters | `src/features/live/**` | Done (server-cached, see below) |
+| Live telemetry + Live page, 19 feeds, globe, pins, filters | `src/features/live/**` | Done (server-cached, see below; the overview warms /live's browser data when idle: `LivePreload`) |
 | Latest application notes (overview section 5) | `src/features/blog/server/catalog.ts`, `components/NoteList.tsx` | Done (git posts and published DB notes) |
 | Work: rack, timing diagram, KPIs (`pWork`, `timingSVG`) | `src/features/work` | Done ("now" marker cached daily) |
 | Lab: memory calculator, bit register (`pLab`) | `src/features/lab` | Done |
@@ -48,7 +48,7 @@ self-hosted by `next/font`. Light is the default and ignores the OS; dark is opt
 | Sign-in, onboarding, user menu (not in the prototype) | `src/features/auth` (`/login`, `/welcome`, `/guidelines`, `UserMenu` in the header) | Done (OAuth via Supabase; Turnstile on `/welcome`) |
 | Admin area (not in the prototype; nav uses the forum's category chips) | `src/app/(site)/admin`, `src/features/admin` (`AdminNav`, `AdminStats`, `MemberTable`, `MemberProfile`, `MemberForms`; categories from `src/features/admin/categories`; reports and log from `src/features/moderation/reports`; notes from `src/features/blog/notes/components`) | Done: overview stats (notes = git posts + database notes) and members (search, roles, bans; PR5), notes (`/admin/notes`, new, `[id]` editor with sanitised preview, publish/unpublish/delete; PR4), categories (create, rename, reorder, staff-only toggle, delete empty; PR7), reports and log (PR9) |
 | Jump-to palette, Ctrl K (`palItems`, `goTo`) | `src/features/palette` (header "Jump to" + footer "Search", mounted by `SiteFooter`) | Done, including the 50 latest forum threads, fetched from `/api/palette/threads` (cached, forum tags) when the palette opens so pages don't carry them (PR10) |
-| Scroll reveals (`reveal`), card spotlight (`spotlight`), number scramble | `src/components/motion` (`Reveal` / `useReveal`, `Spotlight`, `scramble`) | Done (only content below the fold on mount is hidden; `data-scramble` marks numbers) |
+| Scroll reveals (`reveal`), card spotlight (`spotlight`), number scramble | `src/components/motion` (`Reveal` / `useReveal`, `Spotlight`, `scramble`) | Done (only content below the fold on mount is hidden; `data-scramble` marks numbers). Faster than the prototype on purpose (#55): 280 ms, 30 ms stagger up to 4 steps, starts 10% before the viewport |
 | Inline moderation: hide/unhide, lock, pin, move, reveal hidden text (not in the prototype) | `src/features/moderation` (`STAFF_TOOLS` in `FRAME_TOOLS`, `HiddenThreadNotice`) | Done (PR8): staff in scope get Hide, Reveal, Unhide on frames and Lock, Pin, Move on frame 00; a hidden thread is a 404 with a staff notice to reveal or unhide it |
 | Reports: Report button, `/admin/reports` queue, `/admin/log` (not in the prototype) | `src/features/moderation/reports` (`reportTool` in `FRAME_TOOLS`, `ProfileReport`, `ReportQueue`, `ModerationLog`) | Done (PR9): members report threads, replies and profiles once each (reason + details, 5/20 a day); the queue groups open reports by target with Hide, Mark actioned and Dismiss; the log pages every staff action and unhides hidden threads. Moderators don't see the queue (superuser and owner only) |
 | Public profiles `/u/[handle]` (not in the prototype; built from the page intro, the `.regs` strip and `ol.threads` rows) | `src/features/profile` (`getProfile`, `ProfileRegs`, `PostList`); `AuthorName` in frames links to it | Done (PR10): handle (any casing redirects to the stored one), highest global role, joined date, counts and the 20 latest visible posts; unknown or unfinished accounts 404, banned members keep theirs, empty profiles are `noindex`. The provider-prefilled display name isn't shown until members can edit it. Visible threads are in `sitemap.xml` |
@@ -103,7 +103,10 @@ The prototype fetched every feed from the visitor's browser. The app serves them
 origin instead: each feed is a `'use cache: remote'` loader (`src/features/live/server`) exposed as
 `/api/feeds/[key]` and prerendered into the Live page and the overview, so one upstream call per
 cache period serves every visitor and the rate limits hold. Only the ISS position (LF-01, every 5 s)
-and the visitor's weather (LF-13) are fetched by the browser; the Moon (LF-14) is computed. Set
+and the visitor's weather (LF-13) are fetched by the browser; the Moon (LF-14) is computed. While
+the overview's hero plays, `LivePreload` (idle, skipped on data saver) warms those two into the
+caches the Live cards read (`client/iss.ts` in memory, `client/weather.ts` in localStorage), plus
+the big globe's coastlines, so a visit to /live renders them without another round trip. Set
 `GITHUB_TOKEN` (no scopes) in Vercel to lift the GitHub limit from 60 to 5,000 an hour.
 
 The Live page departs from the prototype's grid on purpose (issue #19): LF-01 spans two columns

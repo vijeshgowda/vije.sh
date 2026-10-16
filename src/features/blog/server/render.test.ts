@@ -14,6 +14,26 @@ describe("rendering post bodies", () => {
     expect(await renderPostBody("no-such-post")).toBeNull();
   });
 
+  it("renders the motorcycle guide with local captioned photos and valid contents links", async () => {
+    const html = renderToStaticMarkup((await renderPostBody("best-motorcycles-2026"))!);
+    expect(html.match(/<figure>/g)).toHaveLength(5);
+    expect(html.match(/<figcaption>/g)).toHaveLength(5);
+    for (const image of [
+      "yamaha-mt-07",
+      "triumph-street-triple",
+      "bmw-r-1300-gs",
+      "yamaha-tenere-700",
+      "royal-enfield-himalayan",
+    ]) {
+      expect(html).toContain(`src="/blog/best-motorcycles-2026/${image}.webp"`);
+    }
+    for (const [, anchor] of html.matchAll(/href="#([^"]+)"/g)) {
+      expect(html).toContain(`id="${anchor}"`);
+    }
+    expect(html).toContain("Find your starting point in the motorcycle shortlist");
+    expect(html).toContain("CC BY-SA 4.0");
+  });
+
   it("renders a note through the sanitised pipeline, tagged for revalidation", async () => {
     const html = renderToStaticMarkup(
       await renderNoteBody("a-note", "## Hi\n\n<script>x()</script>\n\n[out](https://example.com)"),

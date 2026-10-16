@@ -558,6 +558,11 @@ width and height, and lazy-loads it. An image alone on its line with a title
 missing, sits outside the post folder, or comes from another site (the CSP only allows this origin
 and `img.vije.sh`). Keep images to WebP, PNG, JPEG or SVG at 1600 px wide or less.
 
+For downloaded photographs, verify the reuse licence before adding the asset. Include the
+photographer, original source link, licence link and any edits in the post, and identify older
+illustrative photographs rather than presenting them as current-model images. Image licences
+remain separate from the repository's code licence.
+
 ### 9.3.1 Diagrams (Mermaid)
 Write a fenced code block with the language `mermaid`, in a git post or a note:
 

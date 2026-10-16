@@ -1,5 +1,6 @@
+import { randomBytes } from "node:crypto";
 import type { Page } from "@playwright/test";
-import { createUser, deleteUser, expect, expectAccessible, test } from "./fixtures";
+import { createUser, deleteUser, expect, expectAccessible, signInAs, test } from "./fixtures";
 
 // Stands in for Cloudflare's script: the test secret makes the server accept any token.
 async function stubTurnstile(page: Page) {
@@ -66,6 +67,79 @@ test("the outlined Sign in button fits narrow screens in both themes", async ({ 
     }
   }
 });
+
+for (const onboarded of [false, true]) {
+  test(`the outlined ${onboarded ? "account menu" : "Finish sign-up link"} fits every screen`, async ({
+    page,
+    context,
+    baseURL,
+  }) => {
+    const user = await createUser({
+      handle: `account_${randomBytes(8).toString("hex")}`,
+      onboarded,
+    });
+    try {
+      await signInAs(context, baseURL!, user);
+      await page.emulateMedia({ reducedMotion: "reduce" });
+      await page.goto("/lab");
+      const banner = page.getByRole("banner");
+      const control = onboarded
+        ? banner.getByLabel(`Account: @${user.handle}`)
+        : banner.getByRole("link", { name: "Finish sign-up" });
+      const theme = banner.getByRole("button", { name: "Dark", exact: true });
+      for (const width of [320, 390, 768, 1024, 1440]) {
+        await page.setViewportSize({ width, height: 900 });
+        for (const dark of [false, true]) {
+          if ((await theme.getAttribute("aria-pressed")) !== String(dark)) await theme.click();
+          await expect(control).toBeVisible();
+          await expect(control).toHaveCSS("border-top-style", "solid");
+          await expect(control).toHaveCSS("border-top-width", "1px");
+          const bounds = await control.boundingBox();
+          expect(bounds!.height).toBeGreaterThanOrEqual(44);
+          expect(bounds!.width).toBeGreaterThanOrEqual(44);
+          await theme.focus();
+          await page.keyboard.press("Tab");
+          await expect(control).toBeFocused();
+          await expect(control).toHaveCSS("outline-style", "solid");
+          await expect(control).toHaveCSS("outline-width", "2px");
+          await expect(control).toHaveCSS("transition-duration", "0s");
+          await expect
+            .poll(() =>
+              page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth),
+            )
+            .toBe(true);
+          if (onboarded) {
+            const label = control.locator("span");
+            await expect(label).toHaveCSS("text-overflow", "ellipsis");
+            if (width <= 640) {
+              expect(
+                await label.evaluate((element) => {
+                  const range = document.createRange();
+                  range.setStart(element.firstChild!, 0);
+                  range.setEnd(element.firstChild!, 8);
+                  return (
+                    element.getBoundingClientRect().width <= range.getBoundingClientRect().width
+                  );
+                }),
+              ).toBe(true);
+            } else {
+              await expect(label).toHaveCSS("max-width", "none");
+            }
+            await page.keyboard.press("Enter");
+            await expect(banner.getByRole("button", { name: "Sign out" })).toBeVisible();
+            await page.keyboard.press("Enter");
+            await expect(banner.getByRole("button", { name: "Sign out" })).toBeHidden();
+          } else {
+            await expect(control).toHaveAttribute("href", "/welcome");
+          }
+        }
+      }
+      await expectAccessible(page);
+    } finally {
+      await deleteUser(user.id);
+    }
+  });
+}
 
 test("/api/me answers guests without a session", async ({ request }) => {
   const res = await request.get("/api/me");

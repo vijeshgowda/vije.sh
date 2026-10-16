@@ -1,6 +1,7 @@
 import { act, render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import buttonStyles from "@/components/ui/Button.module.css";
 import type { WelcomeState } from "../actions";
 
 const nav = vi.hoisted(() => ({ pathname: "/lab", search: "" }));
@@ -102,12 +103,14 @@ describe("UserMenu", () => {
       "href",
       "/welcome",
     );
+    expect(screen.getByRole("link", { name: "Finish sign-up" })).toHaveClass(buttonStyles.btn);
   });
 
   it("shows the member's handle and a sign-out form", async () => {
     session(member);
     render(<UserMenu />);
     await userEvent.click(await screen.findByText("@vije"));
+    expect(screen.getByLabelText("Account: @vije")).toHaveClass(buttonStyles.btn);
     const button = screen.getByRole("button", { name: "Sign out" });
     expect(button.closest("form")).toHaveAttribute("action", "/auth/signout");
     expect(button.closest("form")).toHaveAttribute("method", "post");

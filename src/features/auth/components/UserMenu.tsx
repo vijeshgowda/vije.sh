@@ -5,6 +5,7 @@ import type { Route } from "next";
 import { usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
 import { ButtonLink } from "@/components/ui/Button";
+import buttonStyles from "@/components/ui/Button.module.css";
 import { isSuperuser, type Role, type RoleGrant } from "@/lib/authz";
 import { hasSessionCookie } from "../session-cookie";
 import styles from "./UserMenu.module.css";
@@ -65,17 +66,20 @@ export function UserMenu() {
 
   if (!me.onboarded) {
     return (
-      <Link className={styles.link} href="/welcome">
-        Finish sign-up
-      </Link>
+      <ButtonLink className={styles.link} href="/welcome">
+        <span className={styles.label}>Finish sign-up</span>
+      </ButtonLink>
     );
   }
 
   return (
     // keyed by path so the menu closes after following one of its links
     <details key={pathname} className={styles.menu}>
-      <summary className={styles.link} aria-label={`Account: @${me.handle}`}>
-        @{me.handle}
+      <summary
+        className={`${buttonStyles.btn} ${styles.link}`}
+        aria-label={`Account: @${me.handle}`}
+      >
+        <span className={styles.label}>{`@${me.handle}`}</span>
       </summary>
       <div className={styles.pop}>
         {!me.banned && isSuperuser({ roles: me.grants }) && <Link href="/admin">Admin</Link>}

@@ -29,6 +29,10 @@ describe("MermaidDiagram", () => {
   it("shows the source first, then swaps in the strict-mode SVG with an accessible name", async () => {
     const { container } = render(<MermaidDiagram source={SOURCE} />);
     expect(container.querySelector("pre code")).toHaveTextContent("graph TD");
+    const source = container.querySelector("pre")!;
+    expect(source).toHaveAttribute("tabindex", "0");
+    source.focus();
+    expect(source).toHaveFocus();
 
     const img = await screen.findByRole("img", { name: "Flow" });
     expect(img.querySelector("svg")).not.toBeNull();
@@ -52,6 +56,7 @@ describe("MermaidDiagram", () => {
     const { container } = render(<MermaidDiagram source="not a diagram" />);
     expect(await screen.findByText(/Diagram failed to render/)).toBeInTheDocument();
     expect(container.querySelector("pre code")).toHaveTextContent("not a diagram");
+    expect(container.querySelector("pre")).toHaveAttribute("tabindex", "0");
     expect(screen.queryByRole("img")).toBeNull();
     expect(container.querySelector("[role=img]")).toHaveAttribute("aria-hidden", "true");
   });

@@ -80,7 +80,7 @@ export function MermaidDiagram({ source }: { source: string }) {
         aria-hidden={state !== "diagram" || undefined}
       />
       {state !== "diagram" && (
-        <pre className={s.source}>
+        <pre className={s.source} tabIndex={0}>
           <code>{source}</code>
         </pre>
       )}

@@ -11,6 +11,10 @@ const ROUTES = [
   { path: "/photo", h1: "Contact sheet" },
   { path: "/blog", h1: "Application notes" },
   { path: "/blog/planning-this-site", h1: "Planning this site" },
+  {
+    path: "/blog/best-motorcycles-2026",
+    h1: "The best motorcycles of 2026: five bikes, five different jobs",
+  },
   { path: "/forum", h1: "Forum" },
   { path: "/forum/engineering", h1: "Engineering" },
   { path: "/live", h1: "Live feeds" },

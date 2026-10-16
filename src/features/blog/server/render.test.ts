@@ -34,6 +34,37 @@ describe("rendering post bodies", () => {
     expect(html).toContain("CC BY-SA 4.0");
   });
 
+  it("renders the reliability guide with fifteen local credited photos and working contents links", async () => {
+    const html = renderToStaticMarkup((await renderPostBody("most-reliable-motorcycles"))!);
+    expect(html.match(/<figure>/g)).toHaveLength(15);
+    expect(html.match(/<figcaption>/g)).toHaveLength(15);
+    for (const image of [
+      "yamaha-mt-07",
+      "suzuki-sv650",
+      "yamaha-mt-09",
+      "honda-cbr600rr",
+      "suzuki-gsx-r750",
+      "yamaha-r1",
+      "honda-fireblade",
+      "suzuki-v-strom-650",
+      "kawasaki-versys-650",
+      "yamaha-tenere-700",
+      "honda-gold-wing",
+      "bmw-r1200rt",
+      "yamaha-fjr1300",
+      "honda-nc750x",
+      "yamaha-tracer-700",
+    ]) {
+      expect(html).toContain(`src="/blog/most-reliable-motorcycles/${image}.webp"`);
+    }
+    for (const [, anchor] of html.matchAll(/href="#([^"]+)"/g)) {
+      expect(html).toContain(`id="${anchor}"`);
+    }
+    expect(html).toContain("Photograph register");
+    expect(html).toContain("CC BY-SA 4.0");
+    expect(html).not.toContain("[gsa1300]");
+  });
+
   it("renders a note through the sanitised pipeline, tagged for revalidation", async () => {
     const html = renderToStaticMarkup(
       await renderNoteBody("a-note", "## Hi\n\n<script>x()</script>\n\n[out](https://example.com)"),

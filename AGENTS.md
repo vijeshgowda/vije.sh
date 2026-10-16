@@ -27,7 +27,7 @@ Several agents work in parallel on separate branches; keep changes inside your f
 
 ```
 npm run dev            # http://localhost:3000
-npm run check          # lint + typecheck + format check + unit/component tests (run before every PR)
+npm run check          # blog:assets + lint + typecheck + format check + unit/component tests (run before every PR)
 npm run test:e2e       # Playwright on a production build (FEEDS_OFFLINE=1, third-party requests blocked)
 npm run db:test:setup  # rebuild the local test database (needs TEST_DATABASE_URL, see .env.test.example)
 npm run test:int       # integration tests against that database

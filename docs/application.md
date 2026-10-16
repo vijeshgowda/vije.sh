@@ -598,8 +598,8 @@ flowchart LR
   (`/blog`, `/blog/<slug>`, the overview's latest notes, the sitemap and the palette): one list
   sorted by date, numbered together (the oldest is AN-001). The design doesn't mark notes
   differently. Note bodies use the sanitised Markdown mode.
-- **Shared slug space.** A note can't take a git post's slug: `npm run blog:assets` (run by `dev`
-  and `build`) writes every git slug to `src/features/blog/notes/git-slugs.json`, which the note
+- **Shared slug space.** A note can't take a git post's slug: `npm run blog:assets` (run by `dev`,
+  `build` and `check`) writes every git slug to `src/features/blog/notes/git-slugs.json`, which the note
   schema and mutations check. The manifest is committed, so typecheck and tests don't need a
   build; a unit test fails when it's out of date (run `npm run blog:assets` and commit it). The
   other direction is a build check: `generateStaticParams` for `/blog/[slug]` fails if a git slug
@@ -948,6 +948,7 @@ JSON file only when a spec should cover that post.
 
 ### 13.7 Scripts
 ```
+npm run check           # blog:assets (slug manifest), lint, typecheck, format check, npm test
 npm test                # vitest: unit + component (fast, no database)
 npm run test:int        # vitest: integration project (needs TEST_DATABASE_URL)
 npm run test:coverage   # all vitest projects with coverage and limits

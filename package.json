@@ -21,7 +21,7 @@
     "test:e2e": "playwright test",
     "db:migrate": "npx --yes supabase db push",
     "db:test:setup": "tsx scripts/db-test-setup.ts",
-    "check": "npm run lint && npm run typecheck && npm run format:check && npm test"
+    "check": "npm run blog:assets && npm run lint && npm run typecheck && npm run format:check && npm test"
   },
   "dependencies": {
     "@shikijs/rehype": "^4.5.0",

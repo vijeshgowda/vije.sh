@@ -7,32 +7,36 @@
 }
 .signIn {
   flex-shrink: 0;
+}
+.signIn,
+.link {
   padding: 0 0.75rem;
   font-size: 0.75rem;
 }
 .link {
-  display: block;
+  display: flex;
   min-width: 0;
   flex-shrink: 1;
-  padding: 0 0.2rem;
-  font: 500 0.75rem/2.6rem var(--font-mono);
-  color: var(--ink);
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
   cursor: pointer;
   list-style: none;
 }
+.label {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
 .link::-webkit-details-marker {
   display: none;
-}
-.link:hover {
-  color: var(--red-t);
 }
 .menu {
   position: relative;
   min-width: 0;
   flex-shrink: 1;
+}
+@media (max-width: 40rem) {
+  .menu .label {
+    max-width: 8ch;
+  }
 }
 .pop {
   position: absolute;

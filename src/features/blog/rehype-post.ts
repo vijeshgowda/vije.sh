@@ -53,6 +53,11 @@ function setImage(node: Element, file: string) {
       // unreadable dimensions: the image still loads, it just can't reserve its space
     }
   }
+  // Post.module.css caps the width by this ratio so tall images stay within the screen height.
+  const ratio = Number(p.width) / Number(p.height);
+  if (p.style === undefined && Number.isFinite(ratio) && ratio > 0) {
+    p.style = `--ar:${Number(ratio.toFixed(4))}`;
+  }
 }
 
 function isExternal(href: string): boolean {

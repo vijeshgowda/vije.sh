@@ -98,18 +98,28 @@ describe("rehypePostAssets", () => {
       "img/logo.svg": SVG,
     });
     expect(out).toContain(
-      '<img src="/blog/p/dot.png" alt="A dot" width="1" height="1" loading="lazy" decoding="async"/>',
+      '<img src="/blog/p/dot.png" alt="A dot" width="1" height="1" style="--ar:1" loading="lazy" decoding="async"/>',
     );
-    expect(out).toContain('src="/blog/p/img/logo.svg" alt="Logo" width="40" height="20"');
+    expect(out).toContain(
+      'src="/blog/p/img/logo.svg" alt="Logo" width="40" height="20" style="--ar:2"',
+    );
   });
 
   it("keeps sizes written in raw HTML and skips sizes it can't read", async () => {
-    const out = await render('<img src="./a.png" alt="" width="300">\n\n![Bad](./bad.png)\n', {
-      "a.png": PNG_1X1,
-      "bad.png": "not an image",
-    });
+    const out = await render(
+      '<img src="./a.png" alt="" width="300">\n\n<img src="./a.png" alt="" width="300" height="200" style="opacity:.5">\n\n![Bad](./bad.png)\n',
+      { "a.png": PNG_1X1, "bad.png": "not an image" },
+    );
     expect(out).toContain('<img src="/blog/p/a.png" alt="" width="300" loading="lazy"');
+    expect(out).toContain('width="300" height="200" style="opacity:.5" loading="lazy"');
     expect(out).toContain('<img src="/blog/p/bad.png" alt="Bad" loading="lazy"');
+  });
+
+  it("exposes the image ratio for the post's height cap", async () => {
+    const out = await render('<img src="./a.png" alt="" width="1153" height="2048">\n', {
+      "a.png": PNG_1X1,
+    });
+    expect(out).toContain('width="1153" height="2048" style="--ar:0.563"');
   });
 
   it("turns a titled image on its own line into a captioned figure", async () => {

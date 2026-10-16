@@ -5,6 +5,11 @@
   min-width: 0;
   flex-shrink: 1;
 }
+.signIn {
+  flex-shrink: 0;
+  padding: 0 0.75rem;
+  font-size: 0.75rem;
+}
 .link {
   display: block;
   min-width: 0;

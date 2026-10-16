@@ -4,6 +4,7 @@ import Link from "next/link";
 import type { Route } from "next";
 import { usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
+import { ButtonLink } from "@/components/ui/Button";
 import { isSuperuser, type Role, type RoleGrant } from "@/lib/authz";
 import { hasSessionCookie } from "../session-cookie";
 import styles from "./UserMenu.module.css";
@@ -56,9 +57,9 @@ export function UserMenu() {
   if (!me) {
     const next = AUTH_PATHS.includes(pathname) ? "" : `?next=${encodeURIComponent(pathname)}`;
     return (
-      <Link className={styles.link} href={`/login${next}` as Route}>
+      <ButtonLink className={styles.signIn} href={`/login${next}` as Route}>
         Sign in
-      </Link>
+      </ButtonLink>
     );
   }
 

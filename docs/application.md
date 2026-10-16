@@ -598,8 +598,8 @@ flowchart LR
   (`/blog`, `/blog/<slug>`, the overview's latest notes, the sitemap and the palette): one list
   sorted by date, numbered together (the oldest is AN-001). The design doesn't mark notes
   differently. Note bodies use the sanitised Markdown mode.
-- **Shared slug space.** A note can't take a git post's slug: `npm run blog:assets` (run by `dev`
-  and `build`) writes every git slug to `src/features/blog/notes/git-slugs.json`, which the note
+- **Shared slug space.** A note can't take a git post's slug: `npm run blog:assets` (run by `dev`,
+  `build` and `check`) writes every git slug to `src/features/blog/notes/git-slugs.json`, which the note
   schema and mutations check. The manifest is committed, so typecheck and tests don't need a
   build; a unit test fails when it's out of date (run `npm run blog:assets` and commit it). The
   other direction is a build check: `generateStaticParams` for `/blog/[slug]` fails if a git slug
@@ -915,6 +915,13 @@ database (for example a published note, `tests/e2e/notes.ts`) then posts the cac
 change what other specs count (blog lists, AN numbers) go in Playwright's `content` project, which
 runs after the others.
 
+**Pinned git posts.** Feature tests only see the git posts listed in `tests/e2e/blog-posts.json`.
+Playwright passes them as `BLOG_ONLY` (comma-separated folder names) to `next build` and
+`next start`, and the CI build step sets the same value; `readPosts()` then skips every other
+folder, and fails if a pinned folder is missing. Adding a post to `content/blog` therefore changes
+no counts, AN numbers or "latest" assertions. Unit tests and the slug manifest still read every post. Add a slug to the
+JSON file only when a spec should cover that post.
+
 ### 13.5 Coverage
 - `@vitest/coverage-v8`, measured across the unit, component and integration projects together.
 - **Limits (CI fails below them):**
@@ -941,6 +948,7 @@ runs after the others.
 
 ### 13.7 Scripts
 ```
+npm run check           # blog:assets (slug manifest), lint, typecheck, format check, npm test
 npm test                # vitest: unit + component (fast, no database)
 npm run test:int        # vitest: integration project (needs TEST_DATABASE_URL)
 npm run test:coverage   # all vitest projects with coverage and limits

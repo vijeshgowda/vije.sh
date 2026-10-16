@@ -47,14 +47,36 @@ export function parsePost(slug: string, source: string): Post {
 }
 
 /**
+ * BLOG_ONLY (comma-separated folder names) limits git posts to a fixed set. Playwright and the CI
+ * e2e build set it from tests/e2e/blog-posts.json, so adding a post never changes what the
+ * feature tests see. Unset (dev, Vercel, unit tests) means every post.
+ */
+export function onlySlugs(source: Record<string, string | undefined> = process.env) {
+  const slugs = (source.BLOG_ONLY ?? "")
+    .split(",")
+    .map((s) => s.trim())
+    .filter(Boolean);
+  return slugs.length ? new Set(slugs) : null;
+}
+
+/**
  * Reads every post synchronously, so prerendering includes them without a cache boundary.
  * next.config.ts traces content/blog explicitly, so the fs calls opt out of Turbopack's tracing.
  */
 export function readPosts(dir = CONTENT_DIR): Post[] {
   if (!fs.existsSync(/*turbopackIgnore: true*/ dir)) return [];
-  return fs
+  const entries = fs
     .readdirSync(/*turbopackIgnore: true*/ dir, { withFileTypes: true })
-    .filter((e) => e.isDirectory())
+    .filter((e) => e.isDirectory());
+  const only = onlySlugs();
+  if (only) {
+    const missing = [...only].filter((s) => !entries.some((e) => e.name === s));
+    if (missing.length) {
+      throw new Error(`BLOG_ONLY names posts that aren't in content/blog: ${missing.join(", ")}`);
+    }
+  }
+  return entries
+    .filter((e) => !only || only.has(e.name))
     .map((e) => {
       const found = INDEX_FILES.filter((f) =>
         fs.existsSync(path.join(/*turbopackIgnore: true*/ dir, e.name, f)),

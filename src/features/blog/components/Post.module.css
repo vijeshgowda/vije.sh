@@ -1,4 +1,5 @@
-/* Application note from V18.1.1 (.post, .anhead, .abstract, .body, .pager, .prog) */
+/* Application note from V18.1.1 (.post, .anhead, .abstract, .body, .pager, .prog).
+   Unlike the prototype's 42rem column, the note fills the centred page wrap (issue #68). */
 .prog {
   position: fixed;
   left: 0;
@@ -11,11 +12,12 @@
   z-index: 30;
 }
 .post {
-  max-width: 42rem;
+  /* Text grows a little on wide screens so full-width lines stay readable. */
+  --post-text: clamp(1.07rem, 0.85rem + 0.4vw, 1.25rem);
   padding-bottom: 3rem;
 }
 .post h1 {
-  font-size: clamp(2.1rem, 5.5vw, 3.3rem);
+  font-size: clamp(2.1rem, 5.5vw, 4rem);
   letter-spacing: -0.04em;
   line-height: 1.04;
   margin: 0.6rem 0 1.25rem;
@@ -70,7 +72,7 @@
 }
 .abstract p {
   margin: 0.2rem 0 0;
-  font-size: 1.05rem;
+  font-size: var(--post-text);
 }
 .abstract .label {
   margin: 0;
@@ -88,7 +90,7 @@
 .body p,
 .body ul,
 .body ol {
-  font-size: 1.07rem;
+  font-size: var(--post-text);
   line-height: 1.75;
   margin: 0 0 1.1rem;
 }
@@ -108,7 +110,7 @@
   letter-spacing: -0.01em;
 }
 .body h2 {
-  font-size: 1.3rem;
+  font-size: clamp(1.3rem, 1rem + 0.6vw, 1.6rem);
   margin: 2.2rem 0 0.5rem;
   display: flex;
   gap: 0.6rem;
@@ -121,7 +123,7 @@
   color: var(--red-t);
 }
 .body h3 {
-  font-size: 1.1rem;
+  font-size: clamp(1.1rem, 0.9rem + 0.45vw, 1.4rem);
   margin: 1.8rem 0 0.4rem;
 }
 .body a {
@@ -134,7 +136,7 @@
   border-left: 3px solid var(--red);
 }
 .body blockquote p {
-  font-size: 1.25rem;
+  font-size: clamp(1.25rem, 1rem + 0.5vw, 1.5rem);
   font-weight: 500;
   line-height: 1.45;
   letter-spacing: -0.01em;
@@ -175,9 +177,11 @@
   color: var(--shiki-dark, inherit);
 }
 
+/* --ar (width / height, set by rehype-post) caps the width so tall photos stay within the screen
+   height in the wide column; images without it just fit the column. */
 .body img {
   display: block;
-  max-width: 100%;
+  max-width: min(100%, min(85vh, 56rem) * var(--ar, 1000));
   height: auto;
   margin: 1.5rem 0;
   border: 1px solid var(--line);

@@ -9,6 +9,7 @@ import {
   latestNotes,
   listedNotes,
   listedPosts,
+  onlySlugs,
   parsePost,
   publishedPosts,
   readPosts,
@@ -112,6 +113,22 @@ describe("readPosts", () => {
         .map((p) => p.slug)
         .sort(),
     ).toEqual(["a", "b"]);
+  });
+
+  it("limits posts to BLOG_ONLY when set, so new posts stay out of the feature tests", () => {
+    const dir = tmp({ "a/index.md": md(FM), "b/index.md": md(FM), "c/index.md": "not read" });
+    expect(onlySlugs({})).toBeNull();
+    expect(onlySlugs({ BLOG_ONLY: " , " })).toBeNull();
+    vi.stubEnv("BLOG_ONLY", "b, a");
+    expect(
+      readPosts(dir)
+        .map((p) => p.slug)
+        .sort(),
+    ).toEqual(["a", "b"]);
+    vi.stubEnv("BLOG_ONLY", "a,gone");
+    expect(() => readPosts(dir)).toThrow(
+      /BLOG_ONLY names posts that aren't in content\/blog: gone/,
+    );
   });
 
   it("returns nothing when the folder is missing", () => {

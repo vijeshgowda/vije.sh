@@ -915,6 +915,13 @@ database (for example a published note, `tests/e2e/notes.ts`) then posts the cac
 change what other specs count (blog lists, AN numbers) go in Playwright's `content` project, which
 runs after the others.
 
+**Pinned git posts.** Feature tests only see the git posts listed in `tests/e2e/blog-posts.json`.
+Playwright passes them as `BLOG_ONLY` (comma-separated folder names) to `next build` and
+`next start`, and the CI build step sets the same value; `readPosts()` then skips every other
+folder, and fails if a pinned folder is missing. Adding a post to `content/blog` therefore changes
+no counts, AN numbers or "latest" assertions. Unit tests and the slug manifest still read every post. Add a slug to the
+JSON file only when a spec should cover that post.
+
 ### 13.5 Coverage
 - `@vitest/coverage-v8`, measured across the unit, component and integration projects together.
 - **Limits (CI fails below them):**

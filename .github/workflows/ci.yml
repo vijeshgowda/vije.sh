@@ -58,7 +58,7 @@ jobs:
       - name: Unit, component and integration tests with coverage limits
         run: npm run test:coverage
       - name: Build (same variables Playwright passes to next start)
-        run: npm run build
+        run: BLOG_ONLY="$(node -p 'require("./tests/e2e/blog-posts.json").join()')" npm run build
         env:
           DATABASE_URL: postgres://postgres:test@localhost:54329/postgres
           AUTH_MODE: test

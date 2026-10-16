@@ -1,5 +1,6 @@
 import { existsSync } from "node:fs";
 import { defineConfig, devices } from "@playwright/test";
+import BLOG_POSTS from "./tests/e2e/blog-posts.json";
 
 const PORT = 3200;
 const CONTENT_SPECS = /notes\.spec\.ts$/;
@@ -41,6 +42,7 @@ export default defineConfig({
   ],
   webServer: {
     // production build; feeds serve offline results so tests never depend on third-party APIs.
+    // BLOG_ONLY pins the git posts to tests/e2e/blog-posts.json, so new posts don't change counts.
     // CI builds once in an earlier step (with the same variables) and sets E2E_SKIP_BUILD.
     command: `${process.env.E2E_SKIP_BUILD ? "" : "npm run build && "}npx next start -p ${PORT}`,
     url: `http://localhost:${PORT}`,
@@ -48,6 +50,7 @@ export default defineConfig({
     timeout: 240_000,
     env: {
       FEEDS_OFFLINE: "1",
+      BLOG_ONLY: BLOG_POSTS.join(","),
       NEXT_TELEMETRY_DISABLED: "1",
       DATABASE_URL: TEST_DATABASE_URL,
       DATABASE_CA_CERT: "",

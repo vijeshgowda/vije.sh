@@ -18,6 +18,17 @@ test("guests see Sign in, and /login lists the providers", async ({ page }) => {
   await page.goto("/lab");
   const signIn = page.getByRole("banner").getByRole("link", { name: "Sign in" });
   await expect(signIn).toHaveAttribute("href", "/login?next=%2Flab");
+  await expect(signIn).toHaveCSS("border-top-style", "solid");
+  await expect(signIn).toHaveCSS("border-top-width", "1px");
+  const bounds = await signIn.boundingBox();
+  expect(bounds).not.toBeNull();
+  expect(bounds!.height).toBeGreaterThanOrEqual(44);
+  expect(bounds!.width).toBeGreaterThanOrEqual(44);
+  await signIn.focus();
+  await expect(signIn).toBeFocused();
+  expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(
+    true,
+  );
   await signIn.click();
   await expect(page.getByRole("heading", { level: 1, name: "Sign in" })).toBeVisible();
   for (const p of ["GitHub", "Google", "Microsoft"]) {
@@ -28,6 +39,32 @@ test("guests see Sign in, and /login lists the providers", async ({ page }) => {
 test("a login error from the callback is shown", async ({ page }) => {
   await page.goto("/login?error=callback");
   await expect(page.getByText("Sign-in didn't complete. Please try again.")).toBeVisible();
+});
+
+test("the outlined Sign in button fits narrow screens in both themes", async ({ page }) => {
+  await page.emulateMedia({ reducedMotion: "reduce" });
+  await page.goto("/lab");
+  const banner = page.getByRole("banner");
+  const signIn = banner.getByRole("link", { name: "Sign in" });
+  const theme = banner.getByRole("button", { name: "Dark", exact: true });
+  for (const width of [320, 390, 1440]) {
+    await page.setViewportSize({ width, height: 900 });
+    for (const dark of [false, true]) {
+      if ((await theme.getAttribute("aria-pressed")) !== String(dark)) await theme.click();
+      await expect(signIn).toBeVisible();
+      await expect(signIn).toHaveCSS("border-top-width", "1px");
+      await theme.focus();
+      await page.keyboard.press("Tab");
+      await expect(signIn).toBeFocused();
+      await expect(signIn).toHaveCSS("outline-style", "solid");
+      await expect(signIn).toHaveCSS("outline-width", "2px");
+      await expect(signIn).toHaveCSS("transition-duration", "0s");
+      await expect
+        .poll(() => page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth))
+        .toBe(true);
+      expect(await signIn.evaluate((link) => link.scrollWidth <= link.clientWidth)).toBe(true);
+    }
+  }
 });
 
 test("/api/me answers guests without a session", async ({ request }) => {

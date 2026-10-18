@@ -25,6 +25,19 @@ const note = (slug: string, date: string, over: Partial<PublishedNoteSummary> = 
 });
 
 describe("mergeNoteRows", () => {
+  it("orders same-day git posts by publish number, then notes by slug", () => {
+    const rows = mergeNoteRows(
+      [
+        { ...post("zebra", "2026-05-01"), seq: 2 },
+        { ...post("apple", "2026-05-01"), seq: 1 },
+      ],
+      [note("mango", "2026-05-01")],
+      new Set(["zebra", "apple"]),
+    );
+    expect(rows.map((r) => r.slug)).toEqual(["zebra", "apple", "mango"]);
+    expect(rows[0]).not.toHaveProperty("seq");
+  });
+
   it("numbers git posts and notes together, newest first, ties by slug", () => {
     const rows = mergeNoteRows(
       [post("old-post", "2026-01-01"), post("b-post", "2026-03-01")],

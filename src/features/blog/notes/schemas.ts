@@ -14,7 +14,7 @@ export const NOTE_LIMITS = {
 
 export const VISIBILITIES = ["public", "unlisted", "private"] as const;
 
-/** Slugs of every git post (content/blog/<slug>/), from the generated manifest. */
+/** Slugs of every git post (content/blog/NNNN-<slug>/), from the generated manifest. */
 export const GIT_SLUGS: ReadonlySet<string> = new Set(manifest.slugs);
 
 export function isGitSlug(slug: string, gitSlugs: ReadonlySet<string> = GIT_SLUGS): boolean {

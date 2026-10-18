@@ -1,9 +1,11 @@
 import fs from "node:fs";
 import path from "node:path";
+import { parseFolders } from "./schemas";
 
 /**
  * Images in git posts (application.md 9.3) sit next to index.md, so they preview on GitHub and in
- * editors. Before dev and build they're copied to public/blog/<slug>/ and served as static files.
+ * editors. Before dev and build they're copied from content/blog/NNNN-<slug>/ to public/blog/<slug>/
+ * and served as static files.
  * No "server-only" here: scripts/copy-blog-assets.ts runs this outside Next.js.
  */
 
@@ -24,14 +26,23 @@ export function assetUrl(slug: string, rel: string): string {
 export function copyPostAssets(contentDir: string, outDir: string): number {
   fs.rmSync(outDir, { recursive: true, force: true });
   if (!fs.existsSync(contentDir)) return 0;
+  const posts = parseFolders(
+    fs
+      .readdirSync(contentDir, { withFileTypes: true })
+      .filter((e) => e.isDirectory())
+      .map((e) => e.name),
+  );
   let copied = 0;
-  for (const entry of fs.readdirSync(contentDir, { recursive: true, withFileTypes: true })) {
-    if (!entry.isFile() || !isImageFile(entry.name)) continue;
-    const from = path.join(entry.parentPath, entry.name);
-    const to = path.join(outDir, path.relative(contentDir, from));
-    fs.mkdirSync(path.dirname(to), { recursive: true });
-    fs.copyFileSync(from, to);
-    copied++;
+  for (const { folder, slug } of posts) {
+    const postDir = path.join(contentDir, folder);
+    for (const entry of fs.readdirSync(postDir, { recursive: true, withFileTypes: true })) {
+      if (!entry.isFile() || !isImageFile(entry.name)) continue;
+      const from = path.join(entry.parentPath, entry.name);
+      const to = path.join(outDir, slug, path.relative(postDir, from));
+      fs.mkdirSync(path.dirname(to), { recursive: true });
+      fs.copyFileSync(from, to);
+      copied++;
+    }
   }
   return copied;
 }

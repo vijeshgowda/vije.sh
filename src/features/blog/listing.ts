@@ -1,4 +1,4 @@
-import { noteId } from "./format";
+import { newestFirst, noteId } from "./format";
 import type { PublishedNote, PublishedNoteSummary } from "./notes/queries";
 import type { NoteRow, Post } from "./posts";
 
@@ -10,9 +10,10 @@ import type { NoteRow, Post } from "./posts";
 /** Category of a note without tags. */
 export const NOTE_CATEGORY = "Notes";
 
-type Row = Omit<NoteRow, "id">;
+type Row = Omit<NoteRow, "id"> & { seq?: number };
 
 const fromPost = (p: Post): Row => ({
+  seq: p.seq,
   slug: p.slug,
   title: p.title,
   summary: p.summary,
@@ -29,7 +30,7 @@ const fromNote = (n: PublishedNoteSummary): Row => ({
 });
 
 /**
- * Listed git posts and listed notes, newest first, numbered together so the oldest is AN-001.
+ * Listed git posts and listed notes, newest first (same-day git posts by publish number), numbered together so the oldest is AN-001.
  * A note whose slug a git post has (`gitSlugs`: every git post, listed or not) is left out: the
  * git post owns the URL.
  */
@@ -42,8 +43,8 @@ export function mergeNoteRows(
     ...posts.map(fromPost),
     ...notes.filter((n) => !gitSlugs.has(n.slug)).map(fromNote),
   ];
-  rows.sort((a, b) => b.date.localeCompare(a.date) || a.slug.localeCompare(b.slug));
-  return rows.map((r, i) => ({ id: noteId(i, rows.length), ...r }));
+  rows.sort(newestFirst);
+  return rows.map(({ seq: _seq, ...r }, i) => ({ id: noteId(i, rows.length), ...r }));
 }
 
 /** A published note in the shape the Post component renders. */

@@ -89,7 +89,7 @@ npm run test:int
 
 ```text
 .
-├── content/blog/       blog posts, one folder each
+├── content/blog/       blog posts, one NNNN-<slug> folder each (NNNN = publish order)
 ├── docs/               architecture, database and design docs
 ├── public/data/        static data (world map for the globe)
 ├── scripts/            blog asset copy, test database setup

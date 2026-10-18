@@ -39,7 +39,7 @@ npm run format         # Prettier
 | You are adding | Put it in |
 | --- | --- |
 | A page | `src/app/(site)/<route>/page.tsx` (thin: fetch + compose) |
-| A blog post | `content/blog/<slug>/index.md`, images next to it (application.md section 9) |
+| A blog post | `content/blog/NNNN-<slug>/index.md` (next publish number), images next to it (application.md section 9) |
 | Feature code (queries, actions, components) | `src/features/<feature>/` (see application.md section 6) |
 | A shared design primitive | `src/components/ui/` (+ `.module.css`) |
 | Colours, shadows, spacing | `src/styles/tokens.css` only |

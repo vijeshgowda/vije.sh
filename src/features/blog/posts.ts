@@ -2,14 +2,20 @@ import "server-only";
 import fs from "node:fs";
 import path from "node:path";
 import { parse as parseYaml } from "yaml";
-import { noteId } from "./format";
-import { frontmatterSchema, slugSchema, type Frontmatter } from "./schemas";
+import { newestFirst, noteId } from "./format";
+import { frontmatterSchema, parseFolders, slugSchema, type Frontmatter } from "./schemas";
 
-/** Git posts (application.md 9): content/blog/<slug>/index.md, or index.mdx when a post needs a component. */
+/**
+ * Git posts (application.md 9): content/blog/NNNN-<slug>/index.md, or index.mdx when a post needs
+ * a component. NNNN is the publish order; the URL is /blog/<slug>.
+ */
 
 export const CONTENT_DIR = path.join(process.cwd(), "content", "blog");
 
-export type Post = Frontmatter & { slug: string; body: string };
+export type Post = Frontmatter & { slug: string; body: string; seq?: number };
+
+/** A post read from content/blog: `folder` is NNNN-<slug>, `seq` its publish number. */
+export type GitPost = Post & { seq: number; folder: string };
 
 /** One row of an application-notes list (overview section 5, blog index). */
 export type NoteRow = {
@@ -24,9 +30,9 @@ export type NoteRow = {
 const FRONTMATTER = /^---\r?\n([\s\S]*?)\r?\n---[ \t]*(?:\r?\n|$)/;
 const INDEX_FILES = ["index.md", "index.mdx"];
 
-export function parsePost(slug: string, source: string): Post {
+export function parsePost(slug: string, source: string, folder = slug): Post {
   const fail: (msg: string) => never = (msg) => {
-    throw new Error(`content/blog/${slug}: ${msg}`);
+    throw new Error(`content/blog/${folder}: ${msg}`);
   };
   const s = slugSchema.safeParse(slug);
   if (!s.success) fail(`folder name ${s.error.issues[0].message}`);
@@ -47,7 +53,7 @@ export function parsePost(slug: string, source: string): Post {
 }
 
 /**
- * BLOG_ONLY (comma-separated folder names) limits git posts to a fixed set. Playwright and the CI
+ * BLOG_ONLY (comma-separated slugs, without the NNNN- prefix) limits git posts to a fixed set. Playwright and the CI
  * e2e build set it from tests/e2e/blog-posts.json, so adding a post never changes what the
  * feature tests see. Unset (dev, Vercel, unit tests) means every post.
  */
@@ -63,29 +69,33 @@ export function onlySlugs(source: Record<string, string | undefined> = process.e
  * Reads every post synchronously, so prerendering includes them without a cache boundary.
  * next.config.ts traces content/blog explicitly, so the fs calls opt out of Turbopack's tracing.
  */
-export function readPosts(dir = CONTENT_DIR): Post[] {
+export function readPosts(dir = CONTENT_DIR): GitPost[] {
   if (!fs.existsSync(/*turbopackIgnore: true*/ dir)) return [];
-  const entries = fs
-    .readdirSync(/*turbopackIgnore: true*/ dir, { withFileTypes: true })
-    .filter((e) => e.isDirectory());
+  const entries = parseFolders(
+    fs
+      .readdirSync(/*turbopackIgnore: true*/ dir, { withFileTypes: true })
+      .filter((e) => e.isDirectory())
+      .map((e) => e.name),
+  );
   const only = onlySlugs();
   if (only) {
-    const missing = [...only].filter((s) => !entries.some((e) => e.name === s));
+    const missing = [...only].filter((s) => !entries.some((e) => e.slug === s));
     if (missing.length) {
       throw new Error(`BLOG_ONLY names posts that aren't in content/blog: ${missing.join(", ")}`);
     }
   }
   return entries
-    .filter((e) => !only || only.has(e.name))
-    .map((e) => {
+    .filter((e) => !only || only.has(e.slug))
+    .map(({ folder, seq, slug }) => {
       const found = INDEX_FILES.filter((f) =>
-        fs.existsSync(path.join(/*turbopackIgnore: true*/ dir, e.name, f)),
+        fs.existsSync(path.join(/*turbopackIgnore: true*/ dir, folder, f)),
       );
       if (found.length !== 1) {
-        throw new Error(`content/blog/${e.name}: needs exactly one of ${INDEX_FILES.join(", ")}`);
+        throw new Error(`content/blog/${folder}: needs exactly one of ${INDEX_FILES.join(", ")}`);
       }
-      const file = path.join(/*turbopackIgnore: true*/ dir, e.name, found[0]);
-      return parsePost(e.name, fs.readFileSync(/*turbopackIgnore: true*/ file, "utf8"));
+      const file = path.join(/*turbopackIgnore: true*/ dir, folder, found[0]);
+      const source = fs.readFileSync(/*turbopackIgnore: true*/ file, "utf8");
+      return { ...parsePost(slug, source, folder), seq, folder };
     });
 }
 
@@ -95,10 +105,8 @@ export function showDrafts(source: Record<string, string | undefined> = process.
 }
 
 /** Posts that appear in lists, newest first. Unlisted posts are reachable by URL only. */
-export function listedPosts(posts: Post[], { drafts }: { drafts: boolean }): Post[] {
-  return posts
-    .filter((p) => p.visibility === "public" && (drafts || !p.draft))
-    .sort((a, b) => b.date.localeCompare(a.date) || a.slug.localeCompare(b.slug));
+export function listedPosts<P extends Post>(posts: P[], { drafts }: { drafts: boolean }): P[] {
+  return posts.filter((p) => p.visibility === "public" && (drafts || !p.draft)).sort(newestFirst);
 }
 
 export function toNoteRows(posts: Post[]): NoteRow[] {
@@ -121,13 +129,13 @@ export function latestNotes(count: number, dir = CONTENT_DIR): NoteRow[] {
 }
 
 /** Every post with a page: listed and unlisted, drafts only where they show. */
-export function publishedPosts(dir = CONTENT_DIR): Post[] {
+export function publishedPosts(dir = CONTENT_DIR): GitPost[] {
   const drafts = showDrafts();
   return readPosts(dir).filter((p) => drafts || !p.draft);
 }
 
-export type PostEntry = {
-  post: Post;
+export type PostEntry<P extends Post = Post> = {
+  post: P;
   /** AN number; null for unlisted posts, which stay out of the numbering */
   id: string | null;
   newer?: NoteRow;
@@ -135,14 +143,14 @@ export type PostEntry = {
 };
 
 /** A post's number and neighbours in a numbered list; unlisted posts aren't in it. */
-export function entryFor(post: Post, rows: NoteRow[]): PostEntry {
+export function entryFor<P extends Post>(post: P, rows: NoteRow[]): PostEntry<P> {
   const i = rows.findIndex((r) => r.slug === post.slug);
   if (i < 0) return { post, id: null };
   return { post, id: rows[i].id, newer: rows[i - 1], older: rows[i + 1] };
 }
 
 /** A git post with its place among git posts only (server/catalog.ts adds database notes). */
-export function getPost(slug: string, dir = CONTENT_DIR): PostEntry | null {
+export function getPost(slug: string, dir = CONTENT_DIR): PostEntry<GitPost> | null {
   const drafts = showDrafts();
   const posts = readPosts(dir);
   const post = posts.find((p) => p.slug === slug && (drafts || !p.draft));

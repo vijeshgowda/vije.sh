@@ -1,5 +1,5 @@
 /**
- * Copies images that sit next to git posts (content/blog/<slug>/) to public/blog/<slug>/ and
+ * Copies images that sit next to git posts (content/blog/NNNN-<slug>/) to public/blog/<slug>/ and
  * refreshes the git slug manifest that keeps database notes off git post slugs.
  * Runs before `npm run dev` and `npm run build`; public/blog is generated and gitignored, the
  * manifest is committed (src/features/blog/notes/git-slugs.ts explains why).

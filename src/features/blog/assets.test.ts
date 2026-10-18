@@ -37,18 +37,19 @@ describe("assets", () => {
     expect(assetUrl("a-post", "img/ship 1.webp")).toBe("/blog/a-post/img/ship%201.webp");
   });
 
-  it("copies only images, keeps folders and clears stale output", () => {
+  it("copies only images to /blog/<slug>/, keeps subfolders and clears stale output", () => {
     const content = tmp({
-      "a/index.md": "x",
-      "a/ship.webp": "w",
-      "a/img/deep.png": PNG_1X1,
-      "b/notes.txt": "t",
+      "0001-a/index.md": "x",
+      "0001-a/ship.webp": "w",
+      "0001-a/img/deep.png": PNG_1X1,
+      "0002-b/notes.txt": "t",
     });
     const out = path.join(tmp({ "blog/stale/old.png": "o" }), "blog");
     expect(copyPostAssets(content, out)).toBe(2);
     expect(fs.existsSync(path.join(out, "a/ship.webp"))).toBe(true);
     expect(fs.existsSync(path.join(out, "a/img/deep.png"))).toBe(true);
     expect(fs.existsSync(path.join(out, "a/index.md"))).toBe(false);
+    expect(fs.existsSync(path.join(out, "0001-a"))).toBe(false);
     expect(fs.existsSync(path.join(out, "stale"))).toBe(false);
     expect(copyPostAssets(path.join(content, "missing"), out)).toBe(0);
   });

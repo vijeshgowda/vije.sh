@@ -20,7 +20,7 @@ export async function renderPostBody(slug: string) {
   cacheLife("max");
   const entry = getPost(slug);
   if (!entry) return null;
-  const dir = path.join(CONTENT_DIR, slug);
+  const dir = path.join(CONTENT_DIR, entry.post.folder);
   return renderMarkdown(entry.post.body, {
     ...DIAGRAMS,
     plugins: [[rehypePostAssets, { slug, dir }], ...DIAGRAMS.plugins],

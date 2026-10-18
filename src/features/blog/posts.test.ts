@@ -107,7 +107,7 @@ describe("readPosts", () => {
   });
 
   it("reads index.md and index.mdx folders and ignores loose files", () => {
-    const dir = tmp({ "a/index.md": md(FM), "b/index.mdx": md(FM), "README.md": "x" });
+    const dir = tmp({ "0001-a/index.md": md(FM), "0002-b/index.mdx": md(FM), "README.md": "x" });
     expect(
       readPosts(dir)
         .map((p) => p.slug)
@@ -116,7 +116,11 @@ describe("readPosts", () => {
   });
 
   it("limits posts to BLOG_ONLY when set, so new posts stay out of the feature tests", () => {
-    const dir = tmp({ "a/index.md": md(FM), "b/index.md": md(FM), "c/index.md": "not read" });
+    const dir = tmp({
+      "0001-a/index.md": md(FM),
+      "0002-b/index.md": md(FM),
+      "0003-c/index.md": "not read",
+    });
     expect(onlySlugs({})).toBeNull();
     expect(onlySlugs({ BLOG_ONLY: " , " })).toBeNull();
     vi.stubEnv("BLOG_ONLY", "b, a");
@@ -136,16 +140,52 @@ describe("readPosts", () => {
   });
 
   it("requires exactly one index file per post", () => {
-    expect(() => readPosts(tmp({ "a/other.md": "x" }))).toThrow(/content\/blog\/a: needs exactly/);
-    expect(() => readPosts(tmp({ "a/index.md": md(FM), "a/index.mdx": md(FM) }))).toThrow(
+    expect(() => readPosts(tmp({ "0001-a/other.md": "x" }))).toThrow(
+      /content\/blog\/0001-a: needs exactly/,
+    );
+    expect(() => readPosts(tmp({ "0001-a/index.md": md(FM), "0001-a/index.mdx": md(FM) }))).toThrow(
       /needs exactly/,
     );
   });
 
+  it("strips the publish number from the folder name and keeps it as seq", () => {
+    const [p] = readPosts(tmp({ "0007-my-post/index.md": md(FM) }));
+    expect(p).toMatchObject({ slug: "my-post", seq: 7, folder: "0007-my-post" });
+  });
+
+  it("requires a publish number and fails on a repeated number or slug", () => {
+    expect(() => readPosts(tmp({ "a/index.md": md(FM) }))).toThrow(
+      /content\/blog\/a: folder name must start with a 4-digit publish number/,
+    );
+    expect(() => readPosts(tmp({ "0000-a/index.md": md(FM) }))).toThrow(/start at 0001/);
+    expect(() => readPosts(tmp({ "0001-Bad_Slug/index.md": md(FM) }))).toThrow(
+      /0001-Bad_Slug: folder name slug must be lowercase/,
+    );
+    expect(() => readPosts(tmp({ "0001-a/index.md": md(FM), "0001-b/index.md": md(FM) }))).toThrow(
+      /0001-b: publish number already used by 0001-a/,
+    );
+    expect(() => readPosts(tmp({ "0001-a/index.md": md(FM), "0002-a/index.md": md(FM) }))).toThrow(
+      /0002-a: slug already used by 0001-a/,
+    );
+  });
+
+  it("lists posts from the same day in publish order, latest first", () => {
+    const dir = tmp({
+      "0001-zebra/index.md": md(FM),
+      "0002-alpha/index.md": md(FM),
+      "0003-middle/index.md": md(FM),
+    });
+    expect(listedNotes(dir).map((n) => [n.id, n.slug])).toEqual([
+      ["AN-003", "middle"],
+      ["AN-002", "alpha"],
+      ["AN-001", "zebra"],
+    ]);
+  });
+
   it("latestNotes hides drafts in production only", () => {
     const dir = tmp({
-      "old/index.md": md(FM.replace("2026-10-05", "2026-01-01")),
-      "new/index.md": md(`${FM}\ndraft: true`),
+      "0001-old/index.md": md(FM.replace("2026-10-05", "2026-01-01")),
+      "0002-new/index.md": md(`${FM}\ndraft: true`),
     });
     vi.stubEnv("VERCEL_ENV", "preview");
     expect(latestNotes(3, dir).map((n) => n.slug)).toEqual(["new", "old"]);
@@ -168,11 +208,11 @@ describe("readPosts", () => {
 
   it("getPost finds listed, unlisted and (outside production) draft posts with neighbours", () => {
     const dir = tmp({
-      "a/index.md": md(FM.replace("2026-10-05", "2026-01-01")),
-      "b/index.md": md(FM.replace("2026-10-05", "2026-02-01")),
-      "c/index.md": md(FM.replace("2026-10-05", "2026-03-01")),
-      "u/index.md": md(`${FM}\nvisibility: unlisted`),
-      "d/index.md": md(`${FM}\ndraft: true`),
+      "0001-a/index.md": md(FM.replace("2026-10-05", "2026-01-01")),
+      "0002-b/index.md": md(FM.replace("2026-10-05", "2026-02-01")),
+      "0003-c/index.md": md(FM.replace("2026-10-05", "2026-03-01")),
+      "0004-u/index.md": md(`${FM}\nvisibility: unlisted`),
+      "0005-d/index.md": md(`${FM}\ndraft: true`),
     });
     vi.stubEnv("VERCEL_ENV", "production");
     const b = getPost("b", dir);

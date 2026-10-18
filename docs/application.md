@@ -174,11 +174,11 @@ storing a dev database credential outside Vercel, which isn't worth it.
 │   └── design.md                # added later from the chosen variation
 ├── content/
 │   └── blog/
-│       └── <slug>/              # one folder per post
+│       └── NNNN-<slug>/         # one folder per post; NNNN = publish order
 │           ├── index.md         # or index.mdx when the post needs a component
 │           └── *.webp|png|svg   # images sit next to the post
 ├── scripts/
-│   └── copy-blog-assets.ts      # prebuild: content/blog/<slug>/* images → public/blog/<slug>/
+│   └── copy-blog-assets.ts      # prebuild: content/blog/NNNN-<slug>/* images → public/blog/<slug>/
 ├── public/                      # static files, fonts, favicons
 ├── supabase/
 │   ├── migrations/              # 0001_init.sql, 0002_... (source of truth)
@@ -516,7 +516,7 @@ of a thread that is still hidden.
 
 | | Git posts | Notes |
 |---|---|---|
-| Source | `content/blog/<slug>/index.md` (or `index.mdx`) | `app.posts` table |
+| Source | `content/blog/NNNN-<slug>/index.md` (or `index.mdx`) | `app.posts` table |
 | Written in | Any editor, or an agent PR | `/admin` Markdown editor with preview |
 | Published by | Merging to `main` | Setting status to `published` (revalidates tags) |
 | Rendering | The shared Markdown pipeline in **trusted** mode (raw HTML allowed) | The same pipeline in **sanitised** mode (no raw HTML) |
@@ -544,7 +544,11 @@ draft: false              # true = shown locally and on preview deploys, never i
 updated: 2026-10-07       # optional
 ---
 ```
-The folder name is the slug. Reading time is computed. `draft: true` lets an agent open a PR with a
+The folder name is `NNNN-<slug>`: a 4-digit publish number, then the slug used in the URL
+(`content/blog/0008-most-reliable-motorcycles/` is `/blog/most-reliable-motorcycles`). Give a new
+post the next number. Lists sort by `date`, and posts from the same day by publish number (latest
+first), so the order never depends on the alphabet. The build fails on a folder without a number,
+or on a number or slug used twice. Reading time is computed. `draft: true` lets an agent open a PR with a
 new post that you can read on the preview URL before it goes live.
 
 ### 9.3 Images
@@ -587,7 +591,7 @@ flowchart LR
   the preview (`npm run dev`, or the note editor's Preview) before publishing.
 
 ### 9.4 Merging the two sources
-- `src/features/blog/posts.ts` reads `content/blog/*/index.{md,mdx}` at build time for
+- `src/features/blog/posts.ts` reads `content/blog/NNNN-*/index.{md,mdx}` at build time for
   `generateStaticParams`, the index and RSS.
 - Notes live in `src/features/blog/notes/`: `queries.ts` (public reads cached with `'use cache'`
   and the tags `notes` and `note:<slug>`; they only return published notes that aren't private),
@@ -596,12 +600,14 @@ flowchart LR
   unpublishing and publishing again keeps that date.
 - `src/features/blog/server/catalog.ts` merges both for every page that lists or opens posts
   (`/blog`, `/blog/<slug>`, the overview's latest notes, the sitemap and the palette): one list
-  sorted by date, numbered together (the oldest is AN-001). The design doesn't mark notes
+  sorted by date, numbered together (the oldest is AN-001). On the same day git posts come first,
+  in publish order, then notes by slug. The design doesn't mark notes
   differently. Note bodies use the sanitised Markdown mode.
 - **Shared slug space.** A note can't take a git post's slug: `npm run blog:assets` (run by `dev`,
   `build` and `check`) writes every git slug to `src/features/blog/notes/git-slugs.json`, which the note
   schema and mutations check. The manifest is committed, so typecheck and tests don't need a
-  build; a unit test fails when it's out of date (run `npm run blog:assets` and commit it). The
+  build. Its unit test checks the first four posts are listed and the file is in generated form, so
+  adding a post never breaks it (run `npm run blog:assets` and commit the refreshed file). The
   other direction is a build check: `generateStaticParams` for `/blog/[slug]` fails if a git slug
   matches a published note. If both exist anyway, the git post owns the URL.
 - `/blog` and RSS merge both sources, sorted by date. `unlisted` items are reachable by URL only;
@@ -916,9 +922,9 @@ change what other specs count (blog lists, AN numbers) go in Playwright's `conte
 runs after the others.
 
 **Pinned git posts.** Feature tests only see the git posts listed in `tests/e2e/blog-posts.json`.
-Playwright passes them as `BLOG_ONLY` (comma-separated folder names) to `next build` and
-`next start`, and the CI build step sets the same value; `readPosts()` then skips every other
-folder, and fails if a pinned folder is missing. Adding a post to `content/blog` therefore changes
+Playwright passes them as `BLOG_ONLY` (comma-separated slugs, without the `NNNN-` prefix) to
+`next build` and `next start`, and the CI build step sets the same value; `readPosts()` then skips
+every other post, and fails if a pinned slug is missing. Adding a post to `content/blog` therefore changes
 no counts, AN numbers or "latest" assertions. Unit tests and the slug manifest still read every post. Add a slug to the
 JSON file only when a spec should cover that post.
 

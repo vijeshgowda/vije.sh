@@ -8,10 +8,12 @@ vi.mock("@/lib/db", () => ({ query: (...args: unknown[]) => query(...args) }));
 const { loadAdminStats } = await import("./queries");
 
 let dir: string;
+let seq = 0;
 const post = (slug: string, extra = "") => {
-  fs.mkdirSync(path.join(dir, slug));
+  const folder = path.join(dir, `${String(++seq).padStart(4, "0")}-${slug}`);
+  fs.mkdirSync(folder);
   fs.writeFileSync(
-    path.join(dir, slug, "index.md"),
+    path.join(folder, "index.md"),
     `---\ntitle: ${slug}\ndate: 2026-01-01\nsummary: s\ntags: [t]\n${extra}---\nBody\n`,
   );
 };

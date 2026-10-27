@@ -759,7 +759,11 @@ All of these checks are free for this public repository:
   PRs; that file alone does not enable security alerts or security-update PRs.
 
 Run the same `npm audit --package-lock-only --include=dev --audit-level=moderate` command locally.
-To enforce the audit before merging, add **Dependency audit** to the required status checks in
+When an advisory is in a transitive dependency that the parent package pins and no fixed parent
+release exists, add a scoped entry to `overrides` in `package.json` (for example
+`"@vercel/cli-config": { "zod": "$zod" }` reuses the root `zod` range), run
+`npm install --package-lock-only`, and remove the override once upstream ships a fix. Do not
+use `npm audit fix --force`; it can install breaking major versions. To enforce the audit before merging, add **Dependency audit** to the required status checks in
 the `main` branch protection/ruleset after its first run. CodeQL merge protection is configured
 separately in GitHub's code-scanning rules. Scheduled workflows run from the default branch, so
 the new audit schedule starts only after the workflow is merged into `main`.

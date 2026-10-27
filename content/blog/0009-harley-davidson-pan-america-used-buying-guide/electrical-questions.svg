@@ -1,0 +1,27 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1000" height="575" viewBox="0 0 1000 575" role="img" aria-labelledby="title description">
+<title id="title">A non-start is a symptom</title><desc id="description">Battery health: Load-test the installed battery; do not judge by age alone.; Charging system: Follow the correct procedure under relevant loads.; Draw and wiring: Investigate accessories, connections and parasitic draw.; Software and history: Read faults and check updates; keep the repair record.</desc>
+<rect width="1000" height="575" fill="#f4eee3"/>
+<text x="36" y="44" font-family="sans-serif" font-size="27" fill="#111214" text-anchor="start" font-weight="700">A non-start is a symptom</text>
+<text x="36" y="78" font-family="sans-serif" font-size="19" fill="#5a5a5e" text-anchor="start" font-weight="400">Questions for a qualified workshop, not a remote diagnosis.</text>
+<rect x="36" y="135" width="448" height="152" rx="3" fill="none" stroke="#ddd5c7" stroke-width="2"/>
+<path d="M36 135H484" stroke="#c4050f" stroke-width="4"/>
+<text x="52" y="169" font-family="sans-serif" font-size="23" fill="#111214" text-anchor="start" font-weight="700">Battery health</text>
+<text x="52" y="200" font-family="sans-serif" font-size="20" fill="#111214" text-anchor="start" font-weight="400">Load-test the installed battery;</text>
+<text x="52" y="225" font-family="sans-serif" font-size="20" fill="#111214" text-anchor="start" font-weight="400">do not judge by age alone.</text>
+<rect x="516" y="135" width="448" height="152" rx="3" fill="none" stroke="#ddd5c7" stroke-width="2"/>
+<path d="M516 135H964" stroke="#c4050f" stroke-width="4"/>
+<text x="532" y="169" font-family="sans-serif" font-size="23" fill="#111214" text-anchor="start" font-weight="700">Charging system</text>
+<text x="532" y="200" font-family="sans-serif" font-size="20" fill="#111214" text-anchor="start" font-weight="400">Follow the correct procedure under</text>
+<text x="532" y="225" font-family="sans-serif" font-size="20" fill="#111214" text-anchor="start" font-weight="400">relevant loads.</text>
+<rect x="36" y="310" width="448" height="152" rx="3" fill="none" stroke="#ddd5c7" stroke-width="2"/>
+<path d="M36 310H484" stroke="#c4050f" stroke-width="4"/>
+<text x="52" y="344" font-family="sans-serif" font-size="23" fill="#111214" text-anchor="start" font-weight="700">Draw and wiring</text>
+<text x="52" y="375" font-family="sans-serif" font-size="20" fill="#111214" text-anchor="start" font-weight="400">Investigate accessories,</text>
+<text x="52" y="400" font-family="sans-serif" font-size="20" fill="#111214" text-anchor="start" font-weight="400">connections and parasitic draw.</text>
+<rect x="516" y="310" width="448" height="152" rx="3" fill="none" stroke="#ddd5c7" stroke-width="2"/>
+<path d="M516 310H964" stroke="#c4050f" stroke-width="4"/>
+<text x="532" y="344" font-family="sans-serif" font-size="23" fill="#111214" text-anchor="start" font-weight="700">Software and history</text>
+<text x="532" y="375" font-family="sans-serif" font-size="20" fill="#111214" text-anchor="start" font-weight="400">Read faults and check updates;</text>
+<text x="532" y="400" font-family="sans-serif" font-size="20" fill="#111214" text-anchor="start" font-weight="400">keep the repair record.</text>
+<text x="36" y="529" font-family="sans-serif" font-size="16" fill="#5a5a5e" text-anchor="start" font-weight="400">Editorial inspection guide informed by the reported MY2024 revision; no frequency claim.</text>
+</svg>

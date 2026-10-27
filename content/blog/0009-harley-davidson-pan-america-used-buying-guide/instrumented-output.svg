@@ -1,0 +1,26 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1000" height="442" viewBox="0 0 1000 442" role="img" aria-labelledby="title description">
+<title id="title">Two instrumented tests, not engine claims</title><desc id="description">2021 CW test bike: 128.2 hp; 2022 CW test bike: 127.63 hp. Different test bikes and conditions; not a controlled model-year improvement comparison.</desc>
+<rect width="1000" height="442" fill="#f4eee3"/>
+<text x="36" y="44" font-family="sans-serif" font-size="27" fill="#111214" text-anchor="start" font-weight="700">Two instrumented tests, not engine claims</text>
+<text x="36" y="78" font-family="sans-serif" font-size="19" fill="#5a5a5e" text-anchor="start" font-weight="400">Different test bikes and conditions; not a controlled model-year improvement comparison.</text>
+<path d="M300.0 125V287" stroke="#ddd5c7"/>
+<text x="300.0" y="317" font-family="sans-serif" font-size="17" fill="#111214" text-anchor="middle" font-weight="400">0</text>
+<path d="M394.0 125V287" stroke="#ddd5c7"/>
+<text x="394.0" y="317" font-family="sans-serif" font-size="17" fill="#111214" text-anchor="middle" font-weight="400">30</text>
+<path d="M488.0 125V287" stroke="#ddd5c7"/>
+<text x="488.0" y="317" font-family="sans-serif" font-size="17" fill="#111214" text-anchor="middle" font-weight="400">60</text>
+<path d="M582.0 125V287" stroke="#ddd5c7"/>
+<text x="582.0" y="317" font-family="sans-serif" font-size="17" fill="#111214" text-anchor="middle" font-weight="400">90</text>
+<path d="M676.0 125V287" stroke="#ddd5c7"/>
+<text x="676.0" y="317" font-family="sans-serif" font-size="17" fill="#111214" text-anchor="middle" font-weight="400">120</text>
+<path d="M770.0 125V287" stroke="#ddd5c7"/>
+<text x="770.0" y="317" font-family="sans-serif" font-size="17" fill="#111214" text-anchor="middle" font-weight="400">150</text>
+<text x="36" y="168" font-family="sans-serif" font-size="20" fill="#111214" text-anchor="start" font-weight="400">2021 CW test bike</text>
+<rect x="300" y="145" width="401.693" height="34" fill="#c4050f"/>
+<text x="713.6933333333333" y="169" font-family="sans-serif" font-size="21" fill="#111214" text-anchor="start" font-weight="700">128.2 hp</text>
+<text x="36" y="234" font-family="sans-serif" font-size="20" fill="#111214" text-anchor="start" font-weight="400">2022 CW test bike</text>
+<rect x="300" y="211" width="399.907" height="34" fill="#c4050f"/>
+<text x="711.9073333333333" y="235" font-family="sans-serif" font-size="21" fill="#111214" text-anchor="start" font-weight="700">127.63 hp</text>
+<text x="300" y="350" font-family="sans-serif" font-size="18" fill="#111214" text-anchor="start" font-weight="400">Cycle World reported test output; zero-based scale</text>
+<text x="36" y="396" font-family="sans-serif" font-size="16" fill="#5a5a5e" text-anchor="start" font-weight="400">Sources: Cycle World 2021 Big-Bore Adventure Shootout and 2022 Open-Class Adventure Comparison.</text>
+</svg>

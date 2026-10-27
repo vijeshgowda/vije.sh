@@ -1,0 +1,52 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1000" height="700" viewBox="0 0 1000 700" role="img" aria-labelledby="title description">
+  <title id="title">UK Pan America Special asking prices, checked 27 October 2026</title>
+  <desc id="description">Fourteen Special adverts from the first twenty results on one Autotrader page. Grouped by advertised registration year, not verified model year. 2021: five bikes, 7489 to 9195 pounds, median 7699. 2022: three, 7999 to 9795, median 9250. 2023: four, 9290 to 10995, median 10499. 2024: one at 10995. 2025: one at 12795. These are asking prices, not sales or a depreciation history. The article contains the full data table.</desc>
+  <rect width="1000" height="700" fill="#f4eee3"/>
+  <g font-family="sans-serif" fill="#111214">
+    <text x="40" y="52" font-size="29" font-weight="700">WHAT UK SELLERS ARE ASKING</text>
+    <text x="40" y="86" font-size="20">Pan America Special only · snapshot, not sale values</text>
+    <text x="40" y="117" font-size="17" fill="#5a5a5e">Advertised year / sample size</text>
+    <g stroke="#ddd5c7">
+      <path d="M170 145V550 M310 145V550 M450 145V550 M590 145V550 M730 145V550"/>
+    </g>
+    <g font-size="21">
+      <text x="40" y="185">2021 · n=5</text>
+      <text x="40" y="265">2022 · n=3</text>
+      <text x="40" y="345">2023 · n=4</text>
+      <text x="40" y="425">2024 · n=1</text>
+      <text x="40" y="505">2025 · n=1</text>
+    </g>
+    <g stroke="#111214" stroke-width="5">
+      <path d="M469.56 178H537.8 M469.56 166V190 M537.8 166V190"/>
+      <path d="M489.96 258H561.8 M489.96 246V270 M561.8 246V270"/>
+      <path d="M541.6 338H609.8 M541.6 326V350 M609.8 326V350"/>
+    </g>
+    <g fill="#c4050f">
+      <circle cx="477.96" cy="178" r="8"/>
+      <circle cx="540" cy="258" r="8"/>
+      <circle cx="589.96" cy="338" r="8"/>
+      <circle cx="609.8" cy="418" r="8"/>
+      <circle cx="681.8" cy="498" r="8"/>
+    </g>
+    <g font-size="21" font-weight="700">
+      <text x="760" y="185">£7,699 median</text>
+      <text x="760" y="265">£9,250 median</text>
+      <text x="760" y="345">£10,499 median</text>
+      <text x="760" y="425">£10,995 single</text>
+      <text x="760" y="505">£12,795 single</text>
+    </g>
+    <path d="M170 550H730" stroke="#111214"/>
+    <g font-size="18" text-anchor="middle">
+      <text x="170" y="580">£0</text>
+      <text x="310" y="580">£3,500</text>
+      <text x="450" y="580">£7,000</text>
+      <text x="590" y="580">£10,500</text>
+      <text x="730" y="580">£14,000</text>
+    </g>
+    <path d="M40 620H100" stroke="#111214" stroke-width="5"/>
+    <text x="115" y="627" font-size="18">Observed min–max</text>
+    <circle cx="380" cy="620" r="7" fill="#c4050f"/>
+    <text x="398" y="627" font-size="18">Median, or one asking price where n=1</text>
+    <text x="40" y="671" font-size="17" fill="#5a5a5e">Source: Autotrader UK, 27 Oct 2026. Mixed equipment; one 2023 advert states 2022 model year.</text>
+  </g>
+</svg>

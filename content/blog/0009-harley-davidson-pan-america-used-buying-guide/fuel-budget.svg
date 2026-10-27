@@ -1,0 +1,35 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1000" height="570" viewBox="0 0 1000 570" role="img" aria-labelledby="title description">
+  <title id="title">Illustrative annual fuel budget at 6000 miles</title>
+  <desc id="description">At an assumed petrol price of 1.50 pounds per litre, 6000 miles costs approximately 1023 pounds at 40 imperial miles per gallon, 909 pounds at 45, and 818 pounds at 50. These are calculated scenarios, not measured Pan America consumption or current pump-price data. Formula: miles divided by imperial mpg times 4.54609 litres per gallon times price per litre.</desc>
+  <rect width="1000" height="570" fill="#f4eee3"/>
+  <g font-family="sans-serif" fill="#111214">
+    <text x="40" y="52" font-size="29" font-weight="700">THE FUEL BILL, NOT THE WHOLE BILL</text>
+    <text x="40" y="89" font-size="21">6,000 miles / year · assumed £1.50 / litre · imperial mpg</text>
+    <g stroke="#ddd5c7">
+      <path d="M200 135V415 M350 135V415 M500 135V415 M650 135V415 M800 135V415"/>
+    </g>
+    <g fill="#c4050f">
+      <rect x="200" y="150" width="511.44" height="50"/>
+      <rect x="200" y="245" width="454.61" height="50"/>
+      <rect x="200" y="340" width="409.15" height="50"/>
+    </g>
+    <g font-size="25">
+      <text x="40" y="183">40 mpg</text>
+      <text x="40" y="278">45 mpg</text>
+      <text x="40" y="373">50 mpg</text>
+      <text x="735" y="183" font-weight="700">£1,023</text>
+      <text x="680" y="278" font-weight="700">£909</text>
+      <text x="635" y="373" font-weight="700">£818</text>
+    </g>
+    <path d="M200 415H800" stroke="#111214"/>
+    <g font-size="20" text-anchor="middle">
+      <text x="200" y="450">£0</text>
+      <text x="350" y="450">£300</text>
+      <text x="500" y="450">£600</text>
+      <text x="650" y="450">£900</text>
+      <text x="800" y="450">£1,200</text>
+    </g>
+    <text x="40" y="505" font-size="20">Calculated scenarios, not a road test or a pump-price survey.</text>
+    <text x="40" y="540" font-size="18" fill="#5a5a5e">Budget separately for insurance, servicing, tyres, chain, tax, recovery and repairs.</text>
+  </g>
+</svg>

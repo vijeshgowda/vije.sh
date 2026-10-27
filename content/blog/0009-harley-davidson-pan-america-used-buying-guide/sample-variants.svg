@@ -1,0 +1,31 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1000" height="574" viewBox="0 0 1000 574" role="img" aria-labelledby="title description">
+<title id="title">What the sample actually contains</title><desc id="description">Special: 14 adverts; ST: 4 adverts; Base: 1 adverts; Limited: 1 adverts. Twenty displayed adverts, not UK sales or the whole advertised market.</desc>
+<rect width="1000" height="574" fill="#f4eee3"/>
+<text x="36" y="44" font-family="sans-serif" font-size="27" fill="#111214" text-anchor="start" font-weight="700">What the sample actually contains</text>
+<text x="36" y="78" font-family="sans-serif" font-size="19" fill="#5a5a5e" text-anchor="start" font-weight="400">Twenty displayed adverts, not UK sales or the whole advertised market.</text>
+<path d="M300.0 125V419" stroke="#ddd5c7"/>
+<text x="300.0" y="449" font-family="sans-serif" font-size="17" fill="#111214" text-anchor="middle" font-weight="400">0</text>
+<path d="M417.5 125V419" stroke="#ddd5c7"/>
+<text x="417.5" y="449" font-family="sans-serif" font-size="17" fill="#111214" text-anchor="middle" font-weight="400">4</text>
+<path d="M535.0 125V419" stroke="#ddd5c7"/>
+<text x="535.0" y="449" font-family="sans-serif" font-size="17" fill="#111214" text-anchor="middle" font-weight="400">8</text>
+<path d="M652.5 125V419" stroke="#ddd5c7"/>
+<text x="652.5" y="449" font-family="sans-serif" font-size="17" fill="#111214" text-anchor="middle" font-weight="400">12</text>
+<path d="M770.0 125V419" stroke="#ddd5c7"/>
+<text x="770.0" y="449" font-family="sans-serif" font-size="17" fill="#111214" text-anchor="middle" font-weight="400">16</text>
+<text x="36" y="168" font-family="sans-serif" font-size="20" fill="#111214" text-anchor="start" font-weight="400">Special</text>
+<rect x="300" y="145" width="411.250" height="34" fill="#c4050f"/>
+<text x="723.25" y="169" font-family="sans-serif" font-size="21" fill="#111214" text-anchor="start" font-weight="700">14 adverts</text>
+<text x="36" y="234" font-family="sans-serif" font-size="20" fill="#111214" text-anchor="start" font-weight="400">ST</text>
+<rect x="300" y="211" width="117.500" height="34" fill="#c4050f"/>
+<text x="429.5" y="235" font-family="sans-serif" font-size="21" fill="#111214" text-anchor="start" font-weight="700">4 adverts</text>
+<text x="36" y="300" font-family="sans-serif" font-size="20" fill="#111214" text-anchor="start" font-weight="400">Base</text>
+<rect x="300" y="277" width="29.375" height="34" fill="#c4050f"/>
+<text x="341.375" y="301" font-family="sans-serif" font-size="21" fill="#111214" text-anchor="start" font-weight="700">1 adverts</text>
+<text x="36" y="366" font-family="sans-serif" font-size="20" fill="#111214" text-anchor="start" font-weight="400">Limited</text>
+<rect x="300" y="343" width="29.375" height="34" fill="#c4050f"/>
+<text x="341.375" y="367" font-family="sans-serif" font-size="21" fill="#111214" text-anchor="start" font-weight="700">1 adverts</text>
+<text x="300" y="482" font-family="sans-serif" font-size="18" fill="#111214" text-anchor="start" font-weight="400">Adverts; zero-based scale</text>
+<text x="36" y="528" font-family="sans-serif" font-size="16" fill="#5a5a5e" text-anchor="start" font-weight="400">Source: first 20 Autotrader UK Pan America adverts, 27 Oct 2026. Asking prices, not sales. Full register</text>
+<text x="36" y="549" font-family="sans-serif" font-size="16" fill="#5a5a5e" text-anchor="start" font-weight="400">in article.</text>
+</svg>

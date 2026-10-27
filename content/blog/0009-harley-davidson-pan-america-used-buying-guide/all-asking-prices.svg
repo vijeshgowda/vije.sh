@@ -1,0 +1,78 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1000" height="980" viewBox="0 0 1000 980" role="img" aria-labelledby="title description">
+<title id="title">All twenty advertised prices</title><desc id="description">Advert 1: Limited, 2026, 18900 pounds; Advert 2: ST, 2026, 13995 pounds; Advert 3: Special, 2022, 9250 pounds; Advert 4: ST, 2025, 13995 pounds; Advert 5: Special, 2025, 12795 pounds; Advert 6: Special, 2023, 9290 pounds; Advert 7: Special, 2022, 9795 pounds; Advert 8: Special, 2022, 7999 pounds; Advert 9: Special, 2021, 7499 pounds; Advert 10: Special, 2023, 10499 pounds; Advert 11: Special, 2021, 7699 pounds; Advert 12: Special, 2024, 10995 pounds; Advert 13: Special, 2021, 7489 pounds; Advert 14: Special, 2021, 7989 pounds; Advert 15: Special, 2023, 10499 pounds; Advert 16: ST, 2025, 13995 pounds; Advert 17: Special, 2023, 10995 pounds; Advert 18: ST, 2025, 12999 pounds; Advert 19: Special, 2021, 9195 pounds; Advert 20: Base, 2025, 9499 pounds</desc>
+<rect width="1000" height="980" fill="#f4eee3"/>
+<text x="36" y="44" font-family="sans-serif" font-size="27" fill="#111214" text-anchor="start" font-weight="700">All twenty advertised prices</text>
+<text x="36" y="78" font-family="sans-serif" font-size="19" fill="#5a5a5e" text-anchor="start" font-weight="400">Rows follow the article's register. Variants are labelled, not treated as equivalent.</text>
+<path d="M340.0 130V855" stroke="#ddd5c7"/>
+<text x="340.0" y="892" font-family="sans-serif" font-size="17" fill="#111214" text-anchor="middle" font-weight="400">£0</text>
+<path d="M477.5 130V855" stroke="#ddd5c7"/>
+<text x="477.5" y="892" font-family="sans-serif" font-size="17" fill="#111214" text-anchor="middle" font-weight="400">£5,000</text>
+<path d="M615.0 130V855" stroke="#ddd5c7"/>
+<text x="615.0" y="892" font-family="sans-serif" font-size="17" fill="#111214" text-anchor="middle" font-weight="400">£10,000</text>
+<path d="M752.5 130V855" stroke="#ddd5c7"/>
+<text x="752.5" y="892" font-family="sans-serif" font-size="17" fill="#111214" text-anchor="middle" font-weight="400">£15,000</text>
+<path d="M890.0 130V855" stroke="#ddd5c7"/>
+<text x="890.0" y="892" font-family="sans-serif" font-size="17" fill="#111214" text-anchor="middle" font-weight="400">£20,000</text>
+<text x="36" y="156" font-family="sans-serif" font-size="18" fill="#111214" text-anchor="start" font-weight="400">01 / 2026 / Limited</text>
+<circle cx="859.75" cy="150" r="6" fill="#c4050f"/>
+<text x="915" y="156" font-family="sans-serif" font-size="17" fill="#111214" text-anchor="start" font-weight="400">18,900</text>
+<text x="36" y="191" font-family="sans-serif" font-size="18" fill="#111214" text-anchor="start" font-weight="400">02 / 2026 / ST</text>
+<circle cx="724.8625" cy="185" r="6" fill="#c4050f"/>
+<text x="915" y="191" font-family="sans-serif" font-size="17" fill="#111214" text-anchor="start" font-weight="400">13,995</text>
+<text x="36" y="226" font-family="sans-serif" font-size="18" fill="#111214" text-anchor="start" font-weight="400">03 / 2022 / Special</text>
+<circle cx="594.375" cy="220" r="6" fill="#c4050f"/>
+<text x="915" y="226" font-family="sans-serif" font-size="17" fill="#111214" text-anchor="start" font-weight="400">9,250</text>
+<text x="36" y="261" font-family="sans-serif" font-size="18" fill="#111214" text-anchor="start" font-weight="400">04 / 2025 / ST</text>
+<circle cx="724.8625" cy="255" r="6" fill="#c4050f"/>
+<text x="915" y="261" font-family="sans-serif" font-size="17" fill="#111214" text-anchor="start" font-weight="400">13,995</text>
+<text x="36" y="296" font-family="sans-serif" font-size="18" fill="#111214" text-anchor="start" font-weight="400">05 / 2025 / Special</text>
+<circle cx="691.8625" cy="290" r="6" fill="#c4050f"/>
+<text x="915" y="296" font-family="sans-serif" font-size="17" fill="#111214" text-anchor="start" font-weight="400">12,795</text>
+<text x="36" y="331" font-family="sans-serif" font-size="18" fill="#111214" text-anchor="start" font-weight="400">06 / 2023 / Special</text>
+<circle cx="595.475" cy="325" r="6" fill="#c4050f"/>
+<text x="915" y="331" font-family="sans-serif" font-size="17" fill="#111214" text-anchor="start" font-weight="400">9,290</text>
+<text x="36" y="366" font-family="sans-serif" font-size="18" fill="#111214" text-anchor="start" font-weight="400">07 / 2022 / Special</text>
+<circle cx="609.3625" cy="360" r="6" fill="#c4050f"/>
+<text x="915" y="366" font-family="sans-serif" font-size="17" fill="#111214" text-anchor="start" font-weight="400">9,795</text>
+<text x="36" y="401" font-family="sans-serif" font-size="18" fill="#111214" text-anchor="start" font-weight="400">08 / 2022 / Special</text>
+<circle cx="559.9725000000001" cy="395" r="6" fill="#c4050f"/>
+<text x="915" y="401" font-family="sans-serif" font-size="17" fill="#111214" text-anchor="start" font-weight="400">7,999</text>
+<text x="36" y="436" font-family="sans-serif" font-size="18" fill="#111214" text-anchor="start" font-weight="400">09 / 2021 / Special</text>
+<circle cx="546.2225" cy="430" r="6" fill="#c4050f"/>
+<text x="915" y="436" font-family="sans-serif" font-size="17" fill="#111214" text-anchor="start" font-weight="400">7,499</text>
+<text x="36" y="471" font-family="sans-serif" font-size="18" fill="#111214" text-anchor="start" font-weight="400">10 / 2023 / Special</text>
+<circle cx="628.7225000000001" cy="465" r="6" fill="#c4050f"/>
+<text x="915" y="471" font-family="sans-serif" font-size="17" fill="#111214" text-anchor="start" font-weight="400">10,499</text>
+<text x="36" y="506" font-family="sans-serif" font-size="18" fill="#111214" text-anchor="start" font-weight="400">11 / 2021 / Special</text>
+<circle cx="551.7225" cy="500" r="6" fill="#c4050f"/>
+<text x="915" y="506" font-family="sans-serif" font-size="17" fill="#111214" text-anchor="start" font-weight="400">7,699</text>
+<text x="36" y="541" font-family="sans-serif" font-size="18" fill="#111214" text-anchor="start" font-weight="400">12 / 2024 / Special</text>
+<circle cx="642.3625" cy="535" r="6" fill="#c4050f"/>
+<text x="915" y="541" font-family="sans-serif" font-size="17" fill="#111214" text-anchor="start" font-weight="400">10,995</text>
+<text x="36" y="576" font-family="sans-serif" font-size="18" fill="#111214" text-anchor="start" font-weight="400">13 / 2021 / Special</text>
+<circle cx="545.9475" cy="570" r="6" fill="#c4050f"/>
+<text x="915" y="576" font-family="sans-serif" font-size="17" fill="#111214" text-anchor="start" font-weight="400">7,489</text>
+<text x="36" y="611" font-family="sans-serif" font-size="18" fill="#111214" text-anchor="start" font-weight="400">14 / 2021 / Special</text>
+<circle cx="559.6975" cy="605" r="6" fill="#c4050f"/>
+<text x="915" y="611" font-family="sans-serif" font-size="17" fill="#111214" text-anchor="start" font-weight="400">7,989</text>
+<text x="36" y="646" font-family="sans-serif" font-size="18" fill="#111214" text-anchor="start" font-weight="400">15 / 2023 / Special</text>
+<circle cx="628.7225000000001" cy="640" r="6" fill="#c4050f"/>
+<text x="915" y="646" font-family="sans-serif" font-size="17" fill="#111214" text-anchor="start" font-weight="400">10,499</text>
+<text x="36" y="681" font-family="sans-serif" font-size="18" fill="#111214" text-anchor="start" font-weight="400">16 / 2025 / ST</text>
+<circle cx="724.8625" cy="675" r="6" fill="#c4050f"/>
+<text x="915" y="681" font-family="sans-serif" font-size="17" fill="#111214" text-anchor="start" font-weight="400">13,995</text>
+<text x="36" y="716" font-family="sans-serif" font-size="18" fill="#111214" text-anchor="start" font-weight="400">17 / 2023 / Special</text>
+<circle cx="642.3625" cy="710" r="6" fill="#c4050f"/>
+<text x="915" y="716" font-family="sans-serif" font-size="17" fill="#111214" text-anchor="start" font-weight="400">10,995</text>
+<text x="36" y="751" font-family="sans-serif" font-size="18" fill="#111214" text-anchor="start" font-weight="400">18 / 2025 / ST</text>
+<circle cx="697.4725000000001" cy="745" r="6" fill="#c4050f"/>
+<text x="915" y="751" font-family="sans-serif" font-size="17" fill="#111214" text-anchor="start" font-weight="400">12,999</text>
+<text x="36" y="786" font-family="sans-serif" font-size="18" fill="#111214" text-anchor="start" font-weight="400">19 / 2021 / Special</text>
+<circle cx="592.8625" cy="780" r="6" fill="#c4050f"/>
+<text x="915" y="786" font-family="sans-serif" font-size="17" fill="#111214" text-anchor="start" font-weight="400">9,195</text>
+<text x="36" y="821" font-family="sans-serif" font-size="18" fill="#111214" text-anchor="start" font-weight="400">20 / 2025 / Base</text>
+<circle cx="601.2225" cy="815" r="6" fill="#c4050f"/>
+<text x="915" y="821" font-family="sans-serif" font-size="17" fill="#111214" text-anchor="start" font-weight="400">9,499</text>
+<text x="36" y="934" font-family="sans-serif" font-size="16" fill="#5a5a5e" text-anchor="start" font-weight="400">Source: first 20 Autotrader UK Pan America adverts, 27 Oct 2026. Asking prices, not sales. Full register</text>
+<text x="36" y="955" font-family="sans-serif" font-size="16" fill="#5a5a5e" text-anchor="start" font-weight="400">in article.</text>
+</svg>

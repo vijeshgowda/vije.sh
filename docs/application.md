@@ -737,6 +737,37 @@ A Postgres service container runs alongside the job (section 13.2).
 
 Branch protection on `main`: CI must pass; no force-pushes.
 
+#### Security scanning
+
+All of these checks are free for this public repository:
+
+- **Dependency CVEs:** `.github/workflows/security.yml` runs `npm audit --package-lock-only
+  --include=dev --audit-level=moderate` on every PR, pushes to `main`, Mondays at 06:37 UTC,
+  and manual dispatch. It audits the committed lockfile, including transitive runtime and
+  development dependencies, without installing packages or running their scripts. Moderate,
+  high and critical advisories fail the job; low advisories remain visible in the report.
+  Registry/network errors also fail the job. The separate workflow does not skip `chore`
+  changes. Results appear in Actions under **Security / Dependency audit**.
+- **Source-code scanning:** CodeQL default setup is already enabled in GitHub's repository
+  settings for JavaScript/TypeScript and GitHub Actions, using the default query suite and
+  weekly scheduled scanning as well as GitHub's push/PR triggers. Findings appear in
+  **Security > Code scanning** and on PRs. Do not add a competing CodeQL Actions workflow
+  unless switching off default setup. The npm severity threshold does not configure CodeQL's
+  alert or merge policy.
+- **Dependency alerts and fixes:** Dependabot alerts and security updates are already enabled
+  in repository settings. `.github/dependabot.yml` separately configures daily npm version-update
+  PRs; that file alone does not enable security alerts or security-update PRs.
+
+Run the same `npm audit --package-lock-only --include=dev --audit-level=moderate` command locally.
+When an advisory is in a transitive dependency that the parent package pins and no fixed parent
+release exists, add a scoped entry to `overrides` in `package.json` (for example
+`"@vercel/cli-config": { "zod": "$zod" }` reuses the root `zod` range), run
+`npm install --package-lock-only`, and remove the override once upstream ships a fix. Do not
+use `npm audit fix --force`; it can install breaking major versions. To enforce the audit before merging, add **Dependency audit** to the required status checks in
+the `main` branch protection/ruleset after its first run. CodeQL merge protection is configured
+separately in GitHub's code-scanning rules. Scheduled workflows run from the default branch, so
+the new audit schedule starts only after the workflow is merged into `main`.
+
 ### 12.5 Setting up Supabase and Vercel (runbook)
 
 Do the **dev project completely first**; repeat for production only once dev works. Never paste

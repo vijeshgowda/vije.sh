@@ -91,8 +91,14 @@ hot spots: change them in small, separate commits and say so in the PR.
 - Prefer a subagent for running already-chosen tests, lint, typecheck or builds when the main
   agent only needs the outcome rather than the tool output. Other useful tasks include checking
   an explicit list of files for a known pattern or verifying a mechanical checklist.
-- Use `gpt-5.6-luna` (GPT Luna) for subagent calls. If unavailable, report that limitation rather
-  than silently choosing another model.
+- Pick the subagent model per task; the main agent decides which fits:
+  - `gpt-6-luna` (GPT Luna) for the simplest tasks: running an already-chosen command and
+    reporting PASS/FAIL, or a mechanical checklist.
+  - `claude-haiku-5.5` (Claude Haiku 5.5) for bounded tasks that need a little more reading or
+    judgement, such as summarising failures across a suite or checking a file list for a
+    pattern that needs interpretation.
+  - If the chosen model is unavailable, report that limitation rather than silently choosing
+    another model.
 - Give each subagent the working directory, exact command or file scope, constraints, expected
   result and stopping condition. Test runners must not edit files, fix failures, install packages
   or broaden the suite unless explicitly authorised.

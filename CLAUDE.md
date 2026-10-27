@@ -3,8 +3,10 @@
 @AGENTS.md
 
 Follow the imported repository instructions, including the subagent and AI commit and PR
-attribution policies. Use `gpt-5.6-luna` for easy, bounded subagent tasks such as executing
-already-chosen validation commands; keep reasoning and debugging with the main agent.
+attribution policies. For easy, bounded subagent tasks, use `gpt-6-luna` for the simplest ones
+(such as executing already-chosen validation commands) and `claude-haiku-5.5` for bounded tasks
+that need more reading or judgement; the main agent decides which. Keep reasoning and debugging
+with the main agent.
 
 Choose attribution by the actual model provider: Anthropic uses
 `Co-authored-by: Claude <noreply@anthropic.com>`, OpenAI uses

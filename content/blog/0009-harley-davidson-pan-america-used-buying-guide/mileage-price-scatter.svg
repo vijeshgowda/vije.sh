@@ -1,0 +1,44 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1000" height="680" viewBox="0 0 1000 680" role="img" aria-labelledby="title description">
+<title id="title">Mileage is not the whole price</title><desc id="description">2022, 1621 miles, 9250 pounds; 2025, 4667 miles, 12795 pounds; 2023, 5130 miles, 9290 pounds; 2022, 5959 miles, 9795 pounds; 2022, 1116 miles, 7999 pounds; 2021, 10007 miles, 7499 pounds; 2023, 1659 miles, 10499 pounds; 2021, 15706 miles, 7699 pounds; 2024, 6900 miles, 10995 pounds; 2021, 5277 miles, 7489 pounds; 2021, 7312 miles, 7989 pounds; 2023, 4079 miles, 10499 pounds; 2023, 429 miles, 10995 pounds; 2021, 2146 miles, 9195 pounds</desc>
+<rect width="1000" height="680" fill="#f4eee3"/>
+<text x="36" y="44" font-family="sans-serif" font-size="27" fill="#111214" text-anchor="start" font-weight="700">Mileage is not the whole price</text>
+<text x="36" y="78" font-family="sans-serif" font-size="19" fill="#5a5a5e" text-anchor="start" font-weight="400">Fourteen Specials; no fitted trend line or implied causal relationship.</text>
+<path d="M100.0 145V525" stroke="#ddd5c7"/>
+<text x="100.0" y="555" font-family="sans-serif" font-size="18" fill="#111214" text-anchor="middle" font-weight="400">0</text>
+<path d="M275.0 145V525" stroke="#ddd5c7"/>
+<text x="275.0" y="555" font-family="sans-serif" font-size="18" fill="#111214" text-anchor="middle" font-weight="400">4,000</text>
+<path d="M450.0 145V525" stroke="#ddd5c7"/>
+<text x="450.0" y="555" font-family="sans-serif" font-size="18" fill="#111214" text-anchor="middle" font-weight="400">8,000</text>
+<path d="M625.0 145V525" stroke="#ddd5c7"/>
+<text x="625.0" y="555" font-family="sans-serif" font-size="18" fill="#111214" text-anchor="middle" font-weight="400">12,000</text>
+<path d="M800.0 145V525" stroke="#ddd5c7"/>
+<text x="800.0" y="555" font-family="sans-serif" font-size="18" fill="#111214" text-anchor="middle" font-weight="400">16,000</text>
+<path d="M100 525.0H800" stroke="#ddd5c7"/>
+<text x="90" y="531.0" font-family="sans-serif" font-size="18" fill="#111214" text-anchor="end" font-weight="400">£0</text>
+<path d="M100 430.0H800" stroke="#ddd5c7"/>
+<text x="90" y="436.0" font-family="sans-serif" font-size="18" fill="#111214" text-anchor="end" font-weight="400">£3,500</text>
+<path d="M100 335.0H800" stroke="#ddd5c7"/>
+<text x="90" y="341.0" font-family="sans-serif" font-size="18" fill="#111214" text-anchor="end" font-weight="400">£7,000</text>
+<path d="M100 240.0H800" stroke="#ddd5c7"/>
+<text x="90" y="246.0" font-family="sans-serif" font-size="18" fill="#111214" text-anchor="end" font-weight="400">£10,500</text>
+<path d="M100 145.0H800" stroke="#ddd5c7"/>
+<text x="90" y="151.0" font-family="sans-serif" font-size="18" fill="#111214" text-anchor="end" font-weight="400">£14,000</text>
+<circle cx="170.91875" cy="273.92857142857144" r="7" fill="#c4050f"><title>2022: £9,250, 1,621 miles, Private</title></circle>
+<circle cx="304.18125" cy="177.70714285714286" r="7" fill="#c4050f"><title>2025: £12,795, 4,667 miles, Cobb &amp; Jagger Motorcycles</title></circle>
+<circle cx="324.4375" cy="272.84285714285716" r="7" fill="#c4050f"><title>2023: £9,290, 5,130 miles, Crescent Motorcycles - Verwood</title></circle>
+<circle cx="360.70625" cy="259.1357142857143" r="7" fill="#c4050f"><title>2022: £9,795, 5,959 miles, Harley Davidson Manchester UK</title></circle>
+<circle cx="148.825" cy="307.88428571428574" r="7" fill="#c4050f"><title>2022: £7,999, 1,116 miles, Arnolds Motorcycles Loughborough</title></circle>
+<circle cx="537.80625" cy="321.4557142857143" r="7" fill="#c4050f"><title>2021: £7,499, 10,007 miles, Kd Motorcycles</title></circle>
+<circle cx="172.58125" cy="240.02714285714285" r="7" fill="#c4050f"><title>2023: £10,499, 1,659 miles, Red Lion Motors</title></circle>
+<circle cx="787.1374999999999" cy="316.02714285714285" r="7" fill="#c4050f"><title>2021: £7,699, 15,706 miles, Vertu Honda Stockton Bikes</title></circle>
+<circle cx="401.875" cy="226.5642857142857" r="7" fill="#c4050f"><title>2024: £10,995, 6,900 miles, Newmarket Harley-Davidson</title></circle>
+<circle cx="330.86875" cy="321.7271428571429" r="7" fill="#c4050f"><title>2021: £7,489, 5,277 miles, Blade Triumph Stratford</title></circle>
+<circle cx="419.90000000000003" cy="308.1557142857143" r="7" fill="#c4050f"><title>2021: £7,989, 7,312 miles, Blade Honda Abingdon</title></circle>
+<circle cx="278.45624999999995" cy="240.02714285714285" r="7" fill="#c4050f"><title>2023: £10,499, 4,079 miles, Harley World Chesterfield</title></circle>
+<circle cx="118.76875" cy="226.5642857142857" r="7" fill="#c4050f"><title>2023: £10,995, 429 miles, Sycamore Motorcycles</title></circle>
+<circle cx="193.8875" cy="275.4214285714286" r="7" fill="#c4050f"><title>2021: £9,195, 2,146 miles, Greenham Kawasaki</title></circle>
+<text x="390" y="590" font-family="sans-serif" font-size="21" fill="#111214" text-anchor="start" font-weight="400">Advertised mileage (miles)</text>
+<text x="830" y="180" font-family="sans-serif" font-size="23" fill="#111214" text-anchor="start" font-weight="700">n = 14</text>
+<text x="36" y="634" font-family="sans-serif" font-size="16" fill="#5a5a5e" text-anchor="start" font-weight="400">Source: first 20 Autotrader UK Pan America adverts, 27 Oct 2026. Asking prices, not sales. Full register</text>
+<text x="36" y="655" font-family="sans-serif" font-size="16" fill="#5a5a5e" text-anchor="start" font-weight="400">in article.</text>
+</svg>

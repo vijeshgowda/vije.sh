@@ -1,0 +1,37 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1000" height="750" viewBox="0 0 1000 750" role="img" aria-labelledby="title description">
+<title id="title">What each source can actually prove</title><desc id="description">Official specification: Equipment and announced changes; not lifetime durability.; Recall record: A defined defect/remedy; not every possible fault.; Road / long-term test: Experience of particular bikes and test conditions.; Owners and forums: Useful leads and counterexamples; no fleet denominator.; Wiki: Background and citation leads; verify against primary material.; Classified advert: Seller's ask and claims; not verified condition or sale price.</desc>
+<rect width="1000" height="750" fill="#f4eee3"/>
+<text x="36" y="44" font-family="sans-serif" font-size="27" fill="#111214" text-anchor="start" font-weight="700">What each source can actually prove</text>
+<text x="36" y="78" font-family="sans-serif" font-size="19" fill="#5a5a5e" text-anchor="start" font-weight="400">Evidence categories, not a numerical reliability score.</text>
+<rect x="36" y="135" width="448" height="152" rx="3" fill="none" stroke="#ddd5c7" stroke-width="2"/>
+<path d="M36 135H484" stroke="#c4050f" stroke-width="4"/>
+<text x="52" y="169" font-family="sans-serif" font-size="23" fill="#111214" text-anchor="start" font-weight="700">Official specification</text>
+<text x="52" y="200" font-family="sans-serif" font-size="20" fill="#111214" text-anchor="start" font-weight="400">Equipment and announced changes;</text>
+<text x="52" y="225" font-family="sans-serif" font-size="20" fill="#111214" text-anchor="start" font-weight="400">not lifetime durability.</text>
+<rect x="516" y="135" width="448" height="152" rx="3" fill="none" stroke="#ddd5c7" stroke-width="2"/>
+<path d="M516 135H964" stroke="#c4050f" stroke-width="4"/>
+<text x="532" y="169" font-family="sans-serif" font-size="23" fill="#111214" text-anchor="start" font-weight="700">Recall record</text>
+<text x="532" y="200" font-family="sans-serif" font-size="20" fill="#111214" text-anchor="start" font-weight="400">A defined defect/remedy; not every</text>
+<text x="532" y="225" font-family="sans-serif" font-size="20" fill="#111214" text-anchor="start" font-weight="400">possible fault.</text>
+<rect x="36" y="310" width="448" height="152" rx="3" fill="none" stroke="#ddd5c7" stroke-width="2"/>
+<path d="M36 310H484" stroke="#c4050f" stroke-width="4"/>
+<text x="52" y="344" font-family="sans-serif" font-size="23" fill="#111214" text-anchor="start" font-weight="700">Road / long-term test</text>
+<text x="52" y="375" font-family="sans-serif" font-size="20" fill="#111214" text-anchor="start" font-weight="400">Experience of particular bikes and</text>
+<text x="52" y="400" font-family="sans-serif" font-size="20" fill="#111214" text-anchor="start" font-weight="400">test conditions.</text>
+<rect x="516" y="310" width="448" height="152" rx="3" fill="none" stroke="#ddd5c7" stroke-width="2"/>
+<path d="M516 310H964" stroke="#c4050f" stroke-width="4"/>
+<text x="532" y="344" font-family="sans-serif" font-size="23" fill="#111214" text-anchor="start" font-weight="700">Owners and forums</text>
+<text x="532" y="375" font-family="sans-serif" font-size="20" fill="#111214" text-anchor="start" font-weight="400">Useful leads and counterexamples;</text>
+<text x="532" y="400" font-family="sans-serif" font-size="20" fill="#111214" text-anchor="start" font-weight="400">no fleet denominator.</text>
+<rect x="36" y="485" width="448" height="152" rx="3" fill="none" stroke="#ddd5c7" stroke-width="2"/>
+<path d="M36 485H484" stroke="#c4050f" stroke-width="4"/>
+<text x="52" y="519" font-family="sans-serif" font-size="23" fill="#111214" text-anchor="start" font-weight="700">Wiki</text>
+<text x="52" y="550" font-family="sans-serif" font-size="20" fill="#111214" text-anchor="start" font-weight="400">Background and citation leads;</text>
+<text x="52" y="575" font-family="sans-serif" font-size="20" fill="#111214" text-anchor="start" font-weight="400">verify against primary material.</text>
+<rect x="516" y="485" width="448" height="152" rx="3" fill="none" stroke="#ddd5c7" stroke-width="2"/>
+<path d="M516 485H964" stroke="#c4050f" stroke-width="4"/>
+<text x="532" y="519" font-family="sans-serif" font-size="23" fill="#111214" text-anchor="start" font-weight="700">Classified advert</text>
+<text x="532" y="550" font-family="sans-serif" font-size="20" fill="#111214" text-anchor="start" font-weight="400">Seller's ask and claims; not</text>
+<text x="532" y="575" font-family="sans-serif" font-size="20" fill="#111214" text-anchor="start" font-weight="400">verified condition or sale price.</text>
+<text x="36" y="704" font-family="sans-serif" font-size="16" fill="#5a5a5e" text-anchor="start" font-weight="400">Research methodology used throughout this article. Independence and source type remain explicit.</text>
+</svg>

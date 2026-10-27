@@ -1,0 +1,27 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1000" height="508" viewBox="0 0 1000 508" role="img" aria-labelledby="title description">
+<title id="title">Annual mileage changes the fuel bill</title><desc id="description">3,000 miles / year: £455; 6,000 miles / year: £909; 10,000 miles / year: £1,515. Illustration: 45 imperial mpg and £1.50/litre; not measured economy.</desc>
+<rect width="1000" height="508" fill="#f4eee3"/>
+<text x="36" y="44" font-family="sans-serif" font-size="27" fill="#111214" text-anchor="start" font-weight="700">Annual mileage changes the fuel bill</text>
+<text x="36" y="78" font-family="sans-serif" font-size="19" fill="#5a5a5e" text-anchor="start" font-weight="400">Illustration: 45 imperial mpg and £1.50/litre; not measured economy.</text>
+<path d="M300.0 125V353" stroke="#ddd5c7"/>
+<text x="300.0" y="383" font-family="sans-serif" font-size="17" fill="#111214" text-anchor="middle" font-weight="400">0</text>
+<path d="M417.5 125V353" stroke="#ddd5c7"/>
+<text x="417.5" y="383" font-family="sans-serif" font-size="17" fill="#111214" text-anchor="middle" font-weight="400">450</text>
+<path d="M535.0 125V353" stroke="#ddd5c7"/>
+<text x="535.0" y="383" font-family="sans-serif" font-size="17" fill="#111214" text-anchor="middle" font-weight="400">900</text>
+<path d="M652.5 125V353" stroke="#ddd5c7"/>
+<text x="652.5" y="383" font-family="sans-serif" font-size="17" fill="#111214" text-anchor="middle" font-weight="400">1,350</text>
+<path d="M770.0 125V353" stroke="#ddd5c7"/>
+<text x="770.0" y="383" font-family="sans-serif" font-size="17" fill="#111214" text-anchor="middle" font-weight="400">1,800</text>
+<text x="36" y="168" font-family="sans-serif" font-size="20" fill="#111214" text-anchor="start" font-weight="400">3,000 miles / year</text>
+<rect x="300" y="145" width="118.703" height="34" fill="#c4050f"/>
+<text x="430.7034611111111" y="169" font-family="sans-serif" font-size="21" fill="#111214" text-anchor="start" font-weight="700">£455</text>
+<text x="36" y="234" font-family="sans-serif" font-size="20" fill="#111214" text-anchor="start" font-weight="400">6,000 miles / year</text>
+<rect x="300" y="211" width="237.407" height="34" fill="#c4050f"/>
+<text x="549.4069222222222" y="235" font-family="sans-serif" font-size="21" fill="#111214" text-anchor="start" font-weight="700">£909</text>
+<text x="36" y="300" font-family="sans-serif" font-size="20" fill="#111214" text-anchor="start" font-weight="400">10,000 miles / year</text>
+<rect x="300" y="277" width="395.678" height="34" fill="#c4050f"/>
+<text x="707.6782037037037" y="301" font-family="sans-serif" font-size="21" fill="#111214" text-anchor="start" font-weight="700">£1,515</text>
+<text x="300" y="416" font-family="sans-serif" font-size="18" fill="#111214" text-anchor="start" font-weight="400">GBP per year; zero-based scale</text>
+<text x="36" y="462" font-family="sans-serif" font-size="16" fill="#5a5a5e" text-anchor="start" font-weight="400">Calculation: miles / imperial mpg × 4.54609 litres per gallon × assumed price per litre.</text>
+</svg>

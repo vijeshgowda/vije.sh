@@ -1,0 +1,27 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1000" height="575" viewBox="0 0 1000 575" role="img" aria-labelledby="title description">
+<title id="title">Ride height is not just preload</title><desc id="description">Automatic preload: Adjusts for load and sag where fitted.; Adaptive Ride Height: Lowers at a stop and restores height for riding.; Rider reach: Boots, seat width and settings affect confidence.; Still a heavy bike: Lowering does not remove mass or fix awkward cambers.</desc>
+<rect width="1000" height="575" fill="#f4eee3"/>
+<text x="36" y="44" font-family="sans-serif" font-size="27" fill="#111214" text-anchor="start" font-weight="700">Ride height is not just preload</text>
+<text x="36" y="78" font-family="sans-serif" font-size="19" fill="#5a5a5e" text-anchor="start" font-weight="400">Functional explanation; not an engineering drawing or diagnostic test.</text>
+<rect x="36" y="135" width="448" height="152" rx="3" fill="none" stroke="#ddd5c7" stroke-width="2"/>
+<path d="M36 135H484" stroke="#c4050f" stroke-width="4"/>
+<text x="52" y="169" font-family="sans-serif" font-size="23" fill="#111214" text-anchor="start" font-weight="700">Automatic preload</text>
+<text x="52" y="200" font-family="sans-serif" font-size="20" fill="#111214" text-anchor="start" font-weight="400">Adjusts for load and sag where</text>
+<text x="52" y="225" font-family="sans-serif" font-size="20" fill="#111214" text-anchor="start" font-weight="400">fitted.</text>
+<rect x="516" y="135" width="448" height="152" rx="3" fill="none" stroke="#ddd5c7" stroke-width="2"/>
+<path d="M516 135H964" stroke="#c4050f" stroke-width="4"/>
+<text x="532" y="169" font-family="sans-serif" font-size="23" fill="#111214" text-anchor="start" font-weight="700">Adaptive Ride Height</text>
+<text x="532" y="200" font-family="sans-serif" font-size="20" fill="#111214" text-anchor="start" font-weight="400">Lowers at a stop and restores</text>
+<text x="532" y="225" font-family="sans-serif" font-size="20" fill="#111214" text-anchor="start" font-weight="400">height for riding.</text>
+<rect x="36" y="310" width="448" height="152" rx="3" fill="none" stroke="#ddd5c7" stroke-width="2"/>
+<path d="M36 310H484" stroke="#c4050f" stroke-width="4"/>
+<text x="52" y="344" font-family="sans-serif" font-size="23" fill="#111214" text-anchor="start" font-weight="700">Rider reach</text>
+<text x="52" y="375" font-family="sans-serif" font-size="20" fill="#111214" text-anchor="start" font-weight="400">Boots, seat width and settings</text>
+<text x="52" y="400" font-family="sans-serif" font-size="20" fill="#111214" text-anchor="start" font-weight="400">affect confidence.</text>
+<rect x="516" y="310" width="448" height="152" rx="3" fill="none" stroke="#ddd5c7" stroke-width="2"/>
+<path d="M516 310H964" stroke="#c4050f" stroke-width="4"/>
+<text x="532" y="344" font-family="sans-serif" font-size="23" fill="#111214" text-anchor="start" font-weight="700">Still a heavy bike</text>
+<text x="532" y="375" font-family="sans-serif" font-size="20" fill="#111214" text-anchor="start" font-weight="400">Lowering does not remove mass or</text>
+<text x="532" y="400" font-family="sans-serif" font-size="20" fill="#111214" text-anchor="start" font-weight="400">fix awkward cambers.</text>
+<text x="36" y="529" font-family="sans-serif" font-size="16" fill="#5a5a5e" text-anchor="start" font-weight="400">Sources: Harley-Davidson system descriptions and independent tests linked in the article.</text>
+</svg>

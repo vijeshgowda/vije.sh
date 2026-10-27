@@ -1,0 +1,28 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1000" height="575" viewBox="0 0 1000 575" role="img" aria-labelledby="title description">
+<title id="title">Four jobs that are not the same</title><desc id="description">Safety recall: Defined safety defect and specified remedy.; Service campaign: Manufacturer programme; applicability needs a VIN check.; Software update: A version change is not proof of new charging hardware.; Hardware upgrade: Confirm part numbers, compatibility, labour and completion.</desc>
+<rect width="1000" height="575" fill="#f4eee3"/>
+<text x="36" y="44" font-family="sans-serif" font-size="27" fill="#111214" text-anchor="start" font-weight="700">Four jobs that are not the same</text>
+<text x="36" y="78" font-family="sans-serif" font-size="19" fill="#5a5a5e" text-anchor="start" font-weight="400">Ask what was done, under which campaign, and on which invoice.</text>
+<rect x="36" y="135" width="448" height="152" rx="3" fill="none" stroke="#ddd5c7" stroke-width="2"/>
+<path d="M36 135H484" stroke="#c4050f" stroke-width="4"/>
+<text x="52" y="169" font-family="sans-serif" font-size="23" fill="#111214" text-anchor="start" font-weight="700">Safety recall</text>
+<text x="52" y="200" font-family="sans-serif" font-size="20" fill="#111214" text-anchor="start" font-weight="400">Defined safety defect and</text>
+<text x="52" y="225" font-family="sans-serif" font-size="20" fill="#111214" text-anchor="start" font-weight="400">specified remedy.</text>
+<rect x="516" y="135" width="448" height="152" rx="3" fill="none" stroke="#ddd5c7" stroke-width="2"/>
+<path d="M516 135H964" stroke="#c4050f" stroke-width="4"/>
+<text x="532" y="169" font-family="sans-serif" font-size="23" fill="#111214" text-anchor="start" font-weight="700">Service campaign</text>
+<text x="532" y="200" font-family="sans-serif" font-size="20" fill="#111214" text-anchor="start" font-weight="400">Manufacturer programme;</text>
+<text x="532" y="225" font-family="sans-serif" font-size="20" fill="#111214" text-anchor="start" font-weight="400">applicability needs a VIN check.</text>
+<rect x="36" y="310" width="448" height="152" rx="3" fill="none" stroke="#ddd5c7" stroke-width="2"/>
+<path d="M36 310H484" stroke="#c4050f" stroke-width="4"/>
+<text x="52" y="344" font-family="sans-serif" font-size="23" fill="#111214" text-anchor="start" font-weight="700">Software update</text>
+<text x="52" y="375" font-family="sans-serif" font-size="20" fill="#111214" text-anchor="start" font-weight="400">A version change is not proof of</text>
+<text x="52" y="400" font-family="sans-serif" font-size="20" fill="#111214" text-anchor="start" font-weight="400">new charging hardware.</text>
+<rect x="516" y="310" width="448" height="152" rx="3" fill="none" stroke="#ddd5c7" stroke-width="2"/>
+<path d="M516 310H964" stroke="#c4050f" stroke-width="4"/>
+<text x="532" y="344" font-family="sans-serif" font-size="23" fill="#111214" text-anchor="start" font-weight="700">Hardware upgrade</text>
+<text x="532" y="375" font-family="sans-serif" font-size="20" fill="#111214" text-anchor="start" font-weight="400">Confirm part numbers,</text>
+<text x="532" y="400" font-family="sans-serif" font-size="20" fill="#111214" text-anchor="start" font-weight="400">compatibility, labour and</text>
+<text x="532" y="425" font-family="sans-serif" font-size="20" fill="#111214" text-anchor="start" font-weight="400">completion.</text>
+<text x="36" y="529" font-family="sans-serif" font-size="16" fill="#5a5a5e" text-anchor="start" font-weight="400">Editorial document checklist. Confirm applicable campaigns and work with a Harley-Davidson dealer.</text>
+</svg>

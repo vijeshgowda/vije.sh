@@ -61,7 +61,8 @@ export function Section({
   children,
 }: {
   id: string;
-  no: number | string;
+  /** Omit for unnumbered sections. */
+  no?: number | string;
   title: string;
   note?: ReactNode;
   children: ReactNode;
@@ -70,7 +71,7 @@ export function Section({
     <section className={styles.sec} id={id} aria-labelledby={`${id}-h`}>
       <Reveal self rule className={styles.sh}>
         <h2 id={`${id}-h`}>
-          <span className={styles.no}>{no}</span>
+          {no != null && <span className={styles.no}>{no}</span>}
           {title}
         </h2>
         {note && <span className={styles.note}>{note}</span>}

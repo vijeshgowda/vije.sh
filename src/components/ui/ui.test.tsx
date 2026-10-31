@@ -64,11 +64,15 @@ describe("ui primitives", () => {
         <Section id="t" no={2} title="NoNote">
           x
         </Section>
+        <Section id="u" title="Unnumbered">
+          y
+        </Section>
         <RunFoot page={3} />
       </>,
     );
     expect(screen.getByRole("heading", { level: 1, name: "Title" })).toBeInTheDocument();
     expect(screen.getByRole("region", { name: "1Sec" })).toBeInTheDocument();
+    expect(screen.getByRole("region", { name: "Unnumbered" })).toBeInTheDocument();
     expect(screen.getByText("Page 3 of 7")).toBeInTheDocument();
   });
 

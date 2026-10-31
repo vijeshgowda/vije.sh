@@ -1,0 +1,138 @@
+{
+  "source": "vijeshgowda/coming-soon-temp@c2a2056a34b9805cccc68b42d848c826078726fa",
+  "privateKeys": [
+    {
+      "kty": "EC",
+      "crv": "P-256",
+      "x": "axfR8uEsQkf4vOblY6RA8ncDfYEt6zOg9KE5RdiYwpY",
+      "y": "T-NC4v4af5uO5-tKfA-eFivOM1drMV7Oy7ZAaDe_UfU",
+      "d": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAE"
+    },
+    {
+      "kty": "EC",
+      "crv": "P-256",
+      "x": "fPJ7GI0DT36KUjgDBLUaw8CJaeJ38hs1pgtI_EdmmXg",
+      "y": "B3dVENuO0EApPZrGn3Qw27p9reY86YIpngS3nSJ4c9E",
+      "d": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAI"
+    }
+  ],
+  "publicKeys": [
+    "BGsX0fLhLEJH+Lzm5WOkQPJ3A32BLeszoPShOUXYmMKWT+NC4v4af5uO5+tKfA+eFivOM1drMV7Oy7ZAaDe/UfU=",
+    "BHzyexiNA09+ilI4AwS1GsPAiWnid/IbNaYLSPxHZpl4B3dVENuO0EApPZrGn3Qw27p9reY86YIpngS3nSJ4c9E="
+  ],
+  "publicKeyWire": "{\"type\":\"pubkey\",\"key\":\"BGsX0fLhLEJH+Lzm5WOkQPJ3A32BLeszoPShOUXYmMKWT+NC4v4af5uO5+tKfA+eFivOM1drMV7Oy7ZAaDe/UfU=\"}",
+  "safety": {
+    "emoji": "🐯 🍋 🐹 🌙 🍋",
+    "code": "C9E5 0320"
+  },
+  "encryptions": [
+    {
+      "password": "",
+      "plaintext": "Omni compatibility 🔒",
+      "iv": [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11],
+      "encrypted": "AAECAwQFBgcICQoLUBUxymZcbBQ/LUjGk2S4YIFlrDUO6CVtxrTmTGT47GvLdIOdqRW7"
+    },
+    {
+      "password": "pass",
+      "plaintext": "Omni compatibility 🔒",
+      "iv": [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12],
+      "encrypted": "AQIDBAUGBwgJCgsM8wOjALnd9YMqwLkSE75xUNt9919OiH7x0213MqC++GV7XZ0VCLvh"
+    },
+    {
+      "password": "pass\u0000word",
+      "plaintext": "Omni compatibility 🔒",
+      "iv": [2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13],
+      "encrypted": "AgMEBQYHCAkKCwwN5c4/q3N5JMwT+25YcwWmvJTMqKuJW6S9O2HF+ecqQX4prlqkumRx"
+    },
+    {
+      "password": "ಕನ್ನಡ",
+      "plaintext": "Omni compatibility 🔒",
+      "iv": [3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14],
+      "encrypted": "AwQFBgcICQoLDA0OzyMPhQC/VV5ALPS4YO7+2pGFeFIjU3ckbfcMyBoYIqbbzgJ1GE0n"
+    }
+  ],
+  "messages": [
+    {
+      "message": {
+        "type": "chat",
+        "text": "hello"
+      },
+      "iv": [4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15],
+      "wire": "{\"type\":\"encrypted\",\"data\":\"BAUGBwgJCgsMDQ4PKSkfqJ93ebVDoia/oD0Ma5u1zUaJ58gE94y0SSo1B9QysO53OVI0nIHoKDaecw==\"}"
+    },
+    {
+      "message": {
+        "type": "typing"
+      },
+      "iv": [5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16],
+      "wire": "{\"type\":\"encrypted\",\"data\":\"BQYHCAkKCwwNDg8QcsR1j0/OdYNFl61Bcx/zDUx0NXZAvoiz6iXfiLTLBc5P\"}"
+    },
+    {
+      "message": {
+        "type": "__verify"
+      },
+      "iv": [6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17],
+      "wire": "{\"type\":\"encrypted\",\"data\":\"BgcICQoLDA0ODxARNgdvVCyxOXutx7GjuyHYZscxSB7kbrYTdN7HW/ZIVbe2oFc=\"}"
+    },
+    {
+      "message": {
+        "type": "__verified"
+      },
+      "iv": [7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18],
+      "wire": "{\"type\":\"encrypted\",\"data\":\"BwgJCgsMDQ4PEBESYYn0YViUW+0kfBgLuuQfaJAdcm9lo6j5rcw3pbOQdoJ28JvRwg==\"}"
+    }
+  ],
+  "file": {
+    "metadata": {
+      "type": "file-meta",
+      "fileId": 2882400001,
+      "name": "sample.bin",
+      "size": 65539,
+      "mimeType": "application/octet-stream",
+      "hash": "c467ba1a4894015de179751bab39a53f78fcac19af3952a7c9b8f828ad2edba7",
+      "chunks": 2
+    },
+    "metadataWire": "{\"type\":\"encrypted\",\"data\":\"CAkKCwwNDg8QERITnJIsOafkHXKjWyLBiN3VviIp9ndSC3D8GsnIR5BdCUcwswTXQELD6PBe7qgSzLKQRKd+KM01eaCIl4HtrqtftIgwfnPVu6N4RHiIqYnCjP1RqaO0XgrN2oWF9rEWxn0CyCf1HiDIGKHKrYDI0xpDd2JowfH17xiY9Teja4cnYOp/kqDIlrCJLj5TMrqYfhCC/saIdGtsjffqd+n9eR/o3SgAfu5jj1qcrpzuuNajmfef0cO/JV1CF3SRQqLNKfLTo3atMGwtXVs1kslHQvLib+t0Buk=\"}",
+    "metadataIv": [8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19],
+    "frames": [
+      {
+        "byteLength": 65572,
+        "header": [1, 239, 205, 171, 0, 0, 0, 0],
+        "iv": [9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20],
+        "sha256": "e797d2c8cd49f89e12104215fb7698d8711366f215300b7030728f5359a935c8"
+      },
+      {
+        "byteLength": 39,
+        "header": [1, 239, 205, 171, 1, 0, 0, 0],
+        "iv": [10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21],
+        "sha256": "6c87c32faf9566d1841ad88bd1510aee5b9fffa6b6d1d5b4c3cffe233128d7b9"
+      }
+    ]
+  },
+  "qrs": [
+    {
+      "text": "hello",
+      "ecc": "LOW",
+      "size": 21,
+      "sha256": "16fcb7e586dec1c5def73002114d7cc9f227b673df1c0133c2ce63daa600e8ea"
+    },
+    {
+      "text": "https://vije.sh/lab/omni#K7Q2M9",
+      "ecc": "MEDIUM",
+      "size": 29,
+      "sha256": "9ef2a82263f9d262b3cc4e0c2dd2b95e9a2cc950c2fcdfb049f58ba8825f4113"
+    },
+    {
+      "text": "ಕನ್ನಡ",
+      "ecc": "QUARTILE",
+      "size": 25,
+      "sha256": "9ba729315a7f97aeef02185ccddfcb83990858272c6447421eab798592f1fb9f"
+    },
+    {
+      "text": "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+      "ecc": "HIGH",
+      "size": 161,
+      "sha256": "8007f9c74be06b4462eedf8f904be2ff60044f6b9e1d4aca7105fc7bae74696d"
+    }
+  ]
+}

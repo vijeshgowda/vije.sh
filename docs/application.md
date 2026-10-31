@@ -189,6 +189,7 @@ storing a dev database credential outside Vercel, which isn't worth it.
 │   │   │   ├── page.tsx                     # /         About
 │   │   │   ├── blog/page.tsx                # /blog
 │   │   │   ├── blog/[slug]/page.tsx         # /blog/:slug  (git post or database note)
+│   │   │   ├── lab/omni/page.tsx            # /lab/omni (browser-to-browser calls)
 │   │   │   ├── forum/page.tsx               # /forum
 │   │   │   ├── forum/[category]/page.tsx
 │   │   │   ├── forum/[category]/[thread]/page.tsx
@@ -260,12 +261,21 @@ src/features/forum/
 - Server-only modules start with `import "server-only"`.
 - Shared UI primitives live in `components/ui`; feature-specific UI stays in its feature folder.
 
-### Omni core (Lab port, not yet exposed as a route)
+### Omni (Lab RTC)
 
 `src/features/omni/client/core/` contains framework-free browser modules. Importing them does not
-open a socket, request media, or create an audio context. The later `/lab/omni` island will load
-them on Create/Join; recorder and QR remain separate lazy chunks. No route, service worker,
-signalling endpoint configuration, or TURN credentials are added by the core port.
+open a socket, request media, or create an audio context. The `/lab/omni` route shell is static;
+the later island will load the core on Create/Join, with recorder and QR as separate lazy chunks.
+There is no service worker. The route links a standalone web manifest, and the signalling endpoint
+is configured by `NEXT_PUBLIC_OMNI_SIGNALING_URL` (default
+`wss://omni-8t2t.onrender.com`) in `src/lib/env.ts`.
+
+The Lab card is a plain document link, and its palette entry uses `window.location.assign`, because
+the route has a different `Permissions-Policy` and CSP from the rest of the site. The Lab page
+allows only the signalling host's HTTP(S) health endpoint for its no-CORS idle warm-up; camera,
+microphone and display capture remain disabled there. `/lab/omni` allows same-origin media capture,
+the signalling WebSocket/health endpoint, blob media and blob workers. Keep the site-wide media
+policy restrictive.
 
 - `SignalingClient` accepts a WebSocket URL; `PeerConnection` accepts signalling, ICE servers and
   the optional room password. Both expose typed `.on(event, detail => ...)` subscriptions,
@@ -313,6 +323,7 @@ prerendered into a static shell; data comes from `'use cache'` functions (with `
 |---|---|---|
 | `/` | Static | Build; tag `notes` (for "latest posts"); default-pin feeds by their `cacheLife` |
 | `/work`, `/lab`, `/photo` | Static | Build |
+| `/lab/omni` | Static shell (RTC code loads only after Create/Join) | Build |
 | `/live` | Static (ISR) | Each feed's `cacheLife` (shortest: 5 min) |
 | `/api/feeds/[key]` | Static per feed (`generateStaticParams`, ISR) | Feed `cacheLife`; tags `feeds`, `feed:<key>` |
 | `/blog` | Static | Build (git posts) + tag `notes` |

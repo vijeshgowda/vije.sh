@@ -4,6 +4,7 @@ import { assertAuthModeSafe, env, EnvError, hasEnv, isLocalDatabase } from "./en
 describe("env()", () => {
   it("applies defaults", () => {
     expect(env("site", {}).NEXT_PUBLIC_SITE_URL).toBe("https://vije.sh");
+    expect(env("omni", {}).NEXT_PUBLIC_OMNI_SIGNALING_URL).toBe("wss://omni-8t2t.onrender.com");
   });
 
   it("treats empty strings as missing", () => {
@@ -46,6 +47,21 @@ describe("env()", () => {
   it("rejects non-postgres URLs and non-http site URLs", () => {
     expect(hasEnv("database", { DATABASE_URL: "mysql://localhost/x" })).toBe(false);
     expect(hasEnv("site", { NEXT_PUBLIC_SITE_URL: "javascript:alert(1)" })).toBe(false);
+  });
+
+  it("accepts only websocket origins for Omni signalling", () => {
+    expect(
+      env("omni", { NEXT_PUBLIC_OMNI_SIGNALING_URL: "ws://localhost:8765" })
+        .NEXT_PUBLIC_OMNI_SIGNALING_URL,
+    ).toBe("ws://localhost:8765");
+    for (const value of [
+      "https://example.com",
+      "wss://user:pass@example.com",
+      "wss://example.com/path",
+      "wss://example.com?token=secret",
+    ]) {
+      expect(hasEnv("omni", { NEXT_PUBLIC_OMNI_SIGNALING_URL: value })).toBe(false);
+    }
   });
 
   it("caches values read from process.env", () => {

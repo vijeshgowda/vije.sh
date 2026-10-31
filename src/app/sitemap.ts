@@ -12,6 +12,10 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       url: new URL(p.href, SITE.url).href,
       changeFrequency: "weekly" as const,
     })),
+    {
+      url: new URL("/lab/omni", SITE.url).href,
+      changeFrequency: "weekly" as const,
+    },
     { url: new URL("/guidelines", SITE.url).href, changeFrequency: "monthly" as const },
     ...(await blogNoteRows()).map((n) => ({
       url: new URL(`/blog/${n.slug}`, SITE.url).href,

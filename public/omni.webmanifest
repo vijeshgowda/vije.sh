@@ -1,0 +1,8 @@
+{
+  "name": "Omni · vije.sh",
+  "short_name": "Omni",
+  "description": "Encrypted browser-to-browser calls, chat and file transfer.",
+  "start_url": "/lab/omni",
+  "scope": "/lab/omni",
+  "display": "standalone"
+}

@@ -54,10 +54,15 @@ function land(el: HTMLElement, action: GoAction, smooth: boolean) {
  * Prototype `goTo`: open a page, or a place on a page. With a selector it waits for the target page
  * to render the element (pages share ids, e.g. feed cards), scrolls to it, then clicks or rings it.
  */
-export function goTo(push: (href: Route) => void, action: GoAction) {
+export function goTo(
+  push: (href: Route) => void,
+  action: GoAction,
+  assign: (href: Route) => void = (href) => window.location.assign(href),
+) {
   const here = window.location.pathname === action.href;
   if (!action.selector) {
     if (here) window.scrollTo({ top: 0, behavior: reduced() ? "auto" : "smooth" });
+    else if (action.document) assign(action.href);
     else push(action.href);
     return;
   }

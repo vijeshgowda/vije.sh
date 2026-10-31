@@ -34,13 +34,18 @@ describe("buildItems", () => {
     const items = build();
     const groups = [...new Set(items.map((i) => i.group))];
     expect(groups).toEqual(["Page", "Section", "Note", "Feed", "Command"]);
-    expect(items.filter((i) => i.group === "Page")).toHaveLength(PAGES.length);
+    expect(items.filter((i) => i.group === "Page")).toHaveLength(PAGES.length + 1);
     expect(items.filter((i) => i.group === "Section")).toHaveLength(SECTIONS.length);
     expect(items.filter((i) => i.group === "Feed")).toHaveLength(FEEDS.length);
   });
 
   it("links notes, sections and feeds to the right places", () => {
     const items = build();
+    expect(items.find((i) => i.title === "Omni")!.action).toEqual({
+      type: "go",
+      href: "/lab/omni",
+      document: true,
+    });
     const note = items.find((i) => i.code === "AN-002")!;
     expect(note.sub).toBe("AI \u00b7 on 2026-10-05");
     expect(note.action).toEqual({ type: "go", href: "/blog/a%20b" });

@@ -15,6 +15,18 @@ export const TURNSTILE_PAGES = ["/welcome"] as const;
 
 export interface CspOptions {
   turnstile?: boolean;
+  omniSignalingUrl?: string;
+}
+
+/** Pages that make Omni calls. They get camera/microphone and the signalling WebSocket. */
+export const OMNI_CALL_PAGES = ["/lab/omni"] as const;
+
+function websocketOrigin(signalingUrl: string): string {
+  const signaling = new URL(signalingUrl);
+  if (signaling.protocol !== "ws:" && signaling.protocol !== "wss:") {
+    throw new TypeError("Omni signalling URL must use ws: or wss:");
+  }
+  return signaling.origin;
 }
 
 /**
@@ -24,7 +36,7 @@ export interface CspOptions {
  */
 export function contentSecurityPolicy(
   dev: boolean,
-  { turnstile = false }: CspOptions = {},
+  { turnstile = false, omniSignalingUrl }: CspOptions = {},
 ): string {
   const directives: Record<string, string[]> = {
     "default-src": ["'self'"],
@@ -37,7 +49,13 @@ export function contentSecurityPolicy(
     "style-src": ["'self'", "'unsafe-inline'"],
     "img-src": ["'self'", "data:", "blob:", ...IMAGE_HOSTS],
     "font-src": ["'self'"],
-    "connect-src": ["'self'", ...BROWSER_CONNECT_HOSTS, ...(dev ? ["ws:"] : [])],
+    "connect-src": [
+      "'self'",
+      ...BROWSER_CONNECT_HOSTS,
+      ...(omniSignalingUrl ? [websocketOrigin(omniSignalingUrl)] : []),
+      ...(dev ? ["ws:"] : []),
+    ],
+    ...(omniSignalingUrl ? { "media-src": ["'self'", "blob:"] } : {}),
     ...(turnstile ? { "frame-src": [TURNSTILE_HOST] } : {}),
     "object-src": ["'none'"],
     "base-uri": ["'self'"],
@@ -53,13 +71,16 @@ export function securityHeaders(
   dev: boolean,
   options: CspOptions = {},
 ): { key: string; value: string }[] {
+  const omniCall = options.omniSignalingUrl !== undefined;
   return [
     { key: "Content-Security-Policy", value: contentSecurityPolicy(dev, options) },
     { key: "X-Content-Type-Options", value: "nosniff" },
     { key: "Referrer-Policy", value: "strict-origin-when-cross-origin" },
     {
       key: "Permissions-Policy",
-      value: "camera=(), microphone=(), geolocation=(self), payment=()",
+      value: omniCall
+        ? "camera=(self), microphone=(self), display-capture=(self), geolocation=(self), payment=()"
+        : "camera=(), microphone=(), geolocation=(self), payment=()",
     },
     { key: "X-Frame-Options", value: "DENY" },
     ...(dev
@@ -69,16 +90,20 @@ export function securityHeaders(
 }
 
 /**
- * `headers()` entries for next.config.ts. Turnstile pages are excluded from the general rule: a
- * response with two CSP headers must satisfy both, so the stricter one would still block the widget.
+ * Special pages are excluded from the general rule because duplicate CSP headers are intersected
+ * by browsers and the stricter policy would still block the required feature.
  */
-export function headerRoutes(dev: boolean) {
-  const pages = TURNSTILE_PAGES.map((p) => p.slice(1)).join("|");
+export function headerRoutes(dev: boolean, omniSignalingUrl: string) {
+  const pages = [...TURNSTILE_PAGES, ...OMNI_CALL_PAGES].map((p) => p.slice(1)).join("|");
   return [
     { source: `/:path((?!(?:${pages})$).*)`, headers: securityHeaders(dev) },
     ...TURNSTILE_PAGES.map((source) => ({
       source,
       headers: securityHeaders(dev, { turnstile: true }),
+    })),
+    ...OMNI_CALL_PAGES.map((source) => ({
+      source,
+      headers: securityHeaders(dev, { omniSignalingUrl }),
     })),
   ];
 }

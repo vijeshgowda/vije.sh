@@ -13,7 +13,14 @@ export type Group = "Page" | "Section" | "Note" | "Feed" | "Command" | "Thread";
 export type CommandId = "theme" | "launch" | "copy" | "feeds" | "top";
 
 export type Action =
-  | { type: "go"; href: Route; selector?: string; click?: boolean; showAllFeeds?: boolean }
+  | {
+      type: "go";
+      href: Route;
+      selector?: string;
+      click?: boolean;
+      showAllFeeds?: boolean;
+      document?: true;
+    }
   | { type: "run"; command: CommandId };
 
 export interface PaletteItem {
@@ -104,6 +111,15 @@ export function buildItems({
     sub: p.description,
     action: { type: "go", href: p.href },
   }));
+  const labTools: PaletteItem[] = [
+    {
+      group: "Page",
+      code: "RTC",
+      title: "Omni",
+      sub: "Encrypted calls, chat and file transfer",
+      action: { type: "go", href: "/lab/omni", document: true },
+    },
+  ];
   const sections = SECTIONS.map<PaletteItem>(([id, title], i) => ({
     group: "Section",
     code: `\u00a7${i + 1}`,
@@ -161,7 +177,7 @@ export function buildItems({
     sub: `${t.category} \u00b7 ${formatDate(t.date)}`,
     action: { type: "go", href: threadHref(t.slug, t.id) },
   }));
-  return [...pages, ...sections, ...posts, ...feeds, ...commands, ...forum];
+  return [...pages, ...labTools, ...sections, ...posts, ...feeds, ...commands, ...forum];
 }
 
 export const MAX_RESULTS = 60;

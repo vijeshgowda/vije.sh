@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { PageIntro, RunFoot, RunHead, Section } from "@/components/ui/Datasheet";
+import { LabCard } from "@/features/omni/components/LabCard";
 import { MemoryLab } from "@/features/lab/components/MemoryLab";
 
 export const metadata: Metadata = {
@@ -16,6 +17,7 @@ export default function LabPage() {
         How much memory does a model need? Fewer bits per weight, smaller model. Pick a size and a
         bit width.
       </PageIntro>
+      <LabCard />
       <Section id="sizing" no={8} title="Memory sizing" note="Raw weights only">
         <MemoryLab />
       </Section>

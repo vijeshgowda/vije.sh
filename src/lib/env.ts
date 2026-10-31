@@ -7,6 +7,18 @@ import { z } from "zod";
  */
 
 const url = z.url({ protocol: /^https?$/ });
+const websocketUrl = z.url({ protocol: /^wss?$/ }).refine((value) => {
+  const parsed = new URL(value);
+  return (
+    !parsed.username &&
+    !parsed.password &&
+    parsed.pathname === "/" &&
+    !parsed.search &&
+    !parsed.hash
+  );
+}, "must be a WebSocket origin URL without credentials or a path");
+
+export const DEFAULT_OMNI_SIGNALING_URL = "wss://omni-8t2t.onrender.com";
 
 export function isLocalDatabase(connectionString: string): boolean {
   try {
@@ -20,6 +32,9 @@ export function isLocalDatabase(connectionString: string): boolean {
 const schemas = {
   site: z.object({
     NEXT_PUBLIC_SITE_URL: url.default("https://vije.sh"),
+  }),
+  omni: z.object({
+    NEXT_PUBLIC_OMNI_SIGNALING_URL: websocketUrl.default(DEFAULT_OMNI_SIGNALING_URL),
   }),
   database: z
     .object({

@@ -1,5 +1,6 @@
 import { existsSync } from "node:fs";
 import { defineConfig, devices } from "@playwright/test";
+import { env } from "./src/lib/env";
 import BLOG_POSTS from "./tests/e2e/blog-posts.json";
 
 const PORT = 3200;
@@ -50,6 +51,7 @@ export default defineConfig({
     timeout: 240_000,
     env: {
       FEEDS_OFFLINE: "1",
+      NEXT_PUBLIC_OMNI_SIGNALING_URL: env("omni").NEXT_PUBLIC_OMNI_SIGNALING_URL,
       BLOG_ONLY: BLOG_POSTS.join(","),
       NEXT_TELEMETRY_DISABLED: "1",
       DATABASE_URL: TEST_DATABASE_URL,

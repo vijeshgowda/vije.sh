@@ -1,4 +1,5 @@
 import type { NextConfig } from "next";
+import { env } from "./src/lib/env";
 import { headerRoutes } from "./src/lib/security-headers";
 
 const nextConfig: NextConfig = {
@@ -24,7 +25,10 @@ const nextConfig: NextConfig = {
   },
   async headers() {
     return [
-      ...headerRoutes(process.env.NODE_ENV !== "production"),
+      ...headerRoutes(
+        process.env.NODE_ENV !== "production",
+        env("omni").NEXT_PUBLIC_OMNI_SIGNALING_URL,
+      ),
       // public/ files default to max-age=0; the coastlines change only with a deploy and an old
       // copy is harmless
       {

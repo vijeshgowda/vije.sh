@@ -37,6 +37,13 @@ describe("goTo", () => {
     expect(push).toHaveBeenCalledWith("/work");
   });
 
+  it("uses a full document navigation for routes that require fresh response headers", () => {
+    const assign = vi.fn();
+    goTo(push, { type: "go", href: "/lab/omni", document: true }, assign);
+    expect(assign).toHaveBeenCalledWith("/lab/omni");
+    expect(push).not.toHaveBeenCalled();
+  });
+
   it("scrolls to the top when the page is already open", () => {
     goTo(push, { type: "go", href: "/" });
     expect(push).not.toHaveBeenCalled();

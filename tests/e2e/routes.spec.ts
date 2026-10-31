@@ -8,6 +8,7 @@ const ROUTES = [
   { path: "/", h1: "vije.sh" },
   { path: "/work", h1: "Deployments" },
   { path: "/lab", h1: "Lab" },
+  { path: "/lab/omni", h1: "Omni" },
   { path: "/photo", h1: "Contact sheet" },
   { path: "/blog", h1: "Application notes" },
   { path: "/blog/planning-this-site", h1: "Planning this site" },
@@ -78,7 +79,10 @@ test("security headers are set", async ({ request }) => {
 
 test("robots, sitemap and the feeds API", async ({ request }) => {
   expect(await (await request.get("/robots.txt")).text()).toContain("Disallow: /api/");
-  expect(await (await request.get("/sitemap.xml")).text()).toContain("/live</loc>");
+  const sitemap = await (await request.get("/sitemap.xml")).text();
+  expect(sitemap).toContain("/live</loc>");
+  expect(sitemap).toContain("/lab/omni</loc>");
+  expect((await request.get("/omni.webmanifest")).status()).toBe(200);
   const feed = await request.get("/api/feeds/hn");
   expect(feed.status()).toBe(200);
   expect(await feed.json()).toMatchObject({ key: "hn", ok: false, error: "offline" });

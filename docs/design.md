@@ -32,7 +32,7 @@ self-hosted by `next/font`. Light is the default and ignores the OS; dark is opt
 | Header: self-fitting nav, menu button, theme switch (`fitNav`) | `src/components/layout/SiteHeader.tsx` | Done |
 | Footer site map | `src/components/layout/SiteFooter.tsx` | Done |
 | Running head/foot, page intro, numbered sections | `src/components/ui/Datasheet.tsx` | Done |
-| Buttons (cut-corner red), cards, shadows, cursors | `src/components/ui/*`, `src/styles/*` | Done |
+| Buttons (cut-corner red), cards, shadows, cursors | `src/components/ui/*`, `src/styles/*` | Done. The hand cursor is a slimmer red-outline redraw (#83); components that set their own cursor use `var(--cur-hand)`, never `pointer` |
 | Hero: fitted wordmark, letter rise, dot pop, rule draw (`fitWm`, landing motion) | `src/features/overview/components/Hero.tsx`, `Wordmark.tsx` | Done |
 | Chip pinout: trace draw-in, packets, tilt (`chipSVG`, `landingMotion`, `tiltChip`) | `src/features/overview/components/Chip.tsx` | Done |
 | UART console (`uart`, `boot`) | `src/lib/uart.ts` (any feature can log), `Uart.tsx` | Done |

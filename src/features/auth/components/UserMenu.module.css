@@ -17,7 +17,7 @@
   display: flex;
   min-width: 0;
   flex-shrink: 1;
-  cursor: pointer;
+  cursor: var(--cur-hand);
   list-style: none;
 }
 .label {
@@ -62,7 +62,7 @@
   text-decoration: none;
   background: none;
   border: 0;
-  cursor: pointer;
+  cursor: var(--cur-hand);
 }
 .pop a:hover,
 .pop button:hover {

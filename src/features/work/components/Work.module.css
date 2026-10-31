@@ -81,7 +81,7 @@
   color: var(--ink);
   font: inherit;
   text-align: left;
-  cursor: pointer;
+  cursor: var(--cur-hand);
   box-shadow: var(--sh1);
 }
 .face:hover {

@@ -11,7 +11,7 @@
   background: var(--bg);
   color: var(--ink);
   font: 500 0.72rem var(--font-mono);
-  cursor: pointer;
+  cursor: var(--cur-hand);
   box-shadow: var(--sh2);
 }
 .top:hover {

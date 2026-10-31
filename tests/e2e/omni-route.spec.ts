@@ -1,4 +1,10 @@
+import { signalingEndpoints } from "../../src/features/omni/signaling-url";
+import { env } from "../../src/lib/env";
 import { expect, expectAccessible, test } from "./fixtures";
+
+const { healthUrl, healthOrigin, signalingOrigin } = signalingEndpoints(
+  env("omni").NEXT_PUBLIC_OMNI_SIGNALING_URL,
+);
 
 test.use({
   launchOptions: {
@@ -7,15 +13,12 @@ test.use({
 });
 
 test("Lab card performs a document navigation with Omni media permissions", async ({ page }) => {
-  await page.route("https://omni-8t2t.onrender.com/health", (route) =>
-    route.fulfill({ status: 200, body: "ok" }),
-  );
   const labResponse = await page.goto("/lab");
   const labPolicy = labResponse?.headers()["permissions-policy"] ?? "";
   const labCsp = labResponse?.headers()["content-security-policy"] ?? "";
   expect(labPolicy).toContain("camera=()");
-  expect(labCsp).toContain("https://omni-8t2t.onrender.com");
-  expect(labCsp).not.toContain("wss://omni-8t2t.onrender.com");
+  expect(labCsp).toContain(healthOrigin);
+  expect(labCsp).not.toContain(signalingOrigin);
   expect(labCsp.match(/connect-src/g)).toHaveLength(1);
   const card = page.getByRole("link", { name: /Omni/ });
   const timeOrigin = await page.evaluate(() => performance.timeOrigin);
@@ -35,7 +38,7 @@ test("Lab card performs a document navigation with Omni media permissions", asyn
     "camera=(self), microphone=(self), display-capture=(self)",
   );
   const csp = response?.headers()["content-security-policy"] ?? "";
-  expect(csp).toContain("wss://omni-8t2t.onrender.com");
+  expect(csp).toContain(signalingOrigin);
   expect(csp.match(/connect-src/g)).toHaveLength(1);
 
   await page.context().grantPermissions(["camera", "microphone"], {
@@ -52,6 +55,23 @@ test("Lab card performs a document navigation with Omni media permissions", asyn
   });
   expect(tracks).toEqual(["audio", "video"]);
 });
+
+for (const start of ["/work", "/welcome"]) {
+  test(`Lab warm-up works after client navigation from ${start}`, async ({ page }) => {
+    const response = await page.goto(start);
+    const csp = response?.headers()["content-security-policy"] ?? "";
+    expect(csp).toContain(healthOrigin);
+    expect(csp).not.toContain(signalingOrigin);
+    expect(response?.headers()["permissions-policy"]).toContain("camera=(), microphone=()");
+    const timeOrigin = await page.evaluate(() => performance.timeOrigin);
+    const healthResponse = page.waitForResponse(healthUrl);
+    await page.getByRole("contentinfo").getByRole("link", { name: "Lab", exact: true }).click();
+    await expect(page).toHaveURL(/\/lab$/);
+    expect(await page.evaluate(() => performance.timeOrigin)).toBe(timeOrigin);
+    await page.getByTestId("omni-card").hover();
+    expect((await healthResponse).status()).toBe(200);
+  });
+}
 
 test("Omni route stays accessible in dark theme", async ({ page }) => {
   await page.emulateMedia({ reducedMotion: "reduce" });

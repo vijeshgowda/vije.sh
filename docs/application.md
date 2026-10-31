@@ -271,11 +271,13 @@ is configured by `NEXT_PUBLIC_OMNI_SIGNALING_URL` (default
 `wss://omni-8t2t.onrender.com`) in `src/lib/env.ts`.
 
 The Lab card is a plain document link, and its palette entry uses `window.location.assign`, because
-the route has a different `Permissions-Policy` and CSP from the rest of the site. The Lab page
-allows only the signalling host's HTTP(S) health endpoint for its no-CORS idle warm-up; camera,
-microphone and display capture remain disabled there. `/lab/omni` allows same-origin media capture,
+the route has a different `Permissions-Policy` and CSP from the rest of the site. Every document
+allows the signalling host's HTTP(S) origin for the Lab card's no-CORS idle warm-up: client-side
+navigation into Lab retains the starting document's CSP. Camera and microphone remain disabled
+outside Omni. `/lab/omni` alone allows same-origin media capture,
 the signalling WebSocket/health endpoint, blob media and blob workers. Keep the site-wide media
-policy restrictive.
+policy restrictive. Playwright mocks the configured health endpoint and blocks other third-party
+requests; tests never depend on Render being reachable.
 
 - `SignalingClient` accepts a WebSocket URL; `PeerConnection` accepts signalling, ICE servers and
   the optional room password. Both expose typed `.on(event, detail => ...)` subscriptions,

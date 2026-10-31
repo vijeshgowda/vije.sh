@@ -19,7 +19,6 @@ export interface CspOptions {
   omniSignalingUrl?: string;
 }
 
-export const OMNI_HEALTH_PAGES = ["/lab"] as const;
 export const OMNI_CALL_PAGES = ["/lab/omni"] as const;
 
 function signalingEndpoints(signalingUrl: string) {
@@ -109,20 +108,16 @@ export function securityHeaders(
  * by browsers and the stricter policy would still block the required feature.
  */
 export function headerRoutes(dev: boolean, omniSignalingUrl: string) {
-  const pages = [...TURNSTILE_PAGES, ...OMNI_HEALTH_PAGES, ...OMNI_CALL_PAGES]
-    .map((p) => p.slice(1))
-    .join("|");
+  const omniHealthUrl = signalingEndpoints(omniSignalingUrl).healthUrl;
+  const pages = [...TURNSTILE_PAGES, ...OMNI_CALL_PAGES].map((p) => p.slice(1)).join("|");
   return [
-    { source: `/:path((?!(?:${pages})$).*)`, headers: securityHeaders(dev) },
+    {
+      source: `/:path((?!(?:${pages})$).*)`,
+      headers: securityHeaders(dev, { omniHealthUrl }),
+    },
     ...TURNSTILE_PAGES.map((source) => ({
       source,
-      headers: securityHeaders(dev, { turnstile: true }),
-    })),
-    ...OMNI_HEALTH_PAGES.map((source) => ({
-      source,
-      headers: securityHeaders(dev, {
-        omniHealthUrl: signalingEndpoints(omniSignalingUrl).healthUrl,
-      }),
+      headers: securityHeaders(dev, { turnstile: true, omniHealthUrl }),
     })),
     ...OMNI_CALL_PAGES.map((source) => ({
       source,

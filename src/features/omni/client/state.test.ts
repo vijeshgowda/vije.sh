@@ -136,4 +136,14 @@ describe("omniReducer", () => {
       expect(omniReducer(initialState, action)).toBe(initialState);
     }
   });
+
+  it("bumps the notice id so a repeated notice shows again", () => {
+    let state = omniReducer(initialState, { type: "call-start", code: "K7Q2M9" });
+    state = omniReducer(state, { type: "notice", text: "Connection lost." });
+    const first = state.call!.noticeId;
+    state = omniReducer(state, { type: "notice", text: "Connection lost." });
+    expect(state.call!.noticeId).toBe(first + 1);
+    state = omniReducer(state, { type: "notice", text: null });
+    expect(state.call!.noticeId).toBe(first + 1);
+  });
 });

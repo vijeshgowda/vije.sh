@@ -387,6 +387,8 @@ describe("Omni call", () => {
       expect(screen.getByText("Connection lost.")).toBeInTheDocument();
       act(() => vi.advanceTimersByTime(6_100));
       expect(screen.queryByText("Connection lost.")).not.toBeInTheDocument();
+      dispatch({ type: "notice", text: "Connection lost." });
+      expect(screen.getByText("Connection lost.")).toBeInTheDocument();
 
       dispatch({ type: "ending", key: "end.peer_left" });
       expect(screen.getByRole("alert")).toHaveTextContent("The other person left the call.");

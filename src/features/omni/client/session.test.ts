@@ -24,7 +24,13 @@ class Socket extends EventTarget implements SignalingSocket {
 class Track {
   enabled = true;
   stop = vi.fn();
+  clones: Track[] = [];
   constructor(readonly kind: "audio" | "video") {}
+  clone = () => {
+    const copy = new Track(this.kind);
+    this.clones.push(copy);
+    return copy;
+  };
 }
 
 class Stream {
@@ -57,6 +63,7 @@ const sessions: OmniSession[] = [];
 function setup(overrides: Partial<SessionDeps> = {}) {
   const sockets: Socket[] = [];
   const peers: Peer[] = [];
+  const peerArgs: unknown[][] = [];
   const actions: OmniAction[] = [];
   const getUserMedia = vi.fn(
     async (constraints: MediaStreamConstraints) =>
@@ -81,9 +88,10 @@ function setup(overrides: Partial<SessionDeps> = {}) {
         sockets.push(socket);
         return socket;
       }),
-    createPeer: () => {
+    createPeer: (...args) => {
       const peer = new Peer();
       peers.push(peer);
+      peerArgs.push(args);
       return peer as unknown as PeerLike;
     },
     sounds,
@@ -95,7 +103,7 @@ function setup(overrides: Partial<SessionDeps> = {}) {
   const types = () => actions.map((action) => action.type);
   const last = <T extends OmniAction["type"]>(type: T) =>
     actions.filter((action) => action.type === type).at(-1) as Extract<OmniAction, { type: T }>;
-  return { session, sockets, peers, actions, types, last, getUserMedia, sounds };
+  return { session, sockets, peers, peerArgs, actions, types, last, getUserMedia, sounds };
 }
 
 async function connect(env: ReturnType<typeof setup>, mode: "create" | "join", password = "") {
@@ -185,11 +193,12 @@ describe("OmniSession", () => {
 
   it("joins as the responder", async () => {
     const env = setup();
-    const socket = await connect(env, "join");
+    const socket = await connect(env, "join", "secret");
     expect(socket.sent[0]).toEqual({ type: "join", code: "K7Q2M9" });
     socket.message({ type: "joined", code: "K7Q2M9" });
     await vi.advanceTimersByTimeAsync(0);
     expect(env.peers).toHaveLength(1);
+    expect(env.peerArgs[0]).toEqual([expect.anything(), false, [], "secret"]);
     expect(env.last("call-start").code).toBe("K7Q2M9");
   });
 
@@ -289,6 +298,7 @@ describe("OmniSession", () => {
   it("verifies the password: wrong password ends the call, __verified clears it", async () => {
     const env = setup();
     const { peer } = await intoCall(env, "secret");
+    expect(env.peerArgs[0]).toEqual([expect.anything(), true, [], "secret"]);
     peer.fire("secure-channel-ready", { safety: { emoji: "🦊", code: "3F9A C21E" } });
     expect(env.last("secure").safety.code).toBe("3F9A C21E");
     expect(peer.send).toHaveBeenCalledWith({ type: "__verify" });
@@ -361,8 +371,10 @@ describe("OmniSession", () => {
     expect(stats.quality).toBe("poor");
     expect(peer.setSendQuality).toHaveBeenCalledWith("poor");
     const count = env.types().filter((type) => type === "stats").length;
+    peer.stats[0] = { ...peer.stats[0], bytesReceived: 100_000 };
     await vi.advanceTimersByTimeAsync(2_000);
-    expect(env.types().filter((type) => type === "stats").length).toBeGreaterThanOrEqual(count);
+    // identical stats are not re-dispatched
+    expect(env.types().filter((type) => type === "stats").length).toBe(count);
   });
 
   it("judges audio-only calls by loss and round trip", async () => {
@@ -455,7 +467,13 @@ describe("OmniSession", () => {
     peer.fire("secure-channel-ready", { safety: { emoji: "", code: "" } });
     expect(analyser.fftSize).toBe(512);
     expect(levels.at(-1)).toBeCloseTo(0.75);
+    const mic = (await env.getUserMedia.mock.results[0]!.value).getAudioTracks()[0] as Track;
+    expect(mic.clones).toHaveLength(1);
+    env.session.toggleMic();
+    expect(mic.enabled).toBe(false);
+    expect(mic.clones[0]!.enabled).toBe(true);
     env.session.hangup();
+    expect(mic.clones[0]!.stop).toHaveBeenCalled();
     expect(cancelAnimationFrame).toHaveBeenCalledWith(7);
     expect(close).toHaveBeenCalled();
     expect(env.last("reset").alert ?? null).toBeNull();

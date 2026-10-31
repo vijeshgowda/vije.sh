@@ -359,16 +359,16 @@
   padding: 0.4rem 0.7rem;
   margin: 0;
 }
-.nudge {
-  background: var(--red);
-  color: var(--chip-t);
-}
+.nudge,
 .notice {
   max-width: min(30rem, 100%);
   background: color-mix(in srgb, var(--card) 88%, transparent);
   border: 1px solid color-mix(in srgb, var(--ink) 18%, transparent);
   border-left: 3px solid var(--warn);
   color: var(--ink);
+}
+.nudge {
+  border-left-color: var(--red);
 }
 
 .menu {

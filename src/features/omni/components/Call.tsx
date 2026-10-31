@@ -115,7 +115,7 @@ export function Call({
   const [swapped, setSwapped] = useState(false);
   const [drag, setDrag] = useState<{ x: number; y: number } | null>(null);
   const [fullscreen, setFullscreen] = useState({ supported: false, active: false });
-  const [seenNotice, setSeenNotice] = useState<string | null>(null);
+  const [seenNotice, setSeenNotice] = useState(0);
 
   const pinned = menuOpen || call.sasOpen || call.ending !== null;
   const visible = shown || pinned;
@@ -178,10 +178,10 @@ export function Call({
 
   useEffect(() => {
     if (!call.notice) return;
-    const notice = call.notice;
-    const timer = setTimeout(() => setSeenNotice(notice), NOTICE_MS);
+    const id = call.noticeId;
+    const timer = setTimeout(() => setSeenNotice(id), NOTICE_MS);
     return () => clearTimeout(timer);
-  }, [call.notice]);
+  }, [call.notice, call.noticeId]);
 
   const wake = useCallback(() => {
     setShown(true);
@@ -311,7 +311,7 @@ export function Call({
           : tr("conn.connected")
       : tr(CONNECTION[call.connection]);
   const elapsed = call.startedAt !== null && now !== null ? (now - call.startedAt) / 1000 : 0;
-  const notice = call.notice && call.notice !== seenNotice ? call.notice : null;
+  const notice = call.notice && call.noticeId !== seenNotice ? call.notice : null;
   const localShows = hasVideo && cam && local !== null;
   const corners = `${styles[corner]} ${drag ? styles.dragging : ""}`;
 

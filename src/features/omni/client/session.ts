@@ -80,7 +80,7 @@ export class OmniSession {
   private cam = true;
   private facing: "user" | "environment" = "user";
   private ending = false;
-  private meter: { ctx: AudioContext; raf: number } | null = null;
+  private meter: { ctx: AudioContext; raf: number; track: MediaStreamTrack } | null = null;
   private nudgedAt = -Infinity;
   private levelListener: ((level: number) => void) | null = null;
 
@@ -463,9 +463,12 @@ export class OmniSession {
       const ctx = create();
       const analyser = ctx.createAnalyser();
       analyser.fftSize = 512;
-      ctx.createMediaStreamSource(new MediaStream([track])).connect(analyser);
+      // A muted (disabled) track feeds silence, so the meter listens to its own clone: it still
+      // hears speech while muted, which is what the "you're muted" nudge needs.
+      const listen = track.clone();
+      ctx.createMediaStreamSource(new MediaStream([listen])).connect(analyser);
       const buffer = new Uint8Array(analyser.fftSize);
-      const meter = { ctx, raf: 0 };
+      const meter = { ctx, raf: 0, track: listen };
       // requestAnimationFrame stops while the tab is hidden, so the meter pauses with it.
       const tick = () => {
         analyser.getByteTimeDomainData(buffer);
@@ -531,6 +534,7 @@ export class OmniSession {
     this.statsTimer = null;
     if (this.meter) {
       cancelAnimationFrame(this.meter.raf);
+      this.meter.track.stop();
       void this.meter.ctx.close().catch(() => undefined);
       this.meter = null;
     }

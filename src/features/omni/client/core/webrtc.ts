@@ -97,6 +97,9 @@ export class PeerConnection extends OmniEvents<PeerEvents> {
     pc.onconnectionstatechange = () => this.emit("connection-state", { state: pc.connectionState });
     pc.onnegotiationneeded = async () => {
       if (this.lifetime.signal.aborted || pc.signalingState === "closed") return;
+      // The initiator makes the first offer. A joiner offering too (addTrack fires this) causes
+      // glare, and after the polite rollback Chrome can answer without gathering any ICE.
+      if (!this.isInitiator && !pc.remoteDescription) return;
       try {
         this.makingOffer = true;
         await pc.setLocalDescription();

@@ -52,6 +52,16 @@ async function wake(page: Page) {
   await page.mouse.move(60, 140);
 }
 
+/** A click before hydration is lost (or submits the form natively), so retry until the app reacts. */
+async function create(page: Page) {
+  await expect(async () => {
+    await page.getByRole("button", { name: "Create Room" }).click();
+    await expect(page.getByRole("heading", { name: "Waiting room" })).toBeVisible({
+      timeout: 1_000,
+    });
+  }).toPass();
+}
+
 test("setup validates codes, then a room opens in an accessible lobby", async ({ page }) => {
   await page.emulateMedia({ reducedMotion: "reduce" });
   const relay: Relay = { code: "K7Q2M9" };
@@ -59,8 +69,12 @@ test("setup validates codes, then a room opens in an accessible lobby", async ({
   await page.goto("/lab/omni");
 
   await expect(page.getByRole("heading", { name: "Link setup" })).toBeVisible();
-  await page.getByRole("button", { name: "Join", exact: true }).click();
-  await expect(page.getByText("Enter a valid code (4-10 characters).")).toBeVisible();
+  await expect(async () => {
+    await page.getByRole("button", { name: "Join", exact: true }).click();
+    await expect(page.getByText("Enter a valid code (4-10 characters).")).toBeVisible({
+      timeout: 1_000,
+    });
+  }).toPass();
   await expect(page.getByLabel("Room code")).toHaveAttribute("aria-invalid", "true");
   await expectAccessible(page);
 
@@ -109,10 +123,12 @@ test("two peers connect, see the same safety check, and the call ends for both",
   await fakeSignaling(peer, relay);
 
   await page.goto("/lab/omni");
-  await page.getByRole("button", { name: "Create Room" }).click();
+  await create(page);
   await expect(page.getByTestId("omni-room-code")).toHaveText("K7Q2M9");
 
   await peer.goto("/lab/omni#K7Q2M9");
+  // the share-link code is filled in on hydration, so Join is live once it shows
+  await expect(peer.getByLabel("Room code")).toHaveValue("K7Q2M9");
   await peer.getByRole("button", { name: "Join", exact: true }).click();
 
   for (const side of [page, peer]) {

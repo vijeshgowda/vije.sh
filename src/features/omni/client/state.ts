@@ -23,6 +23,8 @@ export type CallState = {
   ending: TranslationKey | null;
   nudge: boolean;
   notice: string | null;
+  /** Bumped on every notice, so a repeated message shows again. */
+  noticeId: number;
 };
 
 export type OmniState = {
@@ -94,6 +96,7 @@ const newCall: Omit<CallState, "code"> = {
   ending: null,
   nudge: false,
   notice: null,
+  noticeId: 0,
 };
 
 function withCall(state: OmniState, patch: Partial<CallState>): OmniState {
@@ -155,7 +158,10 @@ export function omniReducer(state: OmniState, action: OmniAction): OmniState {
         link: action.link,
       });
     case "notice":
-      return withCall(state, { notice: action.text });
+      return withCall(state, {
+        notice: action.text,
+        noticeId: (state.call?.noticeId ?? 0) + (action.text ? 1 : 0),
+      });
     case "mic":
       return {
         ...withCall(state, action.on ? { nudge: false } : {}),

@@ -27,5 +27,11 @@ jobs:
       - uses: actions/setup-node@v5
         with:
           node-version: 24
-      - name: Audit locked runtime and development dependencies
-        run: npm audit --package-lock-only --include=dev --audit-level=moderate
+      # Dev-only tooling (ESLint, test runners) never ships to the site; report it without failing.
+      - name: Report development dependency advisories (non-blocking)
+        run: |
+          if ! npm audit --package-lock-only --include=dev --audit-level=moderate; then
+            echo "::warning title=Development dependency advisories::npm audit found moderate or higher advisories in development-only dependencies (or could not reach the registry). See this step's log."
+          fi
+      - name: Audit locked runtime dependencies
+        run: npm audit --package-lock-only --omit=dev --audit-level=moderate

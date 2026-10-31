@@ -4,11 +4,6 @@
   grid-template-columns: 1fr 1fr;
   gap: 3rem;
 }
-.omni {
-  display: grid;
-  grid-template-columns: minmax(0, 36rem);
-  margin: 0.5rem 0 1.5rem;
-}
 .eq {
   font: 500 1.25rem var(--font-mono);
   padding: 1rem 1.2rem;

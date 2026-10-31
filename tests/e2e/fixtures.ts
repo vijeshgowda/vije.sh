@@ -2,11 +2,7 @@ import { randomBytes } from "node:crypto";
 import { test as base, expect, type BrowserContext } from "@playwright/test";
 import AxeBuilder from "@axe-core/playwright";
 import { signTestSession, TEST_SESSION_COOKIE } from "../../src/features/auth/test-session";
-import { signalingEndpoints } from "../../src/features/omni/signaling-url";
-import { env } from "../../src/lib/env";
 import { testClient } from "../helpers/db";
-
-const { healthUrl } = signalingEndpoints(env("omni").NEXT_PUBLIC_OMNI_SIGNALING_URL);
 
 export interface TestUser {
   id: string;
@@ -138,10 +134,10 @@ const signedIn =
   };
 
 /**
- * Shared fixture: mocks Omni health and blocks other third-party requests (tests must not depend
- * on live APIs), and fails the test on any page error or console error. The `as*` fixtures create a
- * user in the test database, sign the browser in as them and delete them afterwards; `asOwner`
- * signs in as the one owner (ensureOwner), which is kept.
+ * Shared fixture: blocks every third-party request (tests must not depend on live APIs) and fails
+ * the test on any page error or console error. The `as*` fixtures create a user in the test
+ * database, sign the browser in as them and delete them afterwards; `asOwner` signs in as the one
+ * owner (ensureOwner), which is kept.
  */
 export const test = base.extend<Fixtures>({
   asMember: signedIn({}),
@@ -158,15 +154,11 @@ export const test = base.extend<Fixtures>({
   errors: [
     async ({ page, baseURL }, use) => {
       const errors: string[] = [];
-      await page.route("**/*", (route) => {
-        const request = route.request();
-        if (request.url() === healthUrl && request.method() === "GET") {
-          return route.fulfill({ status: 200, body: "ok" });
-        }
-        return request.url().startsWith(baseURL!)
+      await page.route("**/*", (route) =>
+        route.request().url().startsWith(baseURL!)
           ? route.continue()
-          : route.abort("blockedbyclient");
-      });
+          : route.abort("blockedbyclient"),
+      );
       page.on("pageerror", (e) => errors.push(e.message));
       page.on("console", (m) => {
         // aborted third-party fetches log as network errors; those are expected here

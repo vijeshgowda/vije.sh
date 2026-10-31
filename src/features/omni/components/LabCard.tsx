@@ -1,10 +1,13 @@
 import { Card } from "@/components/ui/Card";
-import { LabWarmup } from "./LabWarmup";
 import styles from "./LabCard.module.css";
 
-export function LabCard({ healthUrl }: { healthUrl: string }) {
+/**
+ * Omni's entry on /lab. A plain <a>, not <Link>: /lab/omni has its own Permissions-Policy and CSP,
+ * which only apply on a full document load.
+ */
+export function LabCard() {
   return (
-    <LabWarmup healthUrl={healthUrl}>
+    <section className={styles.slot} aria-label="Real-time communications">
       <a
         className={styles.link}
         href="/lab/omni"
@@ -24,6 +27,6 @@ export function LabCard({ healthUrl }: { healthUrl: string }) {
           </span>
         </Card>
       </a>
-    </LabWarmup>
+    </section>
   );
 }

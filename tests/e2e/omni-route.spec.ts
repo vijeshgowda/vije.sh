@@ -1,10 +1,7 @@
-import { signalingEndpoints } from "../../src/features/omni/signaling-url";
 import { env } from "../../src/lib/env";
 import { expect, expectAccessible, test } from "./fixtures";
 
-const { healthUrl, healthOrigin, signalingOrigin } = signalingEndpoints(
-  env("omni").NEXT_PUBLIC_OMNI_SIGNALING_URL,
-);
+const signaling = new URL(env("omni").NEXT_PUBLIC_OMNI_SIGNALING_URL);
 
 test.use({
   launchOptions: {
@@ -17,8 +14,7 @@ test("Lab card performs a document navigation with Omni media permissions", asyn
   const labPolicy = labResponse?.headers()["permissions-policy"] ?? "";
   const labCsp = labResponse?.headers()["content-security-policy"] ?? "";
   expect(labPolicy).toContain("camera=()");
-  expect(labCsp).toContain(healthOrigin);
-  expect(labCsp).not.toContain(signalingOrigin);
+  expect(labCsp).not.toContain(signaling.host);
   expect(labCsp.match(/connect-src/g)).toHaveLength(1);
   const card = page.getByRole("link", { name: /Omni/ });
   const timeOrigin = await page.evaluate(() => performance.timeOrigin);
@@ -38,7 +34,7 @@ test("Lab card performs a document navigation with Omni media permissions", asyn
     "camera=(self), microphone=(self), display-capture=(self)",
   );
   const csp = response?.headers()["content-security-policy"] ?? "";
-  expect(csp).toContain(signalingOrigin);
+  expect(csp).toContain(signaling.origin);
   expect(csp.match(/connect-src/g)).toHaveLength(1);
 
   await page.context().grantPermissions(["camera", "microphone"], {
@@ -56,22 +52,21 @@ test("Lab card performs a document navigation with Omni media permissions", asyn
   expect(tracks).toEqual(["audio", "video"]);
 });
 
-for (const start of ["/work", "/welcome"]) {
-  test(`Lab warm-up works after client navigation from ${start}`, async ({ page }) => {
-    const response = await page.goto(start);
-    const csp = response?.headers()["content-security-policy"] ?? "";
-    expect(csp).toContain(healthOrigin);
-    expect(csp).not.toContain(signalingOrigin);
-    expect(response?.headers()["permissions-policy"]).toContain("camera=(), microphone=()");
-    const timeOrigin = await page.evaluate(() => performance.timeOrigin);
-    const healthResponse = page.waitForResponse(healthUrl);
-    await page.getByRole("contentinfo").getByRole("link", { name: "Lab", exact: true }).click();
-    await expect(page).toHaveURL(/\/lab$/);
-    expect(await page.evaluate(() => performance.timeOrigin)).toBe(timeOrigin);
-    await page.getByTestId("omni-card").hover();
-    expect((await healthResponse).status()).toBe(200);
+// Render wakes on Create/Join (the WebSocket connect), never from browsing Lab
+test("Lab never contacts the signalling server", async ({ page }) => {
+  const signalingRequests: string[] = [];
+  page.on("request", (request) => {
+    if (new URL(request.url()).host === signaling.host) signalingRequests.push(request.url());
   });
-}
+  await page.goto("/work");
+  await page.getByRole("contentinfo").getByRole("link", { name: "Lab", exact: true }).click();
+  await expect(page).toHaveURL(/\/lab$/);
+  const card = page.getByTestId("omni-card");
+  await card.hover();
+  await card.focus();
+  await page.waitForLoadState("networkidle");
+  expect(signalingRequests).toEqual([]);
+});
 
 test("Omni route stays accessible in dark theme", async ({ page }) => {
   await page.emulateMedia({ reducedMotion: "reduce" });

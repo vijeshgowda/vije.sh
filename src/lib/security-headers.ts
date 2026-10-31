@@ -15,25 +15,18 @@ export const TURNSTILE_PAGES = ["/welcome"] as const;
 
 export interface CspOptions {
   turnstile?: boolean;
-  omniHealthUrl?: string;
   omniSignalingUrl?: string;
 }
 
+/** Pages that make Omni calls. They get camera/microphone and the signalling WebSocket. */
 export const OMNI_CALL_PAGES = ["/lab/omni"] as const;
 
-function signalingEndpoints(signalingUrl: string) {
+function websocketOrigin(signalingUrl: string): string {
   const signaling = new URL(signalingUrl);
   if (signaling.protocol !== "ws:" && signaling.protocol !== "wss:") {
     throw new TypeError("Omni signalling URL must use ws: or wss:");
   }
-  const health = new URL(signaling.origin);
-  health.protocol = signaling.protocol === "wss:" ? "https:" : "http:";
-  health.pathname = "/health";
-  return {
-    signalingOrigin: signaling.origin,
-    healthOrigin: health.origin,
-    healthUrl: health.href,
-  };
+  return signaling.origin;
 }
 
 /**
@@ -43,9 +36,8 @@ function signalingEndpoints(signalingUrl: string) {
  */
 export function contentSecurityPolicy(
   dev: boolean,
-  { turnstile = false, omniHealthUrl, omniSignalingUrl }: CspOptions = {},
+  { turnstile = false, omniSignalingUrl }: CspOptions = {},
 ): string {
-  const omniEndpoints = omniSignalingUrl ? signalingEndpoints(omniSignalingUrl) : undefined;
   const directives: Record<string, string[]> = {
     "default-src": ["'self'"],
     "script-src": [
@@ -60,16 +52,10 @@ export function contentSecurityPolicy(
     "connect-src": [
       "'self'",
       ...BROWSER_CONNECT_HOSTS,
-      ...(omniHealthUrl ? [new URL(omniHealthUrl).origin] : []),
-      ...(omniEndpoints ? [omniEndpoints.signalingOrigin, omniEndpoints.healthOrigin] : []),
+      ...(omniSignalingUrl ? [websocketOrigin(omniSignalingUrl)] : []),
       ...(dev ? ["ws:"] : []),
     ],
-    ...(omniEndpoints
-      ? {
-          "media-src": ["'self'", "blob:"],
-          "worker-src": ["'self'", "blob:"],
-        }
-      : {}),
+    ...(omniSignalingUrl ? { "media-src": ["'self'", "blob:"] } : {}),
     ...(turnstile ? { "frame-src": [TURNSTILE_HOST] } : {}),
     "object-src": ["'none'"],
     "base-uri": ["'self'"],
@@ -108,16 +94,12 @@ export function securityHeaders(
  * by browsers and the stricter policy would still block the required feature.
  */
 export function headerRoutes(dev: boolean, omniSignalingUrl: string) {
-  const omniHealthUrl = signalingEndpoints(omniSignalingUrl).healthUrl;
   const pages = [...TURNSTILE_PAGES, ...OMNI_CALL_PAGES].map((p) => p.slice(1)).join("|");
   return [
-    {
-      source: `/:path((?!(?:${pages})$).*)`,
-      headers: securityHeaders(dev, { omniHealthUrl }),
-    },
+    { source: `/:path((?!(?:${pages})$).*)`, headers: securityHeaders(dev) },
     ...TURNSTILE_PAGES.map((source) => ({
       source,
-      headers: securityHeaders(dev, { turnstile: true, omniHealthUrl }),
+      headers: securityHeaders(dev, { turnstile: true }),
     })),
     ...OMNI_CALL_PAGES.map((source) => ({
       source,

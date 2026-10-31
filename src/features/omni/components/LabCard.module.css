@@ -1,5 +1,7 @@
-.warmup {
-  display: contents;
+.slot {
+  display: grid;
+  grid-template-columns: minmax(0, 36rem);
+  margin: 0.5rem 0 1.5rem;
 }
 
 .link {
@@ -30,12 +32,4 @@
   font: 500 0.72rem var(--font-mono);
   letter-spacing: 0.04em;
   text-transform: uppercase;
-}
-
-@media (prefers-reduced-motion: no-preference) {
-  .link:hover .card {
-    transform: translateY(-4px);
-    box-shadow: var(--sh3);
-    border-color: var(--line2);
-  }
 }

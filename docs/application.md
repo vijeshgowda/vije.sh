@@ -741,12 +741,17 @@ Branch protection on `main`: CI must pass; no force-pushes.
 
 All of these checks are free for this public repository:
 
-- **Dependency CVEs:** `.github/workflows/security.yml` runs `npm audit --package-lock-only
-  --include=dev --audit-level=moderate` on every PR, pushes to `main`, Mondays at 06:37 UTC,
-  and manual dispatch. It audits the committed lockfile, including transitive runtime and
-  development dependencies, without installing packages or running their scripts. Moderate,
-  high and critical advisories fail the job; low advisories remain visible in the report.
-  Registry/network errors also fail the job. The separate workflow does not skip `chore`
+- **Dependency CVEs:** `.github/workflows/security.yml` audits the committed lockfile on every
+  PR, pushes to `main`, Mondays at 06:37 UTC, and manual dispatch, without installing packages
+  or running their scripts. It blocks on runtime dependencies only:
+  `npm audit --package-lock-only --omit=dev --audit-level=moderate` fails the job on moderate,
+  high and critical advisories in anything that ships with the site (including transitive
+  dependencies); low advisories remain visible in the report, and registry/network errors also
+  fail the job. Development-only tooling (ESLint and its plugins, test runners) is reported but
+  not blocking: `npm audit --package-lock-only --include=dev --audit-level=moderate` runs first
+  and adds a warning annotation instead of failing, because those advisories often have no fix
+  the tooling can use yet (for example GHSA-g3hv-75wg-m249 in `minimatch`, which ESLint plugins
+  pin to 3.x) and they never reach visitors. The separate workflow does not skip `chore`
   changes. Results appear in Actions under **Security / Dependency audit**.
 - **Source-code scanning:** CodeQL default setup is already enabled in GitHub's repository
   settings for JavaScript/TypeScript and GitHub Actions, using the default query suite and
@@ -758,7 +763,9 @@ All of these checks are free for this public repository:
   in repository settings. `.github/dependabot.yml` separately configures daily npm version-update
   PRs; that file alone does not enable security alerts or security-update PRs.
 
-Run the same `npm audit --package-lock-only --include=dev --audit-level=moderate` command locally.
+Run the same commands locally: `npm audit --package-lock-only --omit=dev --audit-level=moderate`
+(blocking) and `npm audit --package-lock-only --include=dev --audit-level=moderate` (report).
+Review development-only warnings when Dependabot or upstream releases make a fix available.
 When an advisory is in a transitive dependency that the parent package pins and no fixed parent
 release exists, add a scoped entry to `overrides` in `package.json` (for example
 `"@vercel/cli-config": { "zod": "$zod" }` reuses the root `zod` range), run

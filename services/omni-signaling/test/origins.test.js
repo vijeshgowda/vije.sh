@@ -2,8 +2,10 @@ import { test } from "node:test";
 import assert from "node:assert/strict";
 import { allowedOrigins, isAllowedOrigin, isExactOrigin, PRODUCTION_ORIGINS } from "../origins.js";
 
-test("the committed production list is exactly https://vije.sh", () => {
-  assert.deepEqual([...PRODUCTION_ORIGINS], ["https://vije.sh"]);
+const PRODUCTION = ["https://vije.sh", "https://vijeshgowda.com"];
+
+test("the committed production list is exactly vije.sh and the GitHub Pages Omni", () => {
+  assert.deepEqual([...PRODUCTION_ORIGINS], PRODUCTION);
   assert.ok(Object.isFrozen(PRODUCTION_ORIGINS));
   for (const origin of PRODUCTION_ORIGINS) {
     assert.ok(isExactOrigin(origin), origin);
@@ -14,7 +16,7 @@ test("the committed production list is exactly https://vije.sh", () => {
 
 test("a missing or empty override keeps the committed list", () => {
   for (const value of [undefined, null, "", "   ", ",", " , ,"]) {
-    assert.deepEqual(allowedOrigins(value), ["https://vije.sh"], String(value));
+    assert.deepEqual(allowedOrigins(value), PRODUCTION, String(value));
   }
 });
 

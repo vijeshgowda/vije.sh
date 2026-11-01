@@ -1,10 +1,38 @@
-import type { Page, WebSocketRoute } from "@playwright/test";
-import { env } from "../../src/lib/env";
-import { expect, expectAccessible, test } from "./fixtures";
+import { randomBytes } from "node:crypto";
+import type { Locator, Page } from "@playwright/test";
+import { expect, expectAccessible, guardPage, test as base } from "./fixtures";
 
-// The signalling server is replaced by an in-test relay that speaks the original server's protocol
-// (omni/server/index.js), so these specs never touch Render.
-const signaling = env("omni").NEXT_PUBLIC_OMNI_SIGNALING_URL;
+// These specs talk to the real signalling server from services/omni-signaling, which Playwright
+// starts locally (playwright.config.ts), so they never touch Render. Every person in a call has
+// their own browser context, as two people on two devices would.
+
+/** Room codes the server generates: six characters, without 0/O, 1/I or L. */
+const ROOM_CODE = /^[A-HJKMNP-Z2-9]{6}$/;
+
+const test = base.extend<{ newPerson: () => Promise<Page> }>({
+  newPerson: async (
+    { browser, baseURL, viewport, userAgent, deviceScaleFactor, isMobile, hasTouch, permissions },
+    provide,
+  ) => {
+    const people: { page: Page; errors: string[] }[] = [];
+    await provide(async () => {
+      const context = await browser.newContext({
+        baseURL,
+        viewport,
+        userAgent,
+        deviceScaleFactor,
+        isMobile,
+        hasTouch,
+        permissions,
+      });
+      const page = await context.newPage();
+      people.push({ page, errors: await guardPage(page, baseURL!) });
+      return page;
+    });
+    for (const { page } of people) await page.context().close();
+    for (const { errors } of people) expect(errors, "console or page errors").toEqual([]);
+  },
+});
 
 test.use({
   launchOptions: {
@@ -13,66 +41,66 @@ test.use({
   permissions: ["camera", "microphone"],
 });
 
-type Relay = { creator?: WebSocketRoute; joiner?: WebSocketRoute; code: string };
-
-async function fakeSignaling(page: Page, relay: Relay) {
-  await page.routeWebSocket(signaling, (ws) => {
-    ws.onMessage((raw) => {
-      const message = JSON.parse(String(raw)) as { type: string; code?: string; payload?: unknown };
-      const send = (target: WebSocketRoute | undefined, data: object) =>
-        target?.send(JSON.stringify(data));
-      if (message.type === "create") {
-        relay.creator = ws;
-        send(ws, { type: "created", code: relay.code, custom: false });
-      } else if (message.type === "join") {
-        if (message.code !== relay.code || !relay.creator) {
-          send(ws, { type: "error", message: "Room not found. Check the code and try again." });
-          return;
-        }
-        relay.joiner = ws;
-        send(ws, { type: "joined", code: relay.code });
-        send(relay.creator, { type: "peer-joined" });
-      } else if (message.type === "signal") {
-        const other = ws === relay.creator ? relay.joiner : relay.creator;
-        send(other, { type: "signal", payload: message.payload });
-      }
-    });
-    ws.onClose(() => {
-      const other = ws === relay.creator ? relay.joiner : relay.creator;
-      if (other && (ws === relay.creator || ws === relay.joiner)) {
-        other.send(JSON.stringify({ type: "peer-left" }));
-      }
-    });
-  });
-}
-
-/** Call controls auto-hide after 4 s; moving the mouse brings them back, as for a real user. */
-async function wake(page: Page) {
-  await page.mouse.move(40, 120);
-  await page.mouse.move(60, 140);
-}
-
-/** A click before hydration is lost (or submits the form natively), so retry until the app reacts. */
-async function create(page: Page) {
+/**
+ * Call controls auto-hide 4 s after the last interaction; moving the mouse brings them back, as
+ * for a real user. On a busy machine they can hide again before the click lands, so wake and
+ * click again until `done` holds. It is checked first, so a click that landed is never repeated.
+ */
+async function press(page: Page, control: Locator, done: (timeout: number) => Promise<unknown>) {
   await expect(async () => {
-    await page.getByRole("button", { name: "Create Room" }).click();
-    await expect(page.getByRole("heading", { name: "Waiting room" })).toBeVisible({
-      timeout: 1_000,
-    });
-  }).toPass();
+    if (
+      await done(250).then(
+        () => true,
+        () => false,
+      )
+    )
+      return;
+    await page.mouse.move(40, 120);
+    await page.mouse.move(60, 140);
+    await control.click({ timeout: 1_000 });
+    await done(2_000);
+  }).toPass({ timeout: 15_000 });
 }
 
-/** Opens a room on `page`, joins it from a second page and waits until both see the safety check. */
+/** axe can't judge contrast mid-fade; without motion the controls are shown or hidden, never half. */
+async function expectCallAccessible(page: Page) {
+  await page.emulateMedia({ reducedMotion: "reduce" });
+  await expectAccessible(page);
+}
+
+/**
+ * A click before hydration is lost (or submits the form natively), so retry until the app reacts.
+ * A click that did land can take a while (media, the RTC chunk, the server), and Create is disabled
+ * or gone meanwhile: only click while the lobby isn't open, and never wait long on the button.
+ */
+async function create(page: Page) {
+  const lobby = page.getByRole("heading", { name: "Waiting room" });
+  await expect(async () => {
+    if (!(await lobby.isVisible())) {
+      await page
+        .getByRole("button", { name: "Create Room" })
+        .click({ timeout: 1_000 })
+        .catch(() => {});
+    }
+    await expect(lobby).toBeVisible({ timeout: 2_000 });
+  }).toPass({ timeout: 30_000 });
+}
+
+/** The code the server gave the room `page` just opened. */
+async function roomCode(page: Page) {
+  const code = page.getByTestId("omni-room-code");
+  await expect(code).toHaveText(ROOM_CODE);
+  return (await code.textContent())!;
+}
+
+/** Opens a room on `page`, joins it from `peer` and waits until both see the safety check. */
 async function connectPair(page: Page, peer: Page) {
-  const relay: Relay = { code: "K7Q2M9" };
-  await fakeSignaling(page, relay);
-  await fakeSignaling(peer, relay);
   await page.goto("/lab/omni");
   await create(page);
-  await expect(page.getByTestId("omni-room-code")).toHaveText("K7Q2M9");
-  await peer.goto("/lab/omni#K7Q2M9");
+  const code = await roomCode(page);
+  await peer.goto(`/lab/omni#${code}`);
   // the share-link code is filled in on hydration, so Join is live once it shows
-  await expect(peer.getByLabel("Room code")).toHaveValue("K7Q2M9");
+  await expect(peer.getByLabel("Room code")).toHaveValue(code);
   await peer.getByRole("button", { name: "Join", exact: true }).click();
   for (const side of [page, peer]) {
     await expect(side.getByTestId("omni-call")).toBeVisible({ timeout: 20_000 });
@@ -80,12 +108,11 @@ async function connectPair(page: Page, peer: Page) {
       timeout: 20_000,
     });
   }
+  return code;
 }
 
 test("setup validates codes, then a room opens in an accessible lobby", async ({ page }) => {
   await page.emulateMedia({ reducedMotion: "reduce" });
-  const relay: Relay = { code: "K7Q2M9" };
-  await fakeSignaling(page, relay);
   await page.goto("/lab/omni");
 
   await expect(page.getByRole("heading", { name: "Link setup" })).toBeVisible();
@@ -100,10 +127,10 @@ test("setup validates codes, then a room opens in an accessible lobby", async ({
 
   await page.getByRole("button", { name: "Create Room" }).click();
   await expect(page.getByRole("heading", { name: "Waiting room" })).toBeFocused();
-  await expect(page.getByTestId("omni-room-code")).toHaveText("K7Q2M9");
-  await expect(page.getByText("Room code K 7 Q 2 M 9")).toBeAttached();
+  const code = await roomCode(page);
+  await expect(page.getByText(`Room code ${[...code].join(" ")}`)).toBeAttached();
   await expect(page.getByRole("status").filter({ hasText: "Waiting for peer" })).toBeVisible();
-  await expect(page.getByText(/\/lab\/omni#K7Q2M9$/)).toBeVisible();
+  await expect(page.getByText(new RegExp(`/lab/omni#${code}$`))).toBeVisible();
   await expectAccessible(page);
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(
     true,
@@ -114,9 +141,9 @@ test("setup validates codes, then a room opens in an accessible lobby", async ({
 });
 
 test("joining an unknown room shows the server's error", async ({ page }) => {
-  await fakeSignaling(page, { code: "K7Q2M9" });
-  await page.goto("/lab/omni#ZZZZ99");
-  await expect(page.getByLabel("Room code")).toHaveValue("ZZZZ99");
+  // The server never generates an O, so no other test can have opened this room
+  await page.goto("/lab/omni#NOROOM");
+  await expect(page.getByLabel("Room code")).toHaveValue("NOROOM");
   await page.getByRole("button", { name: "Join", exact: true }).click();
   const alert = page.locator("[data-omni-focus]");
   await expect(alert).toContainText("Room not found. Check the code and try again.");
@@ -127,38 +154,57 @@ test("joining an unknown room shows the server's error", async ({ page }) => {
   await expect(alert).toBeHidden();
 });
 
-test("two peers connect, see the same safety check, and the call ends for both", async ({
+/** Opens the custom-code field (a click before hydration does nothing) and creates `code`. */
+async function createCustom(page: Page, code: string) {
+  const toggle = page.getByRole("button", { name: "Choose my own code" });
+  await expect(async () => {
+    if ((await toggle.getAttribute("aria-expanded")) !== "true") await toggle.click();
+    await expect(page.getByLabel("Custom code")).toBeVisible({ timeout: 1_000 });
+  }).toPass();
+  await page.getByLabel("Custom code").fill(code);
+  await page.getByRole("button", { name: "Create Room" }).click();
+}
+
+test("the server refuses a code in use and a third person in a full room", async ({
   page,
-  context,
+  newPerson,
 }) => {
   test.setTimeout(60_000);
-  const relay: Relay = { code: "K7Q2M9" };
-  await fakeSignaling(page, relay);
-  const peer = await context.newPage();
-  const peerErrors: string[] = [];
-  peer.on("pageerror", (error) => peerErrors.push(error.message));
-  peer.on("console", (message) => {
-    if (message.type() === "error") peerErrors.push(message.text());
-  });
-  await fakeSignaling(peer, relay);
-
+  const code = `E${randomBytes(4).toString("hex").toUpperCase()}`;
   await page.goto("/lab/omni");
-  await create(page);
-  await expect(page.getByTestId("omni-room-code")).toHaveText("K7Q2M9");
+  await createCustom(page, code);
+  await expect(page.getByTestId("omni-room-code")).toHaveText(code);
 
-  await peer.goto("/lab/omni#K7Q2M9");
-  // the share-link code is filled in on hydration, so Join is live once it shows
-  await expect(peer.getByLabel("Room code")).toHaveValue("K7Q2M9");
+  const other = await newPerson();
+  await other.goto("/lab/omni");
+  await createCustom(other, code);
+  const alert = other.locator("[data-omni-focus]");
+  await expect(alert).toContainText("That code is already in use. Try a different one.");
+
+  const peer = await newPerson();
+  await peer.goto(`/lab/omni#${code}`);
+  await expect(peer.getByLabel("Room code")).toHaveValue(code);
   await peer.getByRole("button", { name: "Join", exact: true }).click();
+  await expect(peer.getByTestId("omni-call")).toBeVisible({ timeout: 20_000 });
+
+  await other.goto(`/lab/omni#${code}`);
+  await expect(other.getByLabel("Room code")).toHaveValue(code);
+  await other.getByRole("button", { name: "Join", exact: true }).click();
+  await expect(alert).toContainText("That room already has two people.");
+});
+
+test("two peers connect, see the same safety check, and the call ends for both", async ({
+  page,
+  newPerson,
+}) => {
+  test.setTimeout(60_000);
+  const peer = await newPerson();
+  const code = await connectPair(page, peer);
 
   for (const side of [page, peer]) {
     const call = side.getByTestId("omni-call");
-    await expect(call).toBeVisible({ timeout: 20_000 });
-    await expect(call).toHaveAttribute("aria-label", "Call K7Q2M9");
+    await expect(call).toHaveAttribute("aria-label", `Call ${code}`);
     await expect(call).toHaveAttribute("data-theme", "dark");
-    await expect(side.getByRole("dialog", { name: "Verify your peer" })).toBeVisible({
-      timeout: 20_000,
-    });
     await expect(side.getByTestId("omni-remote-video")).toBeVisible();
   }
   const safety = async (side: Page) =>
@@ -173,37 +219,35 @@ test("two peers connect, see the same safety check, and the call ends for both",
     name: "Mic",
   });
   await expect(mic).toHaveAttribute("aria-pressed", "true");
-  await wake(page);
-  await mic.click();
+  await press(page, mic, (timeout) =>
+    expect(mic).toHaveAttribute("aria-pressed", "false", { timeout }),
+  );
   await expect(mic).toHaveAttribute("aria-pressed", "false");
-  await expectAccessible(page);
+  await expectCallAccessible(page);
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(
     true,
   );
 
-  await wake(page);
-  await page.getByRole("button", { name: "End", exact: true }).click();
-  await expect(page.getByRole("heading", { name: "Link setup" })).toBeVisible();
+  const setup = page.getByRole("heading", { name: "Link setup" });
+  await press(page, page.getByRole("button", { name: "End", exact: true }), (timeout) =>
+    expect(setup).toBeVisible({ timeout }),
+  );
   await expect(peer.getByRole("alert").filter({ hasText: "left the call" })).toBeVisible();
   await expect(peer.getByRole("heading", { name: "Link setup" })).toBeVisible({ timeout: 6_000 });
-  expect(peerErrors).toEqual([]);
 });
 
-test("peers chat and send an encrypted, verified file", async ({ page, context }) => {
+test("peers chat and send an encrypted, verified file", async ({ page, newPerson }) => {
   test.setTimeout(60_000);
-  const peer = await context.newPage();
-  const peerErrors: string[] = [];
-  peer.on("pageerror", (error) => peerErrors.push(error.message));
+  const peer = await newPerson();
   await connectPair(page, peer);
   for (const side of [page, peer]) await side.getByRole("button", { name: "They match" }).click();
 
-  await wake(page);
-  await page
-    .getByRole("toolbar", { name: "Call controls" })
-    .getByRole("button", { name: "Chat" })
-    .click();
   const input = page.getByRole("textbox", { name: "Message" });
-  await expect(input).toBeFocused();
+  await press(
+    page,
+    page.getByRole("toolbar", { name: "Call controls" }).getByRole("button", { name: "Chat" }),
+    (timeout) => expect(input).toBeFocused({ timeout }),
+  );
   await input.fill("hello <b>there</b>");
   await input.press("Enter");
   await expect(input).toHaveValue("");
@@ -230,15 +274,12 @@ test("peers chat and send an encrypted, verified file", async ({ page, context }
   const path = await download.path();
   const { readFile } = await import("node:fs/promises");
   expect(await readFile(path, "utf8")).toBe("omni file transfer\n");
-  await expectAccessible(peer);
-  expect(peerErrors).toEqual([]);
+  await expectCallAccessible(peer);
 });
 
 test("the language is remembered, and the lobby shows the join link as a QR code", async ({
   page,
 }) => {
-  const relay: Relay = { code: "K7Q2M9" };
-  await fakeSignaling(page, relay);
   await page.goto("/lab/omni");
   const languages = page.getByRole("group", { name: "Language" });
   await expect(async () => {
@@ -262,7 +303,10 @@ test("the language is remembered, and the lobby shows the join link as a QR code
   await expectAccessible(page);
 });
 
-test("a peer shares the screen and records the call to a local file", async ({ page, context }) => {
+test("a peer shares the screen and records the call to a local file", async ({
+  page,
+  newPerson,
+}) => {
   test.setTimeout(60_000);
   // Without a file picker the recording falls back to a download, which the test can read.
   await page.addInitScript(() => {
@@ -278,38 +322,38 @@ test("a peer shares the screen and records the call to a local file", async ({ p
       }
     };
   });
-  const peer = await context.newPage();
-  await connectPair(page, peer);
+  const peer = await newPerson();
+  const code = await connectPair(page, peer);
   await page.getByRole("button", { name: "They match" }).click();
 
   const more = page.getByRole("button", { name: "More" });
   const share = page.getByRole("menuitemcheckbox", { name: /Share screen/ });
-  await wake(page);
-  await more.click();
+  const openMore = () => press(page, more, (timeout) => expect(share).toBeVisible({ timeout }));
+  await openMore();
   await share.click();
-  await wake(page);
-  await more.click();
+  await openMore();
   await expect(share).toHaveAttribute("aria-checked", "true");
   await share.click();
-  await wake(page);
-  await more.click();
+  await openMore();
   await expect(share).toHaveAttribute("aria-checked", "false");
   await page.keyboard.press("Escape");
 
   const record = page.getByRole("menuitemcheckbox", { name: /Record call/ });
-  await wake(page);
-  await more.click();
+  await openMore();
   await record.click();
   await expect(page.getByTestId("omni-rec")).toBeVisible();
   await page.evaluate(() => {
     Object.defineProperty(document, "hidden", { configurable: true, get: () => true });
     document.dispatchEvent(new Event("visibilitychange"));
   });
+  // The worker only starts on hide, so give it time to load on a busy machine.
   await expect
-    .poll(() =>
-      page.evaluate(
-        () => (window as unknown as { __omniTicks: { count: number } }).__omniTicks.count,
-      ),
+    .poll(
+      () =>
+        page.evaluate(
+          () => (window as unknown as { __omniTicks: { count: number } }).__omniTicks.count,
+        ),
+      { timeout: 15_000 },
     )
     .toBeGreaterThan(3);
   await page.evaluate(() => {
@@ -318,11 +362,12 @@ test("a peer shares the screen and records the call to a local file", async ({ p
   });
   await page.waitForTimeout(1_000);
   const download = page.waitForEvent("download");
-  await wake(page);
-  await more.click();
+  await openMore();
   await record.click();
   const file = await download;
-  expect(file.suggestedFilename()).toMatch(/^omni-K7Q2M9-\d{4}-\d\d-\d\dT\d\d-\d\d-\d\d\.webm$/);
+  expect(file.suggestedFilename()).toMatch(
+    new RegExp(`^omni-${code}-\\d{4}-\\d\\d-\\d\\dT\\d\\d-\\d\\d-\\d\\d\\.webm$`),
+  );
   await expect(page.getByTestId("omni-rec")).toBeHidden();
   await page.getByRole("button", { name: "Chat", exact: true }).click();
   await expect(page.getByText(/Recording saved/)).toBeVisible();

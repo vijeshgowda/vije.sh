@@ -1,0 +1,324 @@
+/* Chat and files: scrolls up over the sticky video inside the call <dialog> (dark theme). */
+
+.sheet {
+  position: relative;
+  z-index: 5;
+  max-width: 46rem;
+  margin: 0 auto;
+  min-height: 88vh;
+  min-height: 88dvh;
+  background: var(--bg);
+  color: var(--ink);
+  border: 1px solid var(--line);
+  border-bottom: 0;
+  box-shadow: 0 -24px 48px -16px var(--bg);
+  display: flex;
+  flex-direction: column;
+}
+.sheet::before {
+  content: "";
+  position: absolute;
+  top: -1px;
+  left: 0;
+  height: 3px;
+  width: 4rem;
+  background: var(--red);
+}
+
+.head {
+  position: sticky;
+  top: 0;
+  z-index: 2;
+  display: flex;
+  align-items: stretch;
+  background: var(--bg);
+  border-bottom: 1px solid var(--line);
+}
+.tabs {
+  display: flex;
+  flex: 1;
+}
+.tabs button {
+  flex: 1;
+  min-height: 3rem;
+  border: 0;
+  border-bottom: 2px solid transparent;
+  background: none;
+  font: 500 0.7rem var(--font-mono);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--mute);
+  cursor: var(--cur-hand, pointer);
+}
+.tabs button[aria-selected="true"] {
+  color: var(--ink);
+  border-bottom-color: var(--red);
+}
+.n {
+  color: var(--red-t);
+  margin-left: 0.35rem;
+}
+.tool {
+  border: 0;
+  border-left: 1px solid var(--line);
+  background: none;
+  padding: 0 0.9rem;
+  font: 500 0.66rem var(--font-mono);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--mute);
+  cursor: var(--cur-hand, pointer);
+}
+.back {
+  padding: 0 1rem;
+  color: var(--ink);
+}
+.tool:hover {
+  color: var(--ink);
+  background: var(--faint);
+}
+.tabs button:focus-visible,
+.tool:focus-visible,
+.send:focus-visible,
+.compose input:focus-visible,
+.msg a:focus-visible,
+.file a:focus-visible {
+  outline: 2px solid var(--red);
+  outline-offset: -2px;
+}
+
+.panel {
+  flex: 1;
+  padding: 0.4rem clamp(0.9rem, 3vw, 1.4rem);
+}
+.panel[hidden] {
+  display: none;
+}
+.empty {
+  margin: 1rem 0;
+  font: 400 0.7rem var(--font-mono);
+  color: var(--mute);
+}
+
+.msgs {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+.msg {
+  padding: 0.7rem 0;
+  border-bottom: 1px solid var(--line);
+  display: grid;
+  gap: 0.15rem;
+}
+.msg header {
+  display: flex;
+  justify-content: space-between;
+  font: 500 0.62rem var(--font-mono);
+  color: var(--mute);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+.msg header b {
+  color: var(--red-t);
+  font-weight: 500;
+}
+.me header b {
+  color: var(--ink);
+}
+.msg p {
+  margin: 0;
+  font-size: 0.95rem;
+  overflow-wrap: anywhere;
+  white-space: pre-wrap;
+}
+.sys {
+  border-bottom-style: dashed;
+}
+.sys p {
+  font: 400 0.7rem var(--font-mono);
+  color: var(--mute);
+}
+
+.prev {
+  margin: 0.3rem 0 0;
+  max-width: 18rem;
+}
+.prev img,
+.prev video {
+  display: block;
+  width: 100%;
+  max-height: 16rem;
+  object-fit: contain;
+  border: 1px solid var(--line2);
+  background: var(--chip);
+}
+.prev figcaption {
+  display: flex;
+  justify-content: space-between;
+  gap: 0.6rem;
+  font: 400 0.64rem var(--font-mono);
+  color: var(--mute);
+  margin-top: 0.3rem;
+  overflow-wrap: anywhere;
+}
+.prev a,
+.file a {
+  color: var(--ink);
+  white-space: nowrap;
+}
+
+.files {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+.file {
+  padding: 0.8rem 0;
+  border-bottom: 1px solid var(--line);
+  display: grid;
+  gap: 0.35rem;
+}
+.file header {
+  display: flex;
+  justify-content: space-between;
+  gap: 0.6rem;
+  font: 500 0.76rem var(--font-mono);
+}
+.file header span:first-child {
+  overflow-wrap: anywhere;
+}
+.file header span:last-child {
+  color: var(--mute);
+  font-weight: 400;
+  white-space: nowrap;
+}
+.track {
+  height: 0.45rem;
+  border: 1px solid var(--line2);
+  background: var(--bg);
+  position: relative;
+  overflow: hidden;
+}
+.track i {
+  position: absolute;
+  inset: 0 auto 0 0;
+  background: var(--ink);
+  width: var(--p, 0%);
+}
+.done .track i {
+  background: var(--ok);
+}
+.failed .track i {
+  background: var(--red);
+}
+.file footer {
+  display: flex;
+  justify-content: space-between;
+  gap: 0.6rem;
+  font: 400 0.62rem var(--font-mono);
+  color: var(--mute);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+.failed footer span:first-child {
+  color: var(--red-t);
+}
+.pick {
+  margin: 1rem 0;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.5rem;
+  font: 400 0.68rem var(--font-mono);
+  color: var(--mute);
+}
+.picker {
+  display: none;
+}
+
+.foot {
+  position: sticky;
+  bottom: 0;
+  background: var(--bg);
+  border-top: 1px solid var(--line);
+  padding-bottom: env(safe-area-inset-bottom);
+}
+.typing {
+  font: 400 0.68rem var(--font-mono);
+  color: var(--mute);
+  padding: 0.4rem clamp(0.9rem, 3vw, 1.4rem) 0;
+  margin: 0;
+  min-height: 1.5rem;
+}
+.typing span::after {
+  content: "_";
+  color: var(--red-t);
+}
+.compose {
+  display: flex;
+  gap: 0.4rem;
+  padding: 0.5rem clamp(0.6rem, 2vw, 1rem) 0.7rem;
+}
+.compose input {
+  flex: 1;
+  min-width: 0;
+  min-height: 2.9rem;
+  font: inherit;
+  border: 1px solid var(--ink);
+  background: var(--bg);
+  color: var(--ink);
+  padding: 0.6rem 0.7rem;
+  border-radius: 0;
+}
+.send {
+  width: 2.9rem;
+  min-height: 2.9rem;
+  border: 1px solid var(--ink);
+  background: var(--ink);
+  color: var(--bg);
+  display: grid;
+  place-items: center;
+  cursor: var(--cur-hand, pointer);
+}
+.send:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+.send svg {
+  width: 1.1rem;
+  height: 1.1rem;
+}
+.hint {
+  font: 400 0.62rem var(--font-mono);
+  color: var(--mute);
+  padding: 0 clamp(0.6rem, 2vw, 1rem) 0.5rem;
+  margin: -0.3rem 0 0;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .typing span::after {
+    animation: blink 1s steps(1) infinite;
+  }
+  .msg {
+    animation: up 0.25s both;
+  }
+}
+@keyframes blink {
+  50% {
+    opacity: 0;
+  }
+}
+@keyframes up {
+  from {
+    opacity: 0;
+    transform: translateY(-6px);
+  }
+}
+
+@media (max-width: 44rem) {
+  .sheet {
+    border-left: 0;
+    border-right: 0;
+  }
+}

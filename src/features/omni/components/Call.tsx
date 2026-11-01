@@ -6,6 +6,8 @@ import {
   useId,
   useRef,
   useState,
+  type ClipboardEvent,
+  type DragEvent,
   type KeyboardEvent,
   type MouseEvent,
   type PointerEvent,
@@ -16,6 +18,7 @@ import { formatClock } from "../client/format";
 import type { CallState, Connection } from "../client/state";
 import type { TranslationKey } from "../i18n";
 import type { Translate } from "./OmniApp";
+import { ChatSheet, type Tab } from "./ChatSheet";
 import { SasPanel } from "./SasPanel";
 import { StreamVideo } from "./StreamVideo";
 import styles from "./Call.module.css";
@@ -32,6 +35,7 @@ const CONNECTION: Record<Connection, TranslationKey> = {
 const HIDE_MS = 4_000;
 const NOTICE_MS = 6_000;
 const DRAG_PX = 6;
+const BANNER_MS = 4_000;
 
 type Props = {
   tr: Translate;
@@ -51,6 +55,10 @@ type Props = {
   onSasMatch: () => void;
   onSasReject: () => void;
   onLevel: (listener: ((level: number) => void) | null) => void;
+  onSend: (text: string) => Promise<boolean>;
+  onTyping: () => void;
+  onFiles: (files: File[]) => void;
+  onClear: () => void;
 };
 
 function Icon({ children, fill }: { children: ReactNode; fill?: boolean }) {
@@ -98,6 +106,10 @@ export function Call({
   onSasMatch,
   onSasReject,
   onLevel,
+  onSend,
+  onTyping,
+  onFiles,
+  onClear,
 }: Props) {
   const id = useId();
   const now = useNow();
@@ -116,6 +128,17 @@ export function Call({
   const [drag, setDrag] = useState<{ x: number; y: number } | null>(null);
   const [fullscreen, setFullscreen] = useState({ supported: false, active: false });
   const [seenNotice, setSeenNotice] = useState(0);
+  const sheet = useRef<HTMLElement>(null);
+  const input = useRef<HTMLInputElement>(null);
+  const picker = useRef<HTMLInputElement>(null);
+  const chatButton = useRef<HTMLButtonElement>(null);
+  const latestId = useRef(0);
+  const dragDepth = useRef(0);
+  const [tab, setTab] = useState<Tab>("chat");
+  const [inChat, setInChat] = useState(false);
+  const [seenId, setSeenId] = useState(0);
+  const [bannerGone, setBannerGone] = useState(0);
+  const [dropping, setDropping] = useState(false);
 
   const pinned = menuOpen || call.sasOpen || call.ending !== null;
   const visible = shown || pinned;
@@ -182,6 +205,101 @@ export function Call({
     const timer = setTimeout(() => setSeenNotice(id), NOTICE_MS);
     return () => clearTimeout(timer);
   }, [call.notice, call.noticeId]);
+
+  const lastPeerItem = call.messages.findLast(
+    (item) => (item.kind === "chat" && item.from === "peer") || item.kind === "file",
+  );
+  useEffect(() => {
+    latestId.current = call.messages.at(-1)?.id ?? 0;
+  }, [call.messages]);
+
+  // The sheet counts as read while a quarter of it is on screen; leaving it marks what was seen.
+  useEffect(() => {
+    const element = sheet.current;
+    if (!element || typeof IntersectionObserver === "undefined") return;
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        const visible = entry?.isIntersecting ?? false;
+        setInChat(visible);
+        setSeenId(latestId.current);
+      },
+      { root: dialog.current, threshold: 0.25 },
+    );
+    observer.observe(element);
+    return () => observer.disconnect();
+  }, []);
+
+  const banner =
+    !inChat && lastPeerItem && lastPeerItem.id > seenId && lastPeerItem.id !== bannerGone
+      ? lastPeerItem
+      : null;
+  const bannerText =
+    banner?.kind === "chat"
+      ? banner.text
+      : banner?.kind === "file"
+        ? (call.transfers.find((transfer) => transfer.key === banner.transfer)?.name ?? "")
+        : "";
+  const bannerId = banner?.id ?? 0;
+  useEffect(() => {
+    if (!bannerId) return;
+    const timer = setTimeout(() => setBannerGone(bannerId), BANNER_MS);
+    return () => clearTimeout(timer);
+  }, [bannerId]);
+  const unread = inChat
+    ? 0
+    : call.messages.filter(
+        (item) =>
+          item.id > seenId &&
+          ((item.kind === "chat" && item.from === "peer") || item.kind === "file"),
+      ).length;
+
+  const goChat = useCallback((focus: "input" | "none" = "input") => {
+    sheet.current?.scrollIntoView?.({ behavior: behavior(), block: "start" });
+    if (focus === "input") input.current?.focus({ preventScroll: true });
+  }, []);
+  const goVideo = () => {
+    dialog.current?.scrollTo?.({ top: 0, behavior: behavior() });
+    chatButton.current?.focus({ preventScroll: true });
+  };
+  const sendFiles = (files: File[]) => {
+    if (!files.length) return;
+    setTab("files");
+    onFiles(files);
+  };
+
+  const onPaste = (event: ClipboardEvent<HTMLDialogElement>) => {
+    const data = event.clipboardData;
+    const files = Array.from(data?.files ?? []);
+    // Text wins: pasting into the message box with text on the clipboard stays a normal paste.
+    if (!files.length || data.types.includes("text/plain")) return;
+    event.preventDefault();
+    sendFiles(files);
+  };
+  const hasFiles = (event: DragEvent) =>
+    Array.from(event.dataTransfer?.types ?? []).includes("Files");
+  const dragProps = {
+    onDragEnter: (event: DragEvent<HTMLDialogElement>) => {
+      if (!hasFiles(event)) return;
+      event.preventDefault();
+      dragDepth.current += 1;
+      setDropping(true);
+    },
+    onDragOver: (event: DragEvent<HTMLDialogElement>) => {
+      if (hasFiles(event)) event.preventDefault();
+    },
+    onDragLeave: (event: DragEvent<HTMLDialogElement>) => {
+      if (!hasFiles(event)) return;
+      dragDepth.current = Math.max(0, dragDepth.current - 1);
+      if (dragDepth.current === 0) setDropping(false);
+    },
+    onDrop: (event: DragEvent<HTMLDialogElement>) => {
+      if (!hasFiles(event)) return;
+      event.preventDefault();
+      dragDepth.current = 0;
+      setDropping(false);
+      sendFiles(Array.from(event.dataTransfer.files));
+    },
+  };
 
   const wake = useCallback(() => {
     setShown(true);
@@ -310,6 +428,7 @@ export function Call({
           ? tr("call.link_relayed")
           : tr("conn.connected")
       : tr(CONNECTION[call.connection]);
+  const typing = call.typing && call.connection === "connected";
   const elapsed = call.startedAt !== null && now !== null ? (now - call.startedAt) / 1000 : 0;
   const notice = call.notice && call.noticeId !== seenNotice ? call.notice : null;
   const localShows = hasVideo && cam && local !== null;
@@ -346,6 +465,8 @@ export function Call({
         const element = dialog.current;
         if (element?.isConnected && typeof element.showModal === "function") element.showModal();
       }}
+      onPaste={onPaste}
+      {...dragProps}
     >
       <div
         ref={stage}
@@ -395,8 +516,8 @@ export function Call({
               />
               Omni &middot; {code}
             </b>
-            <span>
-              {tr("call.peer")} &middot; {sub}
+            <span className={typing ? styles.typing : undefined}>
+              {typing ? tr("chat.typing") : `${tr("call.peer")} · ${sub}`}
             </span>
           </div>
           <span className={styles.spacer} />
@@ -428,6 +549,15 @@ export function Call({
             )}
           </div>
         </div>
+
+        {banner && (
+          <button className={styles.banner} type="button" onClick={() => goChat()}>
+            <small>
+              {tr("call.peer")} &middot; {tr("chat.new")}
+            </small>
+            <span>{bannerText}</span>
+          </button>
+        )}
 
         {call.sasOpen && call.safety && !call.ending && (
           <SasPanel tr={tr} safety={call.safety} onMatch={onSasMatch} onReject={onSasReject} />
@@ -498,6 +628,26 @@ export function Call({
               </button>
             )}
             <span className={styles.sep} aria-hidden="true" />
+            <button
+              ref={chatButton}
+              className={styles.ctl}
+              type="button"
+              title={tr("chat.title")}
+              data-ctl=""
+              onClick={() => goChat()}
+            >
+              <Icon>
+                <path d="M4 5h16v11H9l-5 4z" />
+              </Icon>
+              {tr("chat.title")}
+              {unread > 0 && " "}
+              {unread > 0 && (
+                <span className={styles.n} data-testid="omni-unread">
+                  <span aria-hidden="true">{unread}</span>
+                  <span className="vh">{tr("chat.unread", { count: unread })}</span>
+                </span>
+              )}
+            </button>
             <div>
               <button
                 ref={more}
@@ -545,6 +695,19 @@ export function Call({
                     role="menuitem"
                     tabIndex={-1}
                     onClick={() => {
+                      closeMenu(false);
+                      setTab("files");
+                      goChat("none");
+                      picker.current?.click();
+                    }}
+                  >
+                    {tr("menu.file")} <small aria-hidden="true">↑</small>
+                  </button>
+                  <button
+                    type="button"
+                    role="menuitem"
+                    tabIndex={-1}
+                    onClick={() => {
                       setCorner(CLOCKWISE[(CLOCKWISE.indexOf(corner) + 1) % CLOCKWISE.length]!);
                       closeMenu();
                     }}
@@ -573,7 +736,16 @@ export function Call({
               <span className={styles.endText}>{tr("ctrl.end")}</span>
             </button>
           </div>
+          <button className={styles.hint} type="button" onClick={() => goChat()}>
+            {tr("chat.scroll")} <span aria-hidden="true">↓</span>
+          </button>
         </div>
+
+        {dropping && (
+          <div className={styles.drop} aria-hidden="true">
+            {tr("call.drop")}
+          </div>
+        )}
 
         {call.connection === "reconnecting" && !call.ending && (
           <div className={styles.recon} role="status">
@@ -589,8 +761,27 @@ export function Call({
           </div>
         )}
       </div>
+
+      <ChatSheet
+        tr={tr}
+        call={call}
+        tab={tab}
+        sheet={sheet}
+        input={input}
+        picker={picker}
+        onTab={setTab}
+        onSend={onSend}
+        onTyping={onTyping}
+        onFiles={sendFiles}
+        onClear={onClear}
+        onBack={goVideo}
+      />
     </dialog>
   );
+}
+
+function behavior(): ScrollBehavior {
+  return window.matchMedia?.("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth";
 }
 
 function menuItems(menu: HTMLElement | null): HTMLButtonElement[] {

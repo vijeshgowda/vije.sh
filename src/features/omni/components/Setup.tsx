@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/Button";
 import { Section } from "@/components/ui/Datasheet";
 import { cleanCode, codeFromHash, isValidCode } from "../client/code";
 import type { Alert, Mode, OmniState } from "../client/state";
-import type { TranslationKey } from "../i18n";
+import { LANGUAGES, type Language, type TranslationKey } from "../i18n";
 import { iceSummary } from "../config";
 import type { Translate } from "./OmniApp";
 import styles from "./Omni.module.css";
@@ -23,6 +23,8 @@ type Props = {
   onRetry: () => void;
   onDismiss: () => void;
   onPrefetch: () => void;
+  language: Language;
+  onLanguage: (language: Language) => void;
 };
 
 const subscribeHash = (cb: () => void) => {
@@ -70,8 +72,11 @@ export function Setup({
   onRetry,
   onDismiss,
   onPrefetch,
+  language,
+  onLanguage,
 }: Props) {
   const id = useId();
+  const [langNote, setLangNote] = useState("");
   const hashCode = useSyncExternalStore(subscribeHash, readHash, serverHash);
   const created = defaults?.mode === "create" ? defaults.code : "";
   const [customOpen, setCustomOpen] = useState(created !== "");
@@ -257,6 +262,32 @@ export function Setup({
               AES-GCM-256
             </div>
           </div>
+          <div className={styles.field}>
+            <span className={styles.small} id={`${id}-lang`}>
+              {tr("home.lang_label")}
+            </span>
+            <div className={styles.lang} role="group" aria-labelledby={`${id}-lang`}>
+              {LANGUAGES.map(({ code, label }) => (
+                <button
+                  key={code}
+                  type="button"
+                  lang={code}
+                  aria-pressed={code === language}
+                  onClick={() => {
+                    if (code === language) return;
+                    onLanguage(code);
+                    // The status sits inside the app's lang attribute, so it is read in the new language.
+                    setLangNote(label);
+                  }}
+                >
+                  {label}
+                </button>
+              ))}
+            </div>
+          </div>
+          <span className="vh" aria-live="polite" data-testid="omni-lang-status">
+            {langNote && tr("a11y.lang_changed", { lang: langNote })}
+          </span>
         </aside>
       </div>
     </Section>

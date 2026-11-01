@@ -233,3 +233,72 @@ test("peers chat and send an encrypted, verified file", async ({ page, context }
   await expectAccessible(peer);
   expect(peerErrors).toEqual([]);
 });
+
+test("the language is remembered, and the lobby shows the join link as a QR code", async ({
+  page,
+}) => {
+  const relay: Relay = { code: "K7Q2M9" };
+  await fakeSignaling(page, relay);
+  await page.goto("/lab/omni");
+  const languages = page.getByRole("group", { name: "Language" });
+  await expect(async () => {
+    await languages.getByRole("button", { name: "Español" }).click();
+    await expect(page.getByRole("heading", { name: "Configuración" })).toBeVisible({
+      timeout: 1_000,
+    });
+  }).toPass();
+  await page.reload();
+  await expect(
+    page.getByRole("group", { name: "Idioma" }).getByRole("button", { name: "Español" }),
+  ).toHaveAttribute("aria-pressed", "true");
+  await page
+    .getByRole("group", { name: "Idioma" })
+    .getByRole("button", { name: "English" })
+    .click();
+
+  await create(page);
+  const qr = page.getByRole("img", { name: "QR code for the join link" });
+  await expect(qr.locator("svg path")).toHaveAttribute("d", /^M/);
+  await expectAccessible(page);
+});
+
+test("a peer shares the screen and records the call to a local file", async ({ page, context }) => {
+  test.setTimeout(60_000);
+  // Without a file picker the recording falls back to a download, which the test can read.
+  await page.addInitScript(() =>
+    Object.defineProperty(window, "showSaveFilePicker", { value: undefined }),
+  );
+  const peer = await context.newPage();
+  await connectPair(page, peer);
+  await page.getByRole("button", { name: "They match" }).click();
+
+  const more = page.getByRole("button", { name: "More" });
+  const share = page.getByRole("menuitemcheckbox", { name: /Share screen/ });
+  await wake(page);
+  await more.click();
+  await share.click();
+  await wake(page);
+  await more.click();
+  await expect(share).toHaveAttribute("aria-checked", "true");
+  await share.click();
+  await wake(page);
+  await more.click();
+  await expect(share).toHaveAttribute("aria-checked", "false");
+  await page.keyboard.press("Escape");
+
+  const record = page.getByRole("menuitemcheckbox", { name: /Record call/ });
+  await wake(page);
+  await more.click();
+  await record.click();
+  await expect(page.getByTestId("omni-rec")).toBeVisible();
+  await page.waitForTimeout(1_500);
+  const download = page.waitForEvent("download");
+  await wake(page);
+  await more.click();
+  await record.click();
+  const file = await download;
+  expect(file.suggestedFilename()).toMatch(/^omni-K7Q2M9-\d{4}-\d\d-\d\dT\d\d-\d\d-\d\d\.webm$/);
+  await expect(page.getByTestId("omni-rec")).toBeHidden();
+  await page.getByRole("button", { name: "Chat", exact: true }).click();
+  await expect(page.getByText(/Recording saved/)).toBeVisible();
+});

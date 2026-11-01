@@ -6,6 +6,7 @@ import {
   useId,
   useRef,
   useState,
+  useSyncExternalStore,
   type ClipboardEvent,
   type DragEvent,
   type KeyboardEvent,
@@ -15,7 +16,7 @@ import {
 } from "react";
 import { useNow } from "@/features/live/client/use-now";
 import { formatClock } from "../client/format";
-import type { CallState, Connection } from "../client/state";
+import type { CallState, Connection, Message } from "../client/state";
 import type { TranslationKey } from "../i18n";
 import type { Translate } from "./OmniApp";
 import { ChatSheet, type Tab } from "./ChatSheet";
@@ -37,6 +38,13 @@ const NOTICE_MS = 6_000;
 const DRAG_PX = 6;
 const BANNER_MS = 4_000;
 
+/** Safari's Picture in Picture predates the standard API. */
+type WebkitVideo = HTMLVideoElement & {
+  webkitSupportsPresentationMode?: (mode: string) => boolean;
+  webkitSetPresentationMode?: (mode: string) => void;
+  webkitPresentationMode?: string;
+};
+
 type Props = {
   tr: Translate;
   code: string;
@@ -48,9 +56,14 @@ type Props = {
   mic: boolean;
   cam: boolean;
   facing: "user" | "environment";
+  screen: MediaStream | null;
+  recording: boolean;
   onMic: () => void;
   onCam: () => void;
   onFlip: () => void;
+  onScreen: () => void;
+  onRecord: () => void;
+  onAnnounce: (item: Message) => void;
   onEnd: () => void;
   onSasMatch: () => void;
   onSasReject: () => void;
@@ -99,9 +112,14 @@ export function Call({
   mic,
   cam,
   facing,
+  screen,
+  recording,
   onMic,
   onCam,
   onFlip,
+  onScreen,
+  onRecord,
+  onAnnounce,
   onEnd,
   onSasMatch,
   onSasReject,
@@ -139,6 +157,8 @@ export function Call({
   const [seenId, setSeenId] = useState(0);
   const [bannerGone, setBannerGone] = useState(0);
   const [dropping, setDropping] = useState(false);
+  const canShare = useSyncExternalStore(noSubscribe, displaySupported, () => false);
+  const [pipOn, setPipOn] = useState(false);
 
   const pinned = menuOpen || call.sasOpen || call.ending !== null;
   const visible = shown || pinned;
@@ -166,6 +186,38 @@ export function Call({
     return () => {
       document.removeEventListener("fullscreenchange", sync);
       if (document.fullscreenElement) void document.exitFullscreen().catch(() => undefined);
+    };
+  }, []);
+
+  // Picture in Picture floats the peer's video over other apps. Leaving the tab enters it on its
+  // own (where the browser allows that without a tap) and coming back leaves it.
+  useEffect(() => {
+    const root = dialog.current;
+    const sync = () => {
+      const video = remoteVideo(root);
+      setPipOn(
+        (video !== null && document.pictureInPictureElement === video) ||
+          video?.webkitPresentationMode === "picture-in-picture",
+      );
+    };
+    const onVisibility = () => {
+      const video = remoteVideo(root);
+      if (!video) return;
+      if (document.hidden) void enterPip(video).catch(() => undefined);
+      else void exitPip(video);
+    };
+    const events = [
+      "enterpictureinpicture",
+      "leavepictureinpicture",
+      "webkitpresentationmodechanged",
+    ];
+    events.forEach((name) => document.addEventListener(name, sync, true));
+    document.addEventListener("visibilitychange", onVisibility);
+    return () => {
+      events.forEach((name) => document.removeEventListener(name, sync, true));
+      document.removeEventListener("visibilitychange", onVisibility);
+      const video = remoteVideo(root);
+      if (video) void exitPip(video);
     };
   }, []);
 
@@ -378,6 +430,20 @@ export function Call({
     else void dialog.current?.requestFullscreen?.().catch(() => undefined);
   };
 
+  const togglePip = async () => {
+    closeMenu();
+    const video = remoteVideo(dialog.current);
+    if (video && pipOn) {
+      await exitPip(video);
+      return;
+    }
+    try {
+      if (!(await enterPip(video))) onAnnounce({ key: "sys.pip_unsupported" });
+    } catch {
+      onAnnounce({ key: "sys.pip_error" });
+    }
+  };
+
   const pipKey = (event: KeyboardEvent<HTMLDivElement>) => {
     if (event.key === "Enter" || event.key === " ") {
       event.preventDefault();
@@ -431,7 +497,9 @@ export function Call({
   const typing = call.typing && call.connection === "connected";
   const elapsed = call.startedAt !== null && now !== null ? (now - call.startedAt) / 1000 : 0;
   const notice = call.notice && call.noticeId !== seenNotice ? call.notice : null;
-  const localShows = hasVideo && cam && local !== null;
+  const localShows = screen !== null || (hasVideo && cam && local !== null);
+  const sharing = screen !== null;
+  const shareable = hasVideo && canShare;
   const corners = `${styles[corner]} ${drag ? styles.dragging : ""}`;
 
   const pipProps = {
@@ -493,11 +561,16 @@ export function Call({
         </div>
         <div
           key="local"
-          className={`${styles.tile} ${facing === "user" ? styles.mirror : ""} ${swapped ? styles.feed : `${styles.pip} ${corners}`}`}
+          className={`${styles.tile} ${sharing ? styles.screen : facing === "user" ? styles.mirror : ""} ${swapped ? styles.feed : `${styles.pip} ${corners}`}`}
           {...(swapped ? {} : pipProps)}
         >
           {localShows ? (
-            <StreamVideo stream={local} version={localVersion} muted />
+            <StreamVideo
+              stream={screen ?? local}
+              version={localVersion}
+              muted
+              data-testid="omni-local-video"
+            />
           ) : (
             <span className={styles.off}>{tr("call.camera_off")}</span>
           )}
@@ -522,6 +595,13 @@ export function Call({
           </div>
           <span className={styles.spacer} />
           <div className={styles.badges}>
+            {recording && (
+              <span className={`${styles.badge} ${styles.rec}`} data-testid="omni-rec">
+                <i className={styles.led} aria-hidden="true" />
+                <span aria-hidden="true">REC</span>
+                <span className="vh">{tr("call.recording")}</span>
+              </span>
+            )}
             <span className={styles.badge} data-testid="omni-timer">
               {formatClock(elapsed)}
             </span>
@@ -627,6 +707,22 @@ export function Call({
                 {tr("ctrl.flip")}
               </button>
             )}
+            {shareable && (
+              <button
+                className={`${styles.ctl} ${styles.act} ${styles.wide}`}
+                type="button"
+                aria-pressed={sharing}
+                title={tr("ctrl.screen_title")}
+                data-ctl=""
+                onClick={onScreen}
+              >
+                <Icon>
+                  <rect x="3" y="4" width="18" height="12" />
+                  <path d="M8 20h8M12 16v4M12 13V7M9 10l3-3 3 3" />
+                </Icon>
+                {tr("ctrl.screen")}
+              </button>
+            )}
             <span className={styles.sep} aria-hidden="true" />
             <button
               ref={chatButton}
@@ -690,6 +786,44 @@ export function Call({
                       {tr("ctrl.flip_title")} <small aria-hidden="true">↻</small>
                     </button>
                   )}
+                  {shareable && (
+                    <button
+                      type="button"
+                      role="menuitemcheckbox"
+                      aria-checked={sharing}
+                      tabIndex={-1}
+                      onClick={() => {
+                        closeMenu();
+                        onScreen();
+                      }}
+                    >
+                      {tr("ctrl.screen_title")}{" "}
+                      <small aria-hidden="true">{sharing ? "ON" : "OFF"}</small>
+                    </button>
+                  )}
+                  {remote && (
+                    <button
+                      type="button"
+                      role="menuitemcheckbox"
+                      aria-checked={pipOn}
+                      tabIndex={-1}
+                      onClick={() => void togglePip()}
+                    >
+                      {tr("ctrl.pip_title")} <small aria-hidden="true">↗</small>
+                    </button>
+                  )}
+                  <button
+                    type="button"
+                    role="menuitemcheckbox"
+                    aria-checked={recording}
+                    tabIndex={-1}
+                    onClick={() => {
+                      closeMenu();
+                      onRecord();
+                    }}
+                  >
+                    {tr("ctrl.record_title")} <small aria-hidden="true">.webm</small>
+                  </button>
                   <button
                     type="button"
                     role="menuitem"
@@ -786,7 +920,38 @@ function behavior(): ScrollBehavior {
 
 function menuItems(menu: HTMLElement | null): HTMLButtonElement[] {
   if (!menu) return [];
-  return Array.from(menu.querySelectorAll<HTMLButtonElement>("[role=menuitem]")).filter(isShown);
+  return Array.from(
+    menu.querySelectorAll<HTMLButtonElement>("[role=menuitem], [role=menuitemcheckbox]"),
+  ).filter(isShown);
+}
+
+const noSubscribe = () => () => undefined;
+const displaySupported = () => typeof navigator.mediaDevices?.getDisplayMedia === "function";
+
+function remoteVideo(root: HTMLElement | null): WebkitVideo | null {
+  return root?.querySelector<WebkitVideo>("[data-testid=omni-remote-video]") ?? null;
+}
+
+/** Resolves false when this browser has no Picture in Picture; throws when it refuses. */
+async function enterPip(video: WebkitVideo | null): Promise<boolean> {
+  const standard = document.pictureInPictureEnabled === true;
+  const webkit = video?.webkitSupportsPresentationMode?.("picture-in-picture") === true;
+  if (!standard && !webkit) return false;
+  if (!video?.srcObject || video.readyState < 2) throw new Error("no video yet");
+  if (standard) {
+    if (document.pictureInPictureElement !== video) await video.requestPictureInPicture();
+  } else video.webkitSetPresentationMode?.("picture-in-picture");
+  return true;
+}
+
+async function exitPip(video: WebkitVideo) {
+  try {
+    if (document.pictureInPictureElement === video) await document.exitPictureInPicture();
+    if (video.webkitPresentationMode === "picture-in-picture")
+      video.webkitSetPresentationMode?.("inline");
+  } catch {
+    // Already closed.
+  }
 }
 
 function isShown(element: HTMLElement): boolean {

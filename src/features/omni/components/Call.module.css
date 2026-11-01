@@ -62,6 +62,11 @@
 .mirror video {
   transform: scaleX(-1);
 }
+/* a shared screen is shown whole and unmirrored, so its text reads */
+.screen video {
+  object-fit: contain;
+  background: var(--chip);
+}
 .feed {
   inset: 0;
   z-index: 0;
@@ -219,8 +224,15 @@
 .securing .led {
   background: var(--warn);
 }
+.rec {
+  border-color: var(--red);
+}
+.rec .led {
+  background: var(--red);
+}
 @media (prefers-reduced-motion: no-preference) {
-  .securing .led {
+  .securing .led,
+  .rec .led {
     animation: hb 1.2s infinite;
   }
 }
@@ -307,7 +319,8 @@
   outline: 2px solid var(--red);
   outline-offset: 2px;
 }
-.toggle[aria-pressed="false"] {
+.toggle[aria-pressed="false"],
+.act[aria-pressed="true"] {
   background: var(--ink);
   color: var(--bg);
   border-color: var(--ink);
@@ -497,6 +510,9 @@
 .menu small {
   color: var(--mute);
   font-size: 0.62rem;
+}
+.menu button[aria-checked="true"] small {
+  color: var(--red-t);
 }
 .menu .narrow {
   display: none;

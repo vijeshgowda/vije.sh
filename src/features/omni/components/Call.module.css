@@ -67,6 +67,10 @@
   object-fit: contain;
   background: var(--chip);
 }
+/* video whose orientation differs from the stage (a phone camera on a laptop) is shown whole */
+.whole video {
+  object-fit: contain;
+}
 .feed {
   inset: 0;
   z-index: 0;
@@ -108,10 +112,14 @@
   display: none;
 }
 
-/* self-view: snaps to a corner, clear of the top bar and the dock */
+/* self-view: snaps to a corner, clear of the top bar and the dock while they show, and tucked
+   into the corner itself while they are hidden; its shape follows the video in it */
 .pip {
+  --pip-w: clamp(6rem, 16vw, 12rem);
+  --pip-tall: clamp(4.5rem, 10vw, 8rem);
+  --pip-edge: clamp(0.6rem, 2vw, 1rem);
   z-index: 3;
-  width: clamp(7rem, 20vw, 15rem);
+  width: var(--pip-w);
   aspect-ratio: 16 / 10;
   border: 1px solid color-mix(in srgb, var(--ink) 28%, transparent);
   box-shadow: var(--sh3);
@@ -132,21 +140,37 @@
   border-color: var(--red);
   z-index: 6;
 }
+.pip[data-shape="portrait"] {
+  width: var(--pip-tall);
+  aspect-ratio: 3 / 4;
+}
+.pip[data-shape="landscape"] {
+  width: var(--pip-w);
+  aspect-ratio: 16 / 10;
+}
 .tl,
 .tr {
-  top: calc(env(safe-area-inset-top) + 4.6rem);
+  top: calc(env(safe-area-inset-top) + 4.4rem);
 }
 .bl,
 .br {
-  bottom: calc(env(safe-area-inset-bottom) + 8.5rem);
+  bottom: calc(env(safe-area-inset-bottom) + 8.25rem);
+}
+.idle .tl,
+.idle .tr {
+  top: calc(env(safe-area-inset-top) + var(--pip-edge));
+}
+.idle .bl,
+.idle .br {
+  bottom: calc(env(safe-area-inset-bottom) + var(--pip-edge));
 }
 .tl,
 .bl {
-  left: clamp(0.8rem, 3vw, 1.6rem);
+  left: calc(env(safe-area-inset-left) + var(--pip-edge));
 }
 .tr,
 .br {
-  right: clamp(0.8rem, 3vw, 1.6rem);
+  right: calc(env(safe-area-inset-right) + var(--pip-edge));
 }
 
 .top {
@@ -679,7 +703,9 @@
 
 @media (max-width: 44rem) {
   .pip {
-    width: clamp(6rem, 30vw, 9rem);
+    --pip-w: clamp(6.5rem, 34vw, 10rem);
+    --pip-tall: clamp(5rem, 24vw, 7.5rem);
+    width: var(--pip-tall);
     aspect-ratio: 3 / 4;
   }
   .dock {

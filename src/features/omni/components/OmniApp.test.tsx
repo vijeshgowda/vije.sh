@@ -1,4 +1,4 @@
-import { act, render, screen, waitFor, within } from "@testing-library/react";
+import { act, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import type { OmniAction } from "../client/state";
@@ -395,7 +395,6 @@ describe("Omni call", () => {
       width: 400,
       height: 800,
     } as DOMRect);
-    const { fireEvent } = await import("@testing-library/react");
     fireEvent.pointerDown(pip, { button: 0, clientX: 350, clientY: 700 });
     fireEvent.pointerMove(pip, { clientX: 60, clientY: 80 });
     expect(pip.style.translate).toBe("-290px -620px");
@@ -715,6 +714,51 @@ describe("Omni extras", () => {
     );
     dispatch({ type: "recording", on: false });
     expect(screen.queryByTestId("omni-rec")).not.toBeInTheDocument();
+  });
+
+  it("shows a video whole when its orientation differs from the screen's", async () => {
+    const matchMedia = window.matchMedia;
+    let portrait = false;
+    window.matchMedia = ((query: string) => ({
+      matches: query === "(orientation: portrait)" ? portrait : false,
+      addEventListener: () => undefined,
+      removeEventListener: () => undefined,
+    })) as unknown as typeof window.matchMedia;
+    const size = (video: HTMLVideoElement, width: number, height: number) => {
+      Object.defineProperty(video, "videoWidth", { value: width, configurable: true });
+      Object.defineProperty(video, "videoHeight", { value: height, configurable: true });
+      act(() => void video.dispatchEvent(new Event("resize")));
+    };
+    try {
+      await startCall();
+      dispatch({ type: "remote", stream });
+      const video = screen.getByTestId("omni-remote-video") as HTMLVideoElement;
+      const tile = video.parentElement!;
+      expect(tile).not.toHaveClass(/whole/);
+
+      // A phone's portrait camera on a landscape laptop is letterboxed, not cropped.
+      size(video, 720, 1280);
+      expect(tile).toHaveClass(/whole/);
+      expect(tile).toHaveAttribute("data-shape", "portrait");
+      size(video, 1280, 720);
+      expect(tile).not.toHaveClass(/whole/);
+
+      // A laptop camera or shared screen on a portrait phone is shown whole too.
+      size(video, 720, 1280);
+      portrait = true;
+      size(video, 1280, 720);
+      expect(tile).toHaveClass(/whole/);
+
+      // Swapped into the self-view, the peer's video takes its own shape there instead.
+      const pip = screen.getByRole("button", { name: "Your camera" });
+      fireEvent.pointerDown(pip, { button: 0, clientX: 10, clientY: 10 });
+      fireEvent.pointerUp(pip, { clientX: 10, clientY: 10 });
+      expect(tile).toHaveAttribute("data-pip");
+      expect(tile).not.toHaveClass(/whole/);
+      expect(tile).toHaveAttribute("data-shape", "landscape");
+    } finally {
+      window.matchMedia = matchMedia;
+    }
   });
 
   it("puts the peer's video in Picture in Picture, or says why it can't", async () => {

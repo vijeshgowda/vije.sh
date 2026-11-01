@@ -62,6 +62,26 @@ async function create(page: Page) {
   }).toPass();
 }
 
+/** Opens a room on `page`, joins it from a second page and waits until both see the safety check. */
+async function connectPair(page: Page, peer: Page) {
+  const relay: Relay = { code: "K7Q2M9" };
+  await fakeSignaling(page, relay);
+  await fakeSignaling(peer, relay);
+  await page.goto("/lab/omni");
+  await create(page);
+  await expect(page.getByTestId("omni-room-code")).toHaveText("K7Q2M9");
+  await peer.goto("/lab/omni#K7Q2M9");
+  // the share-link code is filled in on hydration, so Join is live once it shows
+  await expect(peer.getByLabel("Room code")).toHaveValue("K7Q2M9");
+  await peer.getByRole("button", { name: "Join", exact: true }).click();
+  for (const side of [page, peer]) {
+    await expect(side.getByTestId("omni-call")).toBeVisible({ timeout: 20_000 });
+    await expect(side.getByRole("dialog", { name: "Verify your peer" })).toBeVisible({
+      timeout: 20_000,
+    });
+  }
+}
+
 test("setup validates codes, then a room opens in an accessible lobby", async ({ page }) => {
   await page.emulateMedia({ reducedMotion: "reduce" });
   const relay: Relay = { code: "K7Q2M9" };
@@ -162,9 +182,54 @@ test("two peers connect, see the same safety check, and the call ends for both",
   );
 
   await wake(page);
-  await page.getByRole("button", { name: "End" }).click();
+  await page.getByRole("button", { name: "End", exact: true }).click();
   await expect(page.getByRole("heading", { name: "Link setup" })).toBeVisible();
   await expect(peer.getByRole("alert").filter({ hasText: "left the call" })).toBeVisible();
   await expect(peer.getByRole("heading", { name: "Link setup" })).toBeVisible({ timeout: 6_000 });
+  expect(peerErrors).toEqual([]);
+});
+
+test("peers chat and send an encrypted, verified file", async ({ page, context }) => {
+  test.setTimeout(60_000);
+  const peer = await context.newPage();
+  const peerErrors: string[] = [];
+  peer.on("pageerror", (error) => peerErrors.push(error.message));
+  await connectPair(page, peer);
+  for (const side of [page, peer]) await side.getByRole("button", { name: "They match" }).click();
+
+  await wake(page);
+  await page
+    .getByRole("toolbar", { name: "Call controls" })
+    .getByRole("button", { name: "Chat" })
+    .click();
+  const input = page.getByRole("textbox", { name: "Message" });
+  await expect(input).toBeFocused();
+  await input.fill("hello <b>there</b>");
+  await input.press("Enter");
+  await expect(input).toHaveValue("");
+
+  const peerLog = peer.getByRole("log", { name: "Message" });
+  await expect(peerLog.getByText("hello <b>there</b>")).toBeAttached();
+  await expect(
+    peer.getByRole("toolbar", { name: "Call controls" }).getByRole("button", { name: /unread/ }),
+  ).toBeAttached();
+
+  await page.getByTestId("omni-file-input").setInputFiles({
+    name: "note.txt",
+    mimeType: "text/plain",
+    buffer: Buffer.from("omni file transfer\n"),
+  });
+  await expect(page.getByRole("tabpanel", { name: /Files/ })).toContainText("Sent");
+  const save = peerLog.getByRole("link", { name: "Save" });
+  await expect(save).toHaveAttribute("download", "note.txt");
+  await expect(peerLog).toContainText("note.txt · 19 B · SHA-256 ok");
+
+  await peer.getByRole("region", { name: "Chat and files" }).scrollIntoViewIfNeeded();
+  const [download] = await Promise.all([peer.waitForEvent("download"), save.click()]);
+  expect(download.suggestedFilename()).toBe("note.txt");
+  const path = await download.path();
+  const { readFile } = await import("node:fs/promises");
+  expect(await readFile(path, "utf8")).toBe("omni file transfer\n");
+  await expectAccessible(peer);
   expect(peerErrors).toEqual([]);
 });

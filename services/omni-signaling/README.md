@@ -6,8 +6,10 @@ deployment root, and Playwright starts the same folder with the same commands fo
 
 Vendored from `vijeshgowda/coming-soon-temp` `omni/server/index.js` at commit
 `c2a2056a34b9805cccc68b42d848c826078726fa` (the commit the client's wire protocol is pinned to).
-The protocol is unchanged, so the GitHub Pages Omni stays compatible. The only changes are the
-origin allow-list below and logging the bound port.
+The protocol is unchanged; the only changes are the origin allow-list below and logging the bound
+port. The old GitHub Pages Omni (`https://vijeshgowda.com`) speaks the same protocol but isn't on
+the allow-list, so once `ALLOWED_ORIGINS` is removed from Render it gets 403. Add its origin to
+`origins.js` if it should keep working.
 
 ## Origin allow-list
 

@@ -267,7 +267,7 @@ src/features/forum/
 open a socket, request media, or create an audio context. The `/lab/omni` route shell is static
 and renders one client island, `components/OmniApp.tsx`. Its state lives in a plain reducer
 (`client/state.ts`). The island loads `client/session.ts` (`OmniSession`, which owns signalling,
-media, the peer, stats and the mic meter) with a dynamic import on Create/Join, prefetched on
+media, the peer, stats, the mic meter, chat, typing and file transfers) with a dynamic import on Create/Join, prefetched on
 pointer enter or focus. Recorder and QR will be separate lazy chunks. ICE servers (Google STUN and
 the Metered TURN relay from the original `config.js`) are in `config.ts`. Those TURN credentials
 are public by design; short-lived Metered credentials are a follow-up. There is no service worker. The route links a standalone web manifest, and the signalling endpoint
@@ -282,7 +282,8 @@ Nothing contacts the signalling server before Create/Join: as in the original Om
 WebSocket connect wakes the Render instance, with the "cold start may take ~30s" message and a
 30-second progress bar while it does. Playwright blocks third-party requests; tests never depend on
 Render being reachable. `tests/e2e/omni-call.spec.ts` replaces the signalling server with an in-test
-relay (`page.routeWebSocket`) and runs a real two-page call on fake media.
+relay (`page.routeWebSocket`) and runs a real two-page call on fake media, including chat and
+an encrypted file transfer that is saved and compared byte for byte.
 
 - `SignalingClient` accepts a WebSocket URL; `PeerConnection` accepts signalling, ICE servers and
   the optional room password. Both expose typed `.on(event, detail => ...)` subscriptions,
@@ -301,10 +302,17 @@ relay (`page.routeWebSocket`) and runs a real two-page call on fake media.
   encrypted file chunks with little-endian file ID/index headers. Hashing is incremental;
   concurrent transfers and resume indices are preserved.
 - Received blobs always use `application/octet-stream` and sanitised download names. Preview only
-  the allow-listed image/video formats, never SVG/HTML or a new-tab blob link. `makeQrPath()` returns
+  the allow-listed image/video formats, never SVG/HTML or a new-tab blob link. `FileReceiver`
+  (`client/core/receiver.ts`) reassembles and verifies incoming files (at most 16 at once); the
+  session owns each received file's object URL and revokes it on Clear, hang-up and dispose.
+  Received files are held in memory until saved: the original's `showSaveFilePicker` streaming
+  needs a user gesture, which an incoming file is not, so it is not ported.
+- Chat and files live in a sheet below the sticky video, inside the scrolling call `<dialog>`.
+  Chat text renders as text only, is cut to 4000 characters and keeps the newest 500 log items.
+  Pasting files (with no text on the clipboard) or dropping them anywhere on the call sends them. `makeQrPath()` returns
   SVG geometry for React elements rather than an HTML string; the Nayuki MIT notice is retained.
 - Translation keys and all six dictionaries are ported unchanged. Strings added for vije.sh (the
-  lobby steps, call states and error alerts) are in `i18n/additions.json`, in the same six languages;
+  lobby steps, call states, error alerts and the chat sheet) are in `i18n/additions.json`, in the same six languages;
   a test keeps them in parity and stops them from overriding an original key. Language is passed explicitly
   to `t()`, not written to the site's document. `languagePreference` uses the shared stored-value
   helper with `vj:omni-lang` and an English server snapshot.

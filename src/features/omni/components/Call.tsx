@@ -21,7 +21,7 @@ import type { TranslationKey } from "../i18n";
 import type { Translate } from "./OmniApp";
 import { ChatSheet, type Tab } from "./ChatSheet";
 import { SasPanel } from "./SasPanel";
-import { StreamVideo } from "./StreamVideo";
+import { StreamVideo, type Shape } from "./StreamVideo";
 import styles from "./Call.module.css";
 
 type Corner = "tl" | "tr" | "br" | "bl";
@@ -159,6 +159,9 @@ export function Call({
   const [dropping, setDropping] = useState(false);
   const canShare = useSyncExternalStore(noSubscribe, displaySupported, () => false);
   const [pipOn, setPipOn] = useState(false);
+  const [remoteShape, setRemoteShape] = useState<Shape | null>(null);
+  const [localShape, setLocalShape] = useState<Shape | null>(null);
+  const portrait = useSyncExternalStore(subscribeOrientation, isPortrait, () => false);
 
   const pinned = menuOpen || call.sasOpen || call.ending !== null;
   const visible = shown || pinned;
@@ -501,6 +504,12 @@ export function Call({
   const sharing = screen !== null;
   const shareable = hasVideo && canShare;
   const corners = `${styles[corner]} ${drag ? styles.dragging : ""}`;
+  const remoteFit = remote ? remoteShape : null;
+  const localFit = localShows ? localShape : null;
+  // The full-screen video fills the stage only when it has the stage's orientation; a portrait
+  // phone camera on a landscape laptop (or a landscape screen on a phone) is shown whole.
+  const fit = (shape: Shape | null) =>
+    shape && (shape === "portrait") !== portrait ? styles.whole : "";
 
   const pipProps = {
     role: "button",
@@ -547,11 +556,12 @@ export function Call({
       >
         <div
           key="remote"
-          className={`${styles.tile} ${swapped ? `${styles.pip} ${corners}` : styles.feed}`}
+          className={`${styles.tile} ${swapped ? `${styles.pip} ${corners}` : `${styles.feed} ${fit(remoteFit)}`}`}
+          data-shape={remoteFit ?? undefined}
           {...(swapped ? pipProps : {})}
         >
           {remote ? (
-            <StreamVideo stream={remote} data-testid="omni-remote-video" />
+            <StreamVideo stream={remote} onShape={setRemoteShape} data-testid="omni-remote-video" />
           ) : (
             <div className={styles.avatar} aria-hidden="true">
               P
@@ -561,13 +571,15 @@ export function Call({
         </div>
         <div
           key="local"
-          className={`${styles.tile} ${sharing ? styles.screen : facing === "user" ? styles.mirror : ""} ${swapped ? styles.feed : `${styles.pip} ${corners}`}`}
+          className={`${styles.tile} ${sharing ? styles.screen : facing === "user" ? styles.mirror : ""} ${swapped ? `${styles.feed} ${fit(localFit)}` : `${styles.pip} ${corners}`}`}
+          data-shape={localFit ?? undefined}
           {...(swapped ? {} : pipProps)}
         >
           {localShows ? (
             <StreamVideo
               stream={screen ?? local}
               version={localVersion}
+              onShape={setLocalShape}
               muted
               data-testid="omni-local-video"
             />
@@ -926,6 +938,13 @@ function menuItems(menu: HTMLElement | null): HTMLButtonElement[] {
 }
 
 const noSubscribe = () => () => undefined;
+const PORTRAIT = "(orientation: portrait)";
+const subscribeOrientation = (onChange: () => void) => {
+  const query = window.matchMedia?.(PORTRAIT);
+  query?.addEventListener?.("change", onChange);
+  return () => query?.removeEventListener?.("change", onChange);
+};
+const isPortrait = () => window.matchMedia?.(PORTRAIT).matches === true;
 const displaySupported = () => typeof navigator.mediaDevices?.getDisplayMedia === "function";
 
 function remoteVideo(root: HTMLElement | null): WebkitVideo | null {

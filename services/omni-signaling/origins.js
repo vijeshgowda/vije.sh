@@ -2,8 +2,9 @@
  * Page origins allowed to open a signalling WebSocket in production. Exact origins only: no
  * localhost, wildcards, paths or trailing slash. Browsers send the page's origin on the WebSocket
  * upgrade, and the server compares it with this list (Render has no CORS setting of its own).
+ * `https://vijeshgowda.com` is the original GitHub Pages Omni, which shares this server.
  */
-export const PRODUCTION_ORIGINS = Object.freeze(["https://vije.sh"]);
+export const PRODUCTION_ORIGINS = Object.freeze(["https://vije.sh", "https://vijeshgowda.com"]);
 
 /** True for a bare http(s) origin such as `https://vije.sh` or `http://localhost:3000`. */
 export function isExactOrigin(value) {

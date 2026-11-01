@@ -273,11 +273,17 @@ describe("Signalling protocol", () => {
 });
 
 describe("Origin allow-list", () => {
-  test("without ALLOWED_ORIGINS only https://vije.sh may connect", async () => {
+  test("without ALLOWED_ORIGINS only the committed origins may connect", async () => {
     const server = await startServer();
     try {
       await close(await connect(server.port, "https://vije.sh"));
-      for (const origin of ["http://localhost:3000", "https://evil.example", undefined]) {
+      await close(await connect(server.port, "https://vijeshgowda.com"));
+      for (const origin of [
+        "http://localhost:3000",
+        "https://www.vijeshgowda.com",
+        "https://evil.example",
+        undefined,
+      ]) {
         await assert.rejects(connect(server.port, origin), { status: 403 }, String(origin));
       }
     } finally {

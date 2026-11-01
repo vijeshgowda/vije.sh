@@ -7,16 +7,16 @@ deployment root, and Playwright starts the same folder with the same commands fo
 Vendored from `vijeshgowda/coming-soon-temp` `omni/server/index.js` at commit
 `c2a2056a34b9805cccc68b42d848c826078726fa` (the commit the client's wire protocol is pinned to).
 The protocol is unchanged; the only changes are the origin allow-list below and logging the bound
-port. The old GitHub Pages Omni (`https://vijeshgowda.com`) speaks the same protocol but isn't on
-the allow-list, so once `ALLOWED_ORIGINS` is removed from Render it gets 403. Add its origin to
-`origins.js` if it should keep working.
+port. The original GitHub Pages Omni (`https://vijeshgowda.com`) speaks the same protocol and is on
+the allow-list, so both sites keep sharing this server.
 
 ## Origin allow-list
 
 Render has no CORS setting; the server checks the browser's `Origin` header itself and refuses a
 mismatch with HTTP 403.
 
-- `origins.js` holds the committed production list: exactly `https://vije.sh`.
+- `origins.js` holds the committed production list: exactly `https://vije.sh` and
+  `https://vijeshgowda.com` (the GitHub Pages Omni).
 - `ALLOWED_ORIGINS` (comma-separated, exact origins) replaces that list for one process. Leave it
   unset in production. An empty or missing value keeps the committed list; it never allows every
   origin. An entry that isn't an exact `http(s)://host[:port]` origin (path, trailing slash,

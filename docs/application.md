@@ -287,8 +287,9 @@ Render being reachable.
 The signalling server itself lives in `services/omni-signaling/` (its own `package.json` with
 `ws`, vendored from the pinned commit below with the protocol unchanged). That folder is Render's
 deployment root; its README lists the Render settings. Origins are checked by the server:
-`origins.js` commits the production list (exactly `https://vije.sh`), `ALLOWED_ORIGINS` is an
-optional exact-match override, an empty value never allows every origin, and a mismatch gets 403.
+`origins.js` commits the production list (exactly `https://vije.sh` and the original GitHub Pages
+Omni, `https://vijeshgowda.com`), `ALLOWED_ORIGINS` is an optional exact-match override, an
+empty value never allows every origin, and a mismatch gets 403.
 Playwright starts that folder with Render's commands (`npm ci --omit=dev`, `npm start`) on port
 3201, allowing only the e2e app's origin, and builds the app with
 `NEXT_PUBLIC_OMNI_SIGNALING_URL=ws://localhost:3201` (`tests/e2e/omni-signaling.ts`).

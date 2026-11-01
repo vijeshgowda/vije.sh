@@ -2,6 +2,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import {
   CallRecorder,
   coverRect,
+  frameClock,
   isRecordingSupported,
   recordingName,
   saveRecording,
@@ -90,6 +91,7 @@ function fakeEnv(options: { supported?: string[]; mixFails?: boolean; noContext?
     createStream: (tracks) => stream(...(tracks as unknown as FakeTrack[])),
     requestFrame: (draw) => frames.push(draw),
     cancelFrame: vi.fn(),
+    disposeFrames: vi.fn(),
   };
   return {
     env,
@@ -274,5 +276,89 @@ describe("saveRecording", () => {
     picker.mockRejectedValueOnce(new DOMException("no activation", "SecurityError"));
     expect(await saveRecording(blob, "omni.webm")).toBe("saved");
     expect(link.click).toHaveBeenCalledTimes(1);
+  });
+});
+
+describe("frameClock", () => {
+  function page() {
+    const listeners = new Map<string, () => void>();
+    const doc = {
+      hidden: false,
+      addEventListener: vi.fn((name: string, fn: () => void) => listeners.set(name, fn)),
+      removeEventListener: vi.fn((name: string) => listeners.delete(name)),
+    };
+    const rafs = new Map<number, () => void>();
+    let next = 0;
+    vi.stubGlobal("document", doc);
+    vi.stubGlobal(
+      "requestAnimationFrame",
+      vi.fn((fn: () => void) => {
+        rafs.set(++next, fn);
+        return next;
+      }),
+    );
+    vi.stubGlobal(
+      "cancelAnimationFrame",
+      vi.fn((id: number) => rafs.delete(id)),
+    );
+    const worker = { onmessage: null as null | (() => void), terminate: vi.fn() };
+    const createWorker = vi.fn(() => worker as unknown as Worker);
+    const flushRaf = () => {
+      const due = [...rafs.values()];
+      rafs.clear();
+      due.forEach((fn) => fn());
+    };
+    return { doc, listeners, rafs, worker, createWorker, flushRaf };
+  }
+
+  it("draws with rAF while visible and with worker ticks while hidden", () => {
+    const env = page();
+    const clock = frameClock(env.createWorker);
+    const draw = vi.fn();
+    clock.request(draw);
+    expect(env.rafs.size).toBe(1);
+    expect(env.createWorker).not.toHaveBeenCalled();
+    env.flushRaf();
+    expect(draw).toHaveBeenCalledTimes(1);
+
+    // Hiding moves a waiting rAF frame onto the worker, which keeps ticking.
+    clock.request(draw);
+    env.doc.hidden = true;
+    env.listeners.get("visibilitychange")!();
+    expect(env.rafs.size).toBe(0);
+    env.worker.onmessage!();
+    expect(draw).toHaveBeenCalledTimes(2);
+    clock.request(draw);
+    expect(env.rafs.size).toBe(0);
+    env.worker.onmessage!();
+    expect(draw).toHaveBeenCalledTimes(3);
+    env.worker.onmessage!();
+    expect(draw).toHaveBeenCalledTimes(3);
+
+    // Back on screen: the next frame is rAF again, and dispose stops everything.
+    env.doc.hidden = false;
+    clock.request(draw);
+    expect(env.rafs.size).toBe(1);
+    env.worker.onmessage!();
+    expect(draw).toHaveBeenCalledTimes(3);
+    clock.dispose();
+    expect(env.rafs.size).toBe(0);
+    expect(env.worker.terminate).toHaveBeenCalled();
+    expect(env.listeners.size).toBe(0);
+    vi.unstubAllGlobals();
+  });
+
+  it("falls back to rAF when a worker can't be created", () => {
+    const env = page();
+    env.doc.hidden = true;
+    const clock = frameClock(() => {
+      throw new Error("blocked");
+    });
+    clock.request(vi.fn());
+    expect(env.rafs.size).toBe(1);
+    clock.cancel();
+    expect(env.rafs.size).toBe(0);
+    clock.dispose();
+    vi.unstubAllGlobals();
   });
 });

@@ -34,6 +34,8 @@ export type RecorderEnv = {
   createStream: (tracks: MediaStreamTrack[]) => MediaStream;
   requestFrame: (draw: () => void) => number;
   cancelFrame: (id: number) => void;
+  /** Releases whatever schedules frames (the background worker). */
+  disposeFrames: () => void;
 };
 
 export type RecordSources = {
@@ -43,7 +45,74 @@ export type RecordSources = {
   audio: (MediaStream | null)[];
 };
 
+type FrameClock = {
+  request: (draw: () => void) => number;
+  cancel: () => void;
+  dispose: () => void;
+};
+
+function frameWorker(): Worker {
+  return new Worker(new URL("./frame-clock.worker.ts", import.meta.url), { type: "module" });
+}
+
+/**
+ * Schedules the recorder's single draw loop: requestAnimationFrame while the tab is visible, and
+ * ticks from a worker while it is hidden (rAF stops there, which would freeze the recording).
+ */
+export function frameClock(createWorker: () => Worker = frameWorker): FrameClock {
+  let worker: Worker | null = null;
+  let pending: (() => void) | null = null;
+  let raf = 0;
+  const run = () => {
+    const draw = pending;
+    pending = null;
+    raf = 0;
+    draw?.();
+  };
+  const viaWorker = () => {
+    if (!document.hidden) return false;
+    if (!worker) {
+      try {
+        worker = createWorker();
+      } catch {
+        return false;
+      }
+      worker.onmessage = () => {
+        if (pending && !raf) run();
+      };
+    }
+    return true;
+  };
+  const onVisibility = () => {
+    if (raf && viaWorker()) {
+      cancelAnimationFrame(raf);
+      raf = 0;
+    }
+  };
+  document.addEventListener("visibilitychange", onVisibility);
+  const clock: FrameClock = {
+    request(draw) {
+      pending = draw;
+      if (!viaWorker()) raf = requestAnimationFrame(run);
+      return 1;
+    },
+    cancel() {
+      if (raf) cancelAnimationFrame(raf);
+      raf = 0;
+      pending = null;
+    },
+    dispose() {
+      clock.cancel();
+      worker?.terminate();
+      worker = null;
+      document.removeEventListener("visibilitychange", onVisibility);
+    },
+  };
+  return clock;
+}
+
 function browserEnv(): RecorderEnv {
+  let clock: FrameClock | null = null;
   return {
     createVideo: () => document.createElement("video"),
     createCanvas: () => document.createElement("canvas"),
@@ -51,8 +120,12 @@ function browserEnv(): RecorderEnv {
     createRecorder: (stream, options) => new MediaRecorder(stream, options),
     isTypeSupported: (type) => MediaRecorder.isTypeSupported(type),
     createStream: (tracks) => new MediaStream(tracks),
-    requestFrame: (draw) => requestAnimationFrame(draw),
-    cancelFrame: (id) => cancelAnimationFrame(id),
+    requestFrame: (draw) => (clock ??= frameClock()).request(draw),
+    cancelFrame: () => clock?.cancel(),
+    disposeFrames: () => {
+      clock?.dispose();
+      clock = null;
+    },
   };
 }
 
@@ -206,6 +279,7 @@ export class CallRecorder {
 
   private release() {
     this.env.cancelFrame(this.frame);
+    this.env.disposeFrames();
     this.frame = 0;
     // Only the recorder's own tracks (canvas capture, audio mix) stop; the call's tracks keep going.
     this.stream?.getTracks().forEach((track) => track.stop());

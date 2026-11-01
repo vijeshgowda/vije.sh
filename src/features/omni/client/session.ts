@@ -237,6 +237,8 @@ export class OmniSession {
     stream.removeTrack(old);
     stream.addTrack(track);
     this.facing = facing;
+    // The recorder's own <video> keeps the stopped track until it is re-bound.
+    if (!this.screen) this.recorder?.rec.setLocal(stream);
     if (!this.screen) await this.peer?.replaceVideoTrack(track).catch(() => undefined);
     this.dispatch({ type: "local-tracks", facing });
   }

@@ -969,6 +969,15 @@ describe("OmniSession recording", () => {
     expect(instances[0]!.setLocal).toHaveBeenLastCalledWith(env.last("media-ready").stream);
   });
 
+  it("re-binds the corner picture after a camera flip", async () => {
+    const { mod, instances } = recorderModule();
+    const env = setup({ loadRecorder: async () => mod as never });
+    await secureCall(env);
+    await env.session.toggleRecording();
+    await env.session.flip();
+    expect(instances[0]!.setLocal).toHaveBeenLastCalledWith(env.last("media-ready").stream);
+  });
+
   it("saves the recording when the call ends", async () => {
     const { mod, instances } = recorderModule();
     const env = setup({ loadRecorder: async () => mod as never });

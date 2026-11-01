@@ -265,9 +265,19 @@ test("the language is remembered, and the lobby shows the join link as a QR code
 test("a peer shares the screen and records the call to a local file", async ({ page, context }) => {
   test.setTimeout(60_000);
   // Without a file picker the recording falls back to a download, which the test can read.
-  await page.addInitScript(() =>
-    Object.defineProperty(window, "showSaveFilePicker", { value: undefined }),
-  );
+  await page.addInitScript(() => {
+    Object.defineProperty(window, "showSaveFilePicker", { value: undefined });
+    // Counts the frame clock's ticks, which keep the recording drawing in a hidden tab.
+    const ticks = { count: 0 };
+    Object.defineProperty(window, "__omniTicks", { value: ticks });
+    const Native = window.Worker;
+    window.Worker = class extends Native {
+      constructor(url: string | URL, options?: WorkerOptions) {
+        super(url, options);
+        this.addEventListener("message", () => ticks.count++);
+      }
+    };
+  });
   const peer = await context.newPage();
   await connectPair(page, peer);
   await page.getByRole("button", { name: "They match" }).click();
@@ -291,7 +301,22 @@ test("a peer shares the screen and records the call to a local file", async ({ p
   await more.click();
   await record.click();
   await expect(page.getByTestId("omni-rec")).toBeVisible();
-  await page.waitForTimeout(1_500);
+  await page.evaluate(() => {
+    Object.defineProperty(document, "hidden", { configurable: true, get: () => true });
+    document.dispatchEvent(new Event("visibilitychange"));
+  });
+  await expect
+    .poll(() =>
+      page.evaluate(
+        () => (window as unknown as { __omniTicks: { count: number } }).__omniTicks.count,
+      ),
+    )
+    .toBeGreaterThan(3);
+  await page.evaluate(() => {
+    Object.defineProperty(document, "hidden", { configurable: true, get: () => false });
+    document.dispatchEvent(new Event("visibilitychange"));
+  });
+  await page.waitForTimeout(1_000);
   const download = page.waitForEvent("download");
   await wake(page);
   await more.click();

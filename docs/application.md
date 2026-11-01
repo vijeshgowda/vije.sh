@@ -322,7 +322,9 @@ an encrypted file transfer that is saved and compared byte for byte.
 - Recording is local only: `CallRecorder` composites the peer full-frame and the self-view (or the
   shared screen) in a corner on a 1280x720 canvas, mixes both audio streams, and saves a `.webm`
   through `showSaveFilePicker` or a download. Ending the call while recording saves what was
-  recorded. Nothing about a recording is sent to the peer.
+  recorded. Nothing about a recording is sent to the peer. Frames are drawn on
+  `requestAnimationFrame` while the tab is visible and on ticks from a small worker
+  (`frame-clock.worker.ts`) while it is hidden, so a backgrounded call keeps recording.
 - Translation keys and all six dictionaries are ported unchanged. Strings added for vije.sh (the
   lobby steps, call states, error alerts and the chat sheet) are in `i18n/additions.json`, in the same six languages;
   a test keeps them in parity and stops them from overriding an original key. Language is passed explicitly

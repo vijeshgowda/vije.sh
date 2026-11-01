@@ -1,22 +1,36 @@
 import { SignalingClient } from "./core/signaling";
 import { PeerConnection } from "./core/webrtc";
 import { NotificationSounds } from "./core/sounds";
+import { sanitiseFileName } from "./core/files";
+import { processFileQueue } from "./core/filequeue";
+import { FileReceiver, type ReceiveResult } from "./core/receiver";
 import {
   getLinkType,
   getQualityLevel,
   type CandidateStats,
   type QualityLevel,
 } from "./core/quality";
-import type { Signal } from "./core/protocol";
-import type { Alert, Mode, OmniAction } from "./state";
+import { CHUNK_SIZE, type FileMetadata, type Signal } from "./core/protocol";
+import { formatBytes } from "./format";
+import { MAX_CHAT, type Alert, type Message, type Mode, type OmniAction } from "./state";
 
 export type PeerLike = Pick<
   PeerConnection,
-  "on" | "initialize" | "handleSignal" | "send" | "hangup" | "replaceVideoTrack" | "setSendQuality"
-> & { readonly pc: Pick<RTCPeerConnection, "getStats"> | null };
+  | "on"
+  | "initialize"
+  | "handleSignal"
+  | "send"
+  | "sendFile"
+  | "hangup"
+  | "replaceVideoTrack"
+  | "setSendQuality"
+> & {
+  readonly pc: Pick<RTCPeerConnection, "getStats"> | null;
+  readonly sharedKey: CryptoKey | null;
+};
 export type SoundsLike = Pick<
   NotificationSounds,
-  "ensureAudioContext" | "playJoinTone" | "playHangupTone" | "dispose"
+  "ensureAudioContext" | "playJoinTone" | "playMessageTone" | "playHangupTone" | "dispose"
 >;
 
 export type SessionDeps = {
@@ -35,6 +49,7 @@ export type SessionDeps = {
   now?: () => number;
   /** Mic meter; null in environments without Web Audio (tests). */
   createAudioContext?: (() => AudioContext) | null;
+  objectUrls?: Pick<typeof URL, "createObjectURL" | "revokeObjectURL">;
 };
 
 export type StartOptions = { mode: Mode; code: string; password: string };
@@ -43,6 +58,9 @@ const VERIFY_MS = 7_000;
 const STATS_MS = 2_000;
 const NUDGE_EVERY_MS = 4_000;
 const NUDGE_SHOW_MS = 3_000;
+const TYPING_SEND_MS = 2_000;
+const TYPING_SHOW_MS = 3_000;
+const LARGE_FILE = 500 * 1024 * 1024;
 
 /** Maps signalling failures (server text or client errors) to a translated alert. */
 export function alertForError(message: string): Alert {
@@ -83,6 +101,12 @@ export class OmniSession {
   private meter: { ctx: AudioContext; raf: number; track: MediaStreamTrack } | null = null;
   private nudgedAt = -Infinity;
   private levelListener: ((level: number) => void) | null = null;
+  private receiver: FileReceiver | null = null;
+  /** Object URLs of received files, by transfer key; revoked on clear and teardown. */
+  private urls = new Map<string, string>();
+  private progress = new Map<string, number>();
+  private typingSent = false;
+  private typingTimer: ReturnType<typeof setTimeout> | null = null;
 
   constructor(private readonly deps: SessionDeps) {
     this.dispatch = deps.dispatch;
@@ -193,6 +217,90 @@ export class OmniSession {
     this.facing = facing;
     await this.peer?.replaceVideoTrack(track).catch(() => undefined);
     this.dispatch({ type: "local-tracks", facing });
+  }
+
+  /** Sends a chat message; resolves false when it couldn't be sent (the log says why). */
+  async sendChat(text: string): Promise<boolean> {
+    const message = text.trim().slice(0, MAX_CHAT);
+    const peer = this.peer;
+    if (!message) return false;
+    if (!peer?.sharedKey || this.stage !== "call") {
+      this.system({ key: "sys.send_failed_notready" });
+      return false;
+    }
+    try {
+      await peer.send({ type: "chat", text: message });
+    } catch {
+      if (this.peer === peer) this.system({ key: "sys.send_failed_notready" });
+      return false;
+    }
+    if (this.peer !== peer) return false;
+    this.dispatch({ type: "chat", from: "me", text: message, at: this.now() });
+    return true;
+  }
+
+  /** Tells the peer we're typing, at most once every 2 s. */
+  typing() {
+    const peer = this.peer;
+    if (!peer?.sharedKey || this.typingSent) return;
+    this.typingSent = true;
+    void peer.send({ type: "typing" }).catch(() => undefined);
+    this.later(() => (this.typingSent = false), TYPING_SEND_MS);
+  }
+
+  /** Each file gets its own ID and is sent concurrently; frames carry the ID. */
+  sendFiles(files: readonly File[]) {
+    const peer = this.peer;
+    if (!files.length) return;
+    if (!peer?.sharedKey || this.stage !== "call") {
+      this.system({ key: "sys.send_failed_notready" });
+      return;
+    }
+    const run = this.run;
+    const queue = files.map((file) => ({
+      file,
+      fileId: crypto.getRandomValues(new Uint32Array(1))[0]!,
+    }));
+    for (const { file, fileId } of queue) {
+      this.dispatch({
+        type: "transfer-start",
+        transfer: {
+          key: `out:${fileId}`,
+          direction: "out",
+          name: file.name,
+          size: file.size,
+          total: Math.ceil(file.size / CHUNK_SIZE),
+        },
+      });
+      this.system({
+        key: "sys.sending",
+        params: { name: file.name, size: formatBytes(file.size) },
+      });
+    }
+    void processFileQueue(
+      queue,
+      ({ file, fileId }) => peer.sendFile(file, { fileId }),
+      (result) => {
+        if (run !== this.run) return;
+        const key = `out:${result.file.fileId}`;
+        const name = result.file.file.name;
+        this.progress.delete(key);
+        if (result.status === "sent") {
+          this.dispatch({ type: "transfer-done", key, url: null, preview: null, at: this.now() });
+          this.system({ key: "sys.sent", params: { name } });
+        } else {
+          this.dispatch({ type: "transfer-failed", key });
+          const error = result.error instanceof Error ? result.error.message : String(result.error);
+          this.system({ key: "sys.send_failed", params: { error } });
+        }
+      },
+    );
+  }
+
+  /** Clears the log and finished transfers, and revokes received files' object URLs. */
+  clearChat() {
+    this.revokeUrls();
+    this.dispatch({ type: "chat-clear", at: this.now() });
   }
 
   confirmSas() {
@@ -315,12 +423,16 @@ export class OmniSession {
       ((s, i, ice, password) => new PeerConnection(s, i, ice, password) as PeerLike)
     )(signaling, initiator, this.deps.iceServers, this.password);
     this.peer = peer;
+    const receiver = new FileReceiver(() => peer.sharedKey);
+    this.receiver = receiver;
+    if (!stream.getVideoTracks().length) this.system({ key: "sys.audio_only" });
     this.unsubscribe.push(
       peer.on("remote-stream", ({ stream: remote }) =>
         this.dispatch({ type: "remote", stream: remote }),
       ),
       peer.on("secure-channel-ready", ({ safety }) => {
         this.dispatch({ type: "secure", safety, at: this.now() });
+        this.system({ key: "sys.channel_ready" });
         this.startVerify(peer);
         this.startStats();
         this.startMeter();
@@ -340,7 +452,33 @@ export class OmniSession {
         if (message.type === "__verify")
           void peer.send({ type: "__verified" }).catch(() => undefined);
         if (message.type === "__verified") this.clearVerify();
+        if (message.type === "chat") {
+          this.clearTyping();
+          this.dispatch({
+            type: "chat",
+            from: "peer",
+            text: message.text.slice(0, MAX_CHAT),
+            at: this.now(),
+          });
+          void this.sounds.playMessageTone().catch(() => undefined);
+        }
+        if (message.type === "typing") this.showTyping();
+        if (message.type === "file-meta") this.receiveMeta(receiver, message);
       }),
+      peer.on("file-chunk", ({ data }) => {
+        const run = this.run;
+        receiver.chunk(data).then(
+          (result) => {
+            if (run === this.run && result) this.received(result);
+          },
+          (error: unknown) => {
+            if (run === this.run) this.notice(error);
+          },
+        );
+      }),
+      peer.on("file-send-progress", ({ fileId, sent, total }) =>
+        this.reportProgress(`out:${fileId}`, sent, total),
+      ),
       peer.on("error", ({ message }) => this.dispatch({ type: "notice", text: message })),
     );
     try {
@@ -353,6 +491,87 @@ export class OmniSession {
     }
     if (run !== this.run) return;
     for (const payload of this.pending.splice(0)) this.handleSignal(peer, payload);
+  }
+
+  private receiveMeta(receiver: FileReceiver, meta: FileMetadata) {
+    let result: ReceiveResult | null;
+    try {
+      result = receiver.begin(meta);
+    } catch (error) {
+      this.notice(error);
+      return;
+    }
+    const name = sanitiseFileName(meta.name);
+    const size = formatBytes(meta.size);
+    this.dispatch({
+      type: "transfer-start",
+      transfer: {
+        key: `in:${meta.fileId}`,
+        direction: "in",
+        name,
+        size: meta.size,
+        total: meta.chunks,
+      },
+    });
+    this.system(
+      meta.size > LARGE_FILE
+        ? { key: "sys.rx_large", params: { name, size } }
+        : { key: "sys.rx_receiving", params: { name, size } },
+    );
+    if (result) this.received(result);
+  }
+
+  private received(result: ReceiveResult) {
+    const key = `in:${result.fileId}`;
+    if (result.type === "progress") {
+      this.reportProgress(key, result.received, result.total);
+      return;
+    }
+    this.progress.delete(key);
+    if (result.type === "failed") {
+      this.dispatch({ type: "transfer-failed", key });
+      this.system({
+        key: "sys.integrity_fail",
+        params: { name: sanitiseFileName(result.meta.name) },
+      });
+      return;
+    }
+    const urls = this.deps.objectUrls ?? URL;
+    const url = urls.createObjectURL(result.blob);
+    this.urls.set(key, url);
+    this.dispatch({ type: "transfer-done", key, url, preview: result.preview, at: this.now() });
+  }
+
+  /** Progress only re-renders when the whole percentage changes. */
+  private reportProgress(key: string, done: number, total: number) {
+    const percent = total > 0 ? Math.floor((done / total) * 100) : 100;
+    if (this.progress.get(key) === percent) return;
+    this.progress.set(key, percent);
+    this.dispatch({ type: "transfer-progress", key, done });
+  }
+
+  private showTyping() {
+    this.clearTyping();
+    this.dispatch({ type: "typing", on: true });
+    this.typingTimer = setTimeout(() => {
+      this.typingTimer = null;
+      this.dispatch({ type: "typing", on: false });
+    }, TYPING_SHOW_MS);
+  }
+
+  private clearTyping() {
+    if (this.typingTimer) clearTimeout(this.typingTimer);
+    this.typingTimer = null;
+  }
+
+  private system(message: Message) {
+    this.dispatch({ type: "system", message, at: this.now() });
+  }
+
+  private revokeUrls() {
+    const urls = this.deps.objectUrls ?? URL;
+    this.urls.forEach((url) => urls.revokeObjectURL(url));
+    this.urls.clear();
   }
 
   private notice(error: unknown) {
@@ -530,6 +749,12 @@ export class OmniSession {
     this.timers.forEach((timer) => clearTimeout(timer));
     this.timers.clear();
     this.clearVerify();
+    this.clearTyping();
+    this.typingSent = false;
+    this.receiver?.clear();
+    this.receiver = null;
+    this.revokeUrls();
+    this.progress.clear();
     if (this.statsTimer) clearInterval(this.statsTimer);
     this.statsTimer = null;
     if (this.meter) {

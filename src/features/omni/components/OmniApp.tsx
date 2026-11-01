@@ -105,6 +105,8 @@ export function OmniApp({ signalingUrl }: { signalingUrl: string }) {
           onRetry={() => request && void start(request)}
           onDismiss={() => dispatch({ type: "dismiss-alert" })}
           onPrefetch={() => void prefetchSession().catch(() => undefined)}
+          language={language}
+          onLanguage={(next) => languagePreference.set(next)}
         />
       )}
       {view === "lobby" && state.room && (
@@ -134,9 +136,14 @@ export function OmniApp({ signalingUrl }: { signalingUrl: string }) {
           mic={state.mic}
           cam={state.cam}
           facing={state.facing}
+          screen={state.screen}
+          recording={state.recording}
           onMic={() => session.current?.toggleMic()}
           onCam={() => session.current?.toggleCam()}
           onFlip={() => void session.current?.flip()}
+          onScreen={() => void session.current?.toggleScreen()}
+          onRecord={() => void session.current?.toggleRecording()}
+          onAnnounce={(item) => session.current?.announce(item)}
           onEnd={() => session.current?.hangup()}
           onSasMatch={() => session.current?.confirmSas()}
           onSasReject={() => session.current?.rejectSas()}

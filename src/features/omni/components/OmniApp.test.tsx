@@ -20,6 +20,9 @@ type FakeSession = {
   typing: ReturnType<typeof vi.fn>;
   sendFiles: ReturnType<typeof vi.fn>;
   clearChat: ReturnType<typeof vi.fn>;
+  toggleScreen: ReturnType<typeof vi.fn>;
+  toggleRecording: ReturnType<typeof vi.fn>;
+  announce: ReturnType<typeof vi.fn>;
   dispose: ReturnType<typeof vi.fn>;
 };
 
@@ -38,6 +41,9 @@ vi.mock("../client/session", () => ({
     typing = vi.fn();
     sendFiles = vi.fn();
     clearChat = vi.fn();
+    toggleScreen = vi.fn(async () => undefined);
+    toggleRecording = vi.fn(async () => undefined);
+    announce = vi.fn();
     dispose = vi.fn();
     constructor(public deps: FakeSession["deps"]) {
       sessions.push(this as unknown as FakeSession);
@@ -155,6 +161,32 @@ describe("Omni setup", () => {
     expect(screen.getByText("Server busy")).toBeInTheDocument();
     await user.click(screen.getByRole("button", { name: "Dismiss" }));
     expect(screen.queryByText("Server busy")).not.toBeInTheDocument();
+  });
+
+  it("renders the progress status inside the form whose button was pressed", async () => {
+    const { session } = await startCreate();
+    const createForm = screen.getByRole("button", { name: "Create Room" }).closest("form")!;
+    expect(within(createForm).getByRole("status")).toHaveTextContent(
+      "Waiting for camera and microphone permission…",
+    );
+    expect(screen.getAllByRole("status")).toHaveLength(1);
+    dispatch({ type: "media-ready", stream, hasVideo: true }, { type: "connecting" });
+    expect(within(createForm).getByRole("status")).toHaveTextContent("Connecting to server…");
+    expect(screen.getByText("LINKING")).toBeInTheDocument();
+    dispatch({ type: "reset", alert: { tone: "error", key: "err.timeout", retry: true } });
+    expect(screen.queryByRole("status")).not.toBeInTheDocument();
+    expect(session.start).toHaveBeenCalledTimes(1);
+  });
+
+  it("renders the join progress status inside the join form", async () => {
+    window.location.hash = "#k7q2m9";
+    const user = userEvent.setup();
+    render(<OmniApp signalingUrl="ws://localhost:8765" />);
+    await user.click(screen.getByRole("button", { name: "Join" }));
+    await waitFor(() => expect(sessions).toHaveLength(1));
+    const joinForm = screen.getByRole("button", { name: "Join" }).closest("form")!;
+    expect(within(joinForm).getByRole("status")).toBeInTheDocument();
+    expect(screen.getAllByRole("status")).toHaveLength(1);
   });
 });
 
@@ -307,17 +339,19 @@ describe("Omni call", () => {
     await user.click(more);
     expect(more).toHaveAttribute("aria-expanded", "true");
     const menu = screen.getByRole("menu");
-    const items = within(menu).getAllByRole("menuitem");
+    const items = Array.from(menu.querySelectorAll("button"));
     expect(items.map((item) => item.textContent)).toEqual([
       "Flip camera ↻",
+      "Record call (saved locally) .webm",
       "Send a file ↑",
       "Move my preview ↘",
     ]);
+    expect(items[1]).toHaveAttribute("role", "menuitemcheckbox");
     expect(items[0]).toHaveFocus();
     await user.keyboard("{ArrowDown}");
     expect(items[1]).toHaveFocus();
     await user.keyboard("{End}");
-    expect(items[2]).toHaveFocus();
+    expect(items[3]).toHaveFocus();
     await user.keyboard("{ArrowDown}");
     expect(items[0]).toHaveFocus();
     await user.keyboard("{Escape}");
@@ -567,5 +601,171 @@ describe("Omni chat and files", () => {
     await user.click(screen.getByRole("button", { name: "More" }));
     await user.click(screen.getByRole("menuitem", { name: /Send a file/ }));
     expect(click).toHaveBeenCalled();
+  });
+});
+
+describe("Omni extras", () => {
+  it("switches the language, remembers it and announces the change", async () => {
+    const user = userEvent.setup();
+    render(<OmniApp signalingUrl="ws://localhost:8765" />);
+    const group = screen.getByRole("group", { name: "Language" });
+    const english = within(group).getByRole("button", { name: "English" });
+    expect(english).toHaveAttribute("aria-pressed", "true");
+    expect(within(group).getAllByRole("button")).toHaveLength(6);
+
+    const kannada = within(group).getByRole("button", { name: "ಕನ್ನಡ" });
+    expect(kannada).toHaveAttribute("lang", "kn");
+    await user.click(kannada);
+    expect(kannada).toHaveAttribute("aria-pressed", "true");
+    expect(english).toHaveAttribute("aria-pressed", "false");
+    expect(screen.getByRole("heading", { name: "ಲಿಂಕ್ ಸೆಟಪ್" })).toBeInTheDocument();
+    expect(screen.getByTestId("omni-lang-status")).toHaveTextContent("ಕನ್ನಡ");
+    expect(screen.getByTestId("omni-lang-status").closest("[lang]")).toHaveAttribute("lang", "kn");
+    expect(localStorage.getItem("vj:omni-lang")).toBe('"kn"');
+  });
+
+  it("shows the join link as a QR code in the lobby", async () => {
+    await startCreate();
+    dispatch(
+      { type: "media-ready", stream, hasVideo: true },
+      { type: "connecting" },
+      {
+        type: "lobby-open",
+        code: "K7Q2M9",
+        custom: false,
+        at: Date.now(),
+        status: { key: "lobby.waiting" },
+      },
+    );
+    const qr = screen.getByRole("img", { name: "QR code for the join link" });
+    await waitFor(() => expect(qr.querySelector("svg path")).toHaveAttribute("d"));
+    expect(qr.querySelector("svg")).toHaveAttribute("viewBox");
+    expect(screen.getByText("Scan to join")).toBeInTheDocument();
+  });
+
+  it("shares the screen from the toolbar and the menu", async () => {
+    Object.defineProperty(navigator, "mediaDevices", {
+      value: { getDisplayMedia: vi.fn() },
+      configurable: true,
+    });
+    try {
+      const { user, session } = await startCall();
+      const share = screen.getByRole("button", { name: "Screen" });
+      expect(share).toHaveAttribute("aria-pressed", "false");
+      await user.click(share);
+      expect(session.toggleScreen).toHaveBeenCalledTimes(1);
+
+      dispatch({ type: "screen", stream });
+      expect(share).toHaveAttribute("aria-pressed", "true");
+      expect(screen.getByTestId("omni-local-video").closest("[data-pip]")).not.toHaveClass(
+        /mirror/,
+      );
+      await user.click(screen.getByRole("button", { name: "More" }));
+      const item = screen.getByRole("menuitemcheckbox", { name: /Share screen/ });
+      expect(item).toHaveAttribute("aria-checked", "true");
+      expect(item).toHaveTextContent("ON");
+      await user.click(item);
+      expect(session.toggleScreen).toHaveBeenCalledTimes(2);
+    } finally {
+      Reflect.deleteProperty(navigator, "mediaDevices");
+    }
+  });
+
+  it("hides screen sharing in an audio-only call", async () => {
+    Object.defineProperty(navigator, "mediaDevices", {
+      value: { getDisplayMedia: vi.fn() },
+      configurable: true,
+    });
+    try {
+      const { user } = await startCreate();
+      dispatch(
+        { type: "media-ready", stream, hasVideo: false },
+        { type: "connecting" },
+        {
+          type: "lobby-open",
+          code: "K7Q2M9",
+          custom: false,
+          at: Date.now(),
+          status: { key: "lobby.waiting" },
+        },
+        { type: "call-start", code: "K7Q2M9" },
+      );
+      expect(screen.queryByRole("button", { name: "Screen" })).not.toBeInTheDocument();
+      await user.click(screen.getByRole("button", { name: "More" }));
+      expect(screen.queryByRole("menuitemcheckbox", { name: /Share screen/ })).toBeNull();
+    } finally {
+      Reflect.deleteProperty(navigator, "mediaDevices");
+    }
+  });
+
+  it("records locally and shows a REC badge", async () => {
+    const { user, session } = await startCall();
+    expect(screen.queryByTestId("omni-rec")).not.toBeInTheDocument();
+    await user.click(screen.getByRole("button", { name: "More" }));
+    await user.click(screen.getByRole("menuitemcheckbox", { name: /Record call/ }));
+    expect(session.toggleRecording).toHaveBeenCalledTimes(1);
+    expect(screen.queryByRole("menu")).not.toBeInTheDocument();
+
+    dispatch({ type: "recording", on: true });
+    expect(screen.getByTestId("omni-rec")).toHaveTextContent("RECRecording");
+    await user.click(screen.getByRole("button", { name: "More" }));
+    expect(screen.getByRole("menuitemcheckbox", { name: /Record call/ })).toHaveAttribute(
+      "aria-checked",
+      "true",
+    );
+    dispatch({ type: "recording", on: false });
+    expect(screen.queryByTestId("omni-rec")).not.toBeInTheDocument();
+  });
+
+  it("puts the peer's video in Picture in Picture, or says why it can't", async () => {
+    const { user, session } = await startCall();
+    dispatch({ type: "remote", stream });
+    const more = screen.getByRole("button", { name: "More" });
+    const pipItem = () => screen.getByRole("menuitemcheckbox", { name: /Picture in Picture/ });
+
+    await user.click(more);
+    await user.click(pipItem());
+    expect(session.announce).toHaveBeenLastCalledWith({ key: "sys.pip_unsupported" });
+
+    const video = screen.getByTestId("omni-remote-video") as HTMLVideoElement;
+    Object.defineProperty(document, "pictureInPictureEnabled", { value: true, configurable: true });
+    const request = vi.fn(async () => {
+      Object.defineProperty(document, "pictureInPictureElement", {
+        value: video,
+        configurable: true,
+      });
+      video.dispatchEvent(new Event("enterpictureinpicture"));
+      return {} as PictureInPictureWindow;
+    });
+    const exit = vi.fn(async () => {
+      Object.defineProperty(document, "pictureInPictureElement", {
+        value: null,
+        configurable: true,
+      });
+      video.dispatchEvent(new Event("leavepictureinpicture"));
+    });
+    video.requestPictureInPicture = request;
+    document.exitPictureInPicture = exit;
+    try {
+      await user.click(more);
+      await user.click(pipItem());
+      expect(session.announce).toHaveBeenLastCalledWith({ key: "sys.pip_error" });
+      expect(request).not.toHaveBeenCalled();
+
+      Object.defineProperty(video, "readyState", { value: 4, configurable: true });
+      await user.click(more);
+      await user.click(pipItem());
+      expect(request).toHaveBeenCalledTimes(1);
+      await user.click(more);
+      expect(pipItem()).toHaveAttribute("aria-checked", "true");
+      await user.click(pipItem());
+      expect(exit).toHaveBeenCalledTimes(1);
+      await user.click(more);
+      expect(pipItem()).toHaveAttribute("aria-checked", "false");
+    } finally {
+      Reflect.deleteProperty(document, "pictureInPictureEnabled");
+      Reflect.deleteProperty(document, "pictureInPictureElement");
+      Reflect.deleteProperty(document, "exitPictureInPicture");
+    }
   });
 });

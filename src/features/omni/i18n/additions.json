@@ -83,7 +83,11 @@
     "file.failed": "Failed",
     "file.save": "Save",
     "file.verified": "SHA-256 ok",
-    "menu.file": "Send a file"
+    "menu.file": "Send a file",
+    "lobby.qr_title": "Scan to join",
+    "lobby.qr_label": "QR code for the join link",
+    "lobby.qr_hint": "Point a phone camera at it to open the link.",
+    "call.recording": "Recording"
   },
   "kn": {
     "setup.title": "ಲಿಂಕ್ ಸೆಟಪ್",
@@ -169,7 +173,11 @@
     "file.failed": "ವಿಫಲವಾಗಿದೆ",
     "file.save": "ಉಳಿಸಿ",
     "file.verified": "SHA-256 ಸರಿ",
-    "menu.file": "ಫೈಲ್ ಕಳುಹಿಸಿ"
+    "menu.file": "ಫೈಲ್ ಕಳುಹಿಸಿ",
+    "lobby.qr_title": "ಸೇರಲು ಸ್ಕ್ಯಾನ್ ಮಾಡಿ",
+    "lobby.qr_label": "ಸೇರುವ ಲಿಂಕ್‌ನ QR ಕೋಡ್",
+    "lobby.qr_hint": "ಲಿಂಕ್ ತೆರೆಯಲು ಫೋನ್ ಕ್ಯಾಮೆರಾವನ್ನು ಇದರತ್ತ ತೋರಿಸಿ.",
+    "call.recording": "ರೆಕಾರ್ಡ್ ಆಗುತ್ತಿದೆ"
   },
   "es": {
     "setup.title": "Configuración del enlace",
@@ -255,7 +263,11 @@
     "file.failed": "Falló",
     "file.save": "Guardar",
     "file.verified": "SHA-256 correcto",
-    "menu.file": "Enviar un archivo"
+    "menu.file": "Enviar un archivo",
+    "lobby.qr_title": "Escanea para unirte",
+    "lobby.qr_label": "Código QR del enlace para unirse",
+    "lobby.qr_hint": "Apunta la cámara de un teléfono para abrir el enlace.",
+    "call.recording": "Grabando"
   },
   "fr": {
     "setup.title": "Configuration du lien",
@@ -341,7 +353,11 @@
     "file.failed": "Échec",
     "file.save": "Enregistrer",
     "file.verified": "SHA-256 ok",
-    "menu.file": "Envoyer un fichier"
+    "menu.file": "Envoyer un fichier",
+    "lobby.qr_title": "Scanner pour rejoindre",
+    "lobby.qr_label": "Code QR du lien pour rejoindre",
+    "lobby.qr_hint": "Visez-le avec l'appareil photo d'un téléphone pour ouvrir le lien.",
+    "call.recording": "Enregistrement"
   },
   "de": {
     "setup.title": "Verbindung einrichten",
@@ -427,7 +443,11 @@
     "file.failed": "Fehlgeschlagen",
     "file.save": "Speichern",
     "file.verified": "SHA-256 ok",
-    "menu.file": "Datei senden"
+    "menu.file": "Datei senden",
+    "lobby.qr_title": "Zum Beitreten scannen",
+    "lobby.qr_label": "QR-Code für den Beitrittslink",
+    "lobby.qr_hint": "Mit der Handykamera scannen, um den Link zu öffnen.",
+    "call.recording": "Aufnahme läuft"
   },
   "hi": {
     "setup.title": "लिंक सेटअप",
@@ -513,6 +533,10 @@
     "file.failed": "विफल",
     "file.save": "सहेजें",
     "file.verified": "SHA-256 ठीक",
-    "menu.file": "फ़ाइल भेजें"
+    "menu.file": "फ़ाइल भेजें",
+    "lobby.qr_title": "जुड़ने के लिए स्कैन करें",
+    "lobby.qr_label": "जुड़ने वाले लिंक का QR कोड",
+    "lobby.qr_hint": "लिंक खोलने के लिए फ़ोन का कैमरा इस पर रखें।",
+    "call.recording": "रिकॉर्डिंग"
   }
 }

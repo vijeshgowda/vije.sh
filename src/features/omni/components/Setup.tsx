@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/Button";
 import { Section } from "@/components/ui/Datasheet";
 import { cleanCode, codeFromHash, isValidCode } from "../client/code";
 import type { Alert, Mode, OmniState } from "../client/state";
-import type { TranslationKey } from "../i18n";
+import { LANGUAGES, type Language, type TranslationKey } from "../i18n";
 import { iceSummary } from "../config";
 import type { Translate } from "./OmniApp";
 import styles from "./Omni.module.css";
@@ -23,6 +23,8 @@ type Props = {
   onRetry: () => void;
   onDismiss: () => void;
   onPrefetch: () => void;
+  language: Language;
+  onLanguage: (language: Language) => void;
 };
 
 const subscribeHash = (cb: () => void) => {
@@ -32,6 +34,32 @@ const subscribeHash = (cb: () => void) => {
 const readHash = () => codeFromHash(window.location.hash);
 const serverHash = () => "";
 const ice = iceSummary();
+
+type BootProps = Pick<Props, "tr" | "phase" | "mode" | "attempt">;
+
+function Boot({ tr, phase, mode, attempt }: BootProps) {
+  return (
+    <div className={styles.boot}>
+      <p role="status">
+        {tr(
+          phase === "media"
+            ? "setup.requesting_media"
+            : mode === "join"
+              ? "home.connecting_join"
+              : "home.connecting",
+        )}
+      </p>
+      {phase === "connecting" && (
+        <>
+          <div className={styles.bar} key={attempt} aria-hidden="true">
+            <i />
+          </div>
+          <small className={styles.small}>{tr("home.connecting_cold")}</small>
+        </>
+      )}
+    </div>
+  );
+}
 
 export function Setup({
   tr,
@@ -44,8 +72,11 @@ export function Setup({
   onRetry,
   onDismiss,
   onPrefetch,
+  language,
+  onLanguage,
 }: Props) {
   const id = useId();
+  const [langNote, setLangNote] = useState("");
   const hashCode = useSyncExternalStore(subscribeHash, readHash, serverHash);
   const created = defaults?.mode === "create" ? defaults.code : "";
   const [customOpen, setCustomOpen] = useState(created !== "");
@@ -151,6 +182,7 @@ export function Setup({
           >
             {tr("home.create")}
           </Button>
+          {busy && mode !== "join" && <Boot tr={tr} phase={phase} mode={mode} attempt={attempt} />}
           <small className={styles.small}>{tr("setup.media_hint")}</small>
         </form>
 
@@ -186,6 +218,7 @@ export function Setup({
               </Button>
             </div>
           </div>
+          {busy && mode === "join" && <Boot tr={tr} phase={phase} mode={mode} attempt={attempt} />}
           <p className={styles.err} id={`${id}-join-err`} role="alert">
             {joinError}
           </p>
@@ -229,30 +262,34 @@ export function Setup({
               AES-GCM-256
             </div>
           </div>
+          <div className={styles.field}>
+            <span className={styles.small} id={`${id}-lang`}>
+              {tr("home.lang_label")}
+            </span>
+            <div className={styles.lang} role="group" aria-labelledby={`${id}-lang`}>
+              {LANGUAGES.map(({ code, label }) => (
+                <button
+                  key={code}
+                  type="button"
+                  lang={code}
+                  aria-pressed={code === language}
+                  onClick={() => {
+                    if (code === language) return;
+                    onLanguage(code);
+                    // The status sits inside the app's lang attribute, so it is read in the new language.
+                    setLangNote(label);
+                  }}
+                >
+                  {label}
+                </button>
+              ))}
+            </div>
+          </div>
+          <span className="vh" aria-live="polite" data-testid="omni-lang-status">
+            {langNote && tr("a11y.lang_changed", { lang: langNote })}
+          </span>
         </aside>
       </div>
-
-      {busy && (
-        <div className={styles.boot}>
-          <p role="status">
-            {tr(
-              phase === "media"
-                ? "setup.requesting_media"
-                : mode === "join"
-                  ? "home.connecting_join"
-                  : "home.connecting",
-            )}
-          </p>
-          {phase === "connecting" && (
-            <>
-              <div className={styles.bar} key={attempt} aria-hidden="true">
-                <i />
-              </div>
-              <small className={styles.small}>{tr("home.connecting_cold")}</small>
-            </>
-          )}
-        </div>
-      )}
     </Section>
   );
 }

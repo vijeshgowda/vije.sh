@@ -24,6 +24,55 @@ type Props = {
   onClose: () => void;
 };
 
+type Qr = { dimension: number; path: string };
+
+/** The join link as a QR code. The encoder is its own chunk, loaded once the lobby opens. */
+function JoinQr({ tr, url }: { tr: Props["tr"]; url: string }) {
+  const [qr, setQr] = useState<{ url: string; qr: Qr | null } | null>(null);
+  useEffect(() => {
+    let live = true;
+    import("../client/core/qrcode")
+      .then(({ makeQrPath }) => {
+        let next: Qr | null = null;
+        try {
+          next = makeQrPath(url, { ecc: "MEDIUM", border: 2 });
+        } catch {
+          // Too long to encode: the link and Share button still work.
+        }
+        if (live) setQr({ url, qr: next });
+      })
+      .catch(() => {
+        if (live) setQr({ url, qr: null });
+      });
+    return () => {
+      live = false;
+    };
+  }, [url]);
+  const current = qr?.url === url ? qr.qr : null;
+  if (qr?.url === url && !current) return null;
+  return (
+    <div className={styles.pane}>
+      <header>
+        <span>QR</span>
+        <span>{tr("lobby.qr_title")}</span>
+      </header>
+      <div className={styles.qr} role="img" aria-label={tr("lobby.qr_label")} data-testid="omni-qr">
+        {current && (
+          <svg
+            viewBox={`0 0 ${current.dimension} ${current.dimension}`}
+            shapeRendering="crispEdges"
+            aria-hidden="true"
+            focusable="false"
+          >
+            <path d={current.path} />
+          </svg>
+        )}
+      </div>
+      <p className={styles.small}>{tr("lobby.qr_hint")}</p>
+    </div>
+  );
+}
+
 export function Lobby({
   tr,
   room,
@@ -128,35 +177,38 @@ export function Lobby({
           )}
         </div>
 
-        <aside className={styles.pane}>
-          <header>
-            <span>CAM</span>
-            <span>{tr("lobby.preview")}</span>
-          </header>
-          <div className={styles.self}>
-            {showVideo ? (
-              <StreamVideo stream={local} version={localVersion} muted />
-            ) : (
-              <span className={styles.off}>{tr("call.camera_off")}</span>
-            )}
-            <div className={styles.row}>
-              <button className={styles.miniBtn} type="button" aria-pressed={mic} onClick={onMic}>
-                {tr("ctrl.mic")}
-              </button>
-              <button
-                className={styles.miniBtn}
-                type="button"
-                aria-pressed={cam}
-                disabled={!hasVideo}
-                onClick={onCam}
-              >
-                {tr("ctrl.cam")}
-              </button>
+        <aside className={styles.side}>
+          <div className={styles.pane}>
+            <header>
+              <span>CAM</span>
+              <span>{tr("lobby.preview")}</span>
+            </header>
+            <div className={styles.self}>
+              {showVideo ? (
+                <StreamVideo stream={local} version={localVersion} muted />
+              ) : (
+                <span className={styles.off}>{tr("call.camera_off")}</span>
+              )}
+              <div className={styles.row}>
+                <button className={styles.miniBtn} type="button" aria-pressed={mic} onClick={onMic}>
+                  {tr("ctrl.mic")}
+                </button>
+                <button
+                  className={styles.miniBtn}
+                  type="button"
+                  aria-pressed={cam}
+                  disabled={!hasVideo}
+                  onClick={onCam}
+                >
+                  {tr("ctrl.cam")}
+                </button>
+              </div>
             </div>
+            <p className={styles.small}>
+              {hasVideo ? tr("lobby.preview_hint") : tr("lobby.audio_only")}
+            </p>
           </div>
-          <p className={styles.small}>
-            {hasVideo ? tr("lobby.preview_hint") : tr("lobby.audio_only")}
-          </p>
+          <JoinQr tr={tr} url={url} />
         </aside>
       </div>
     </Section>

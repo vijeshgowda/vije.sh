@@ -156,6 +156,32 @@ describe("Omni setup", () => {
     await user.click(screen.getByRole("button", { name: "Dismiss" }));
     expect(screen.queryByText("Server busy")).not.toBeInTheDocument();
   });
+
+  it("renders the progress status inside the form whose button was pressed", async () => {
+    const { session } = await startCreate();
+    const createForm = screen.getByRole("button", { name: "Create Room" }).closest("form")!;
+    expect(within(createForm).getByRole("status")).toHaveTextContent(
+      "Waiting for camera and microphone permission…",
+    );
+    expect(screen.getAllByRole("status")).toHaveLength(1);
+    dispatch({ type: "media-ready", stream, hasVideo: true }, { type: "connecting" });
+    expect(within(createForm).getByRole("status")).toHaveTextContent("Connecting to server…");
+    expect(screen.getByText("LINKING")).toBeInTheDocument();
+    dispatch({ type: "reset", alert: { tone: "error", key: "err.timeout", retry: true } });
+    expect(screen.queryByRole("status")).not.toBeInTheDocument();
+    expect(session.start).toHaveBeenCalledTimes(1);
+  });
+
+  it("renders the join progress status inside the join form", async () => {
+    window.location.hash = "#k7q2m9";
+    const user = userEvent.setup();
+    render(<OmniApp signalingUrl="ws://localhost:8765" />);
+    await user.click(screen.getByRole("button", { name: "Join" }));
+    await waitFor(() => expect(sessions).toHaveLength(1));
+    const joinForm = screen.getByRole("button", { name: "Join" }).closest("form")!;
+    expect(within(joinForm).getByRole("status")).toBeInTheDocument();
+    expect(screen.getAllByRole("status")).toHaveLength(1);
+  });
 });
 
 describe("Omni lobby", () => {

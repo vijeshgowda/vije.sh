@@ -33,6 +33,32 @@ const readHash = () => codeFromHash(window.location.hash);
 const serverHash = () => "";
 const ice = iceSummary();
 
+type BootProps = Pick<Props, "tr" | "phase" | "mode" | "attempt">;
+
+function Boot({ tr, phase, mode, attempt }: BootProps) {
+  return (
+    <div className={styles.boot}>
+      <p role="status">
+        {tr(
+          phase === "media"
+            ? "setup.requesting_media"
+            : mode === "join"
+              ? "home.connecting_join"
+              : "home.connecting",
+        )}
+      </p>
+      {phase === "connecting" && (
+        <>
+          <div className={styles.bar} key={attempt} aria-hidden="true">
+            <i />
+          </div>
+          <small className={styles.small}>{tr("home.connecting_cold")}</small>
+        </>
+      )}
+    </div>
+  );
+}
+
 export function Setup({
   tr,
   phase,
@@ -151,6 +177,7 @@ export function Setup({
           >
             {tr("home.create")}
           </Button>
+          {busy && mode !== "join" && <Boot tr={tr} phase={phase} mode={mode} attempt={attempt} />}
           <small className={styles.small}>{tr("setup.media_hint")}</small>
         </form>
 
@@ -186,6 +213,7 @@ export function Setup({
               </Button>
             </div>
           </div>
+          {busy && mode === "join" && <Boot tr={tr} phase={phase} mode={mode} attempt={attempt} />}
           <p className={styles.err} id={`${id}-join-err`} role="alert">
             {joinError}
           </p>
@@ -231,28 +259,6 @@ export function Setup({
           </div>
         </aside>
       </div>
-
-      {busy && (
-        <div className={styles.boot}>
-          <p role="status">
-            {tr(
-              phase === "media"
-                ? "setup.requesting_media"
-                : mode === "join"
-                  ? "home.connecting_join"
-                  : "home.connecting",
-            )}
-          </p>
-          {phase === "connecting" && (
-            <>
-              <div className={styles.bar} key={attempt} aria-hidden="true">
-                <i />
-              </div>
-              <small className={styles.small}>{tr("home.connecting_cold")}</small>
-            </>
-          )}
-        </div>
-      )}
     </Section>
   );
 }

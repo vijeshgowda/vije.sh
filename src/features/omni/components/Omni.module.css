@@ -246,8 +246,6 @@
 .boot {
   display: grid;
   gap: 0.45rem;
-  margin-top: 1.25rem;
-  max-width: 36rem;
 }
 .boot p {
   margin: 0;

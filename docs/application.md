@@ -303,9 +303,9 @@ an encrypted file transfer that is saved and compared byte for byte.
   concurrent transfers and resume indices are preserved.
 - Received blobs always use `application/octet-stream` and sanitised download names. Preview only
   the allow-listed image/video formats, never SVG/HTML or a new-tab blob link. `FileReceiver`
-  (`client/core/receiver.ts`) reassembles and verifies incoming files (at most 16 at once); the
-  session owns each received file's object URL and revokes it on Clear, hang-up and dispose.
-  Received files are held in memory until saved: the original's `showSaveFilePicker` streaming
+  (`client/core/receiver.ts`) reassembles and verifies incoming files (at most 16 at once, and a
+  repeated file ID is refused); the sender keeps four files in flight. The session owns each
+  received file's object URL and revokes it on Clear, hang-up and dispose. Received files are held in memory until saved: the original's `showSaveFilePicker` streaming
   needs a user gesture, which an incoming file is not, so it is not ported.
 - Chat and files live in a sheet below the sticky video, inside the scrolling call `<dialog>`.
   Chat text renders as text only, is cut to 4000 characters and keeps the newest 500 log items.

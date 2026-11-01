@@ -3,7 +3,7 @@ import { PeerConnection } from "./core/webrtc";
 import { NotificationSounds } from "./core/sounds";
 import { sanitiseFileName } from "./core/files";
 import { processFileQueue } from "./core/filequeue";
-import { FileReceiver, type ReceiveResult } from "./core/receiver";
+import { FileReceiver, MAX_INCOMING, type ReceiveResult } from "./core/receiver";
 import {
   getLinkType,
   getQualityLevel,
@@ -61,6 +61,8 @@ const NUDGE_SHOW_MS = 3_000;
 const TYPING_SEND_MS = 2_000;
 const TYPING_SHOW_MS = 3_000;
 const LARGE_FILE = 500 * 1024 * 1024;
+/** Outgoing files in flight at once; below the receiver's MAX_INCOMING so none are refused. */
+export const SEND_CONCURRENCY = 4;
 
 /** Maps signalling failures (server text or client errors) to a translated alert. */
 export function alertForError(message: string): Alert {
@@ -105,6 +107,8 @@ export class OmniSession {
   /** Object URLs of received files, by transfer key; revoked on clear and teardown. */
   private urls = new Map<string, string>();
   private progress = new Map<string, number>();
+  /** Incoming file IDs seen on this peer; a repeated ID is refused. */
+  private incomingIds = new Set<number>();
   private typingSent = false;
   private typingTimer: ReturnType<typeof setTimeout> | null = null;
 
@@ -248,7 +252,7 @@ export class OmniSession {
     this.later(() => (this.typingSent = false), TYPING_SEND_MS);
   }
 
-  /** Each file gets its own ID and is sent concurrently; frames carry the ID. */
+  /** Each file gets its own ID; up to SEND_CONCURRENCY are sent at once and frames carry the ID. */
   sendFiles(files: readonly File[]) {
     const peer = this.peer;
     if (!files.length) return;
@@ -277,24 +281,28 @@ export class OmniSession {
         params: { name: file.name, size: formatBytes(file.size) },
       });
     }
-    void processFileQueue(
-      queue,
-      ({ file, fileId }) => peer.sendFile(file, { fileId }),
-      (result) => {
-        if (run !== this.run) return;
-        const key = `out:${result.file.fileId}`;
-        const name = result.file.file.name;
-        this.progress.delete(key);
-        if (result.status === "sent") {
-          this.dispatch({ type: "transfer-done", key, url: null, preview: null, at: this.now() });
-          this.system({ key: "sys.sent", params: { name } });
-        } else {
-          this.dispatch({ type: "transfer-failed", key });
-          const error = result.error instanceof Error ? result.error.message : String(result.error);
-          this.system({ key: "sys.send_failed", params: { error } });
-        }
-      },
-    );
+    const send = ({ file, fileId }: (typeof queue)[number]) => peer.sendFile(file, { fileId });
+    const onResult: Parameters<typeof processFileQueue<(typeof queue)[number]>>[2] = (result) => {
+      if (run !== this.run) return;
+      const key = `out:${result.file.fileId}`;
+      const name = result.file.file.name;
+      this.progress.delete(key);
+      if (result.status === "sent") {
+        this.dispatch({ type: "transfer-done", key, url: null, preview: null, at: this.now() });
+        this.system({ key: "sys.sent", params: { name } });
+      } else {
+        this.dispatch({ type: "transfer-failed", key });
+        const error = result.error instanceof Error ? result.error.message : String(result.error);
+        this.system({ key: "sys.send_failed", params: { error } });
+      }
+    };
+    const worker = async () => {
+      for (let item = queue.shift(); item && run === this.run; item = queue.shift()) {
+        await processFileQueue([item], send, onResult);
+      }
+    };
+    const workers = Math.min(SEND_CONCURRENCY, MAX_INCOMING, queue.length);
+    for (let i = 0; i < workers; i++) void worker();
   }
 
   /** Clears the log and finished transfers, and revokes received files' object URLs. */
@@ -496,7 +504,9 @@ export class OmniSession {
   private receiveMeta(receiver: FileReceiver, meta: FileMetadata) {
     let result: ReceiveResult | null;
     try {
+      if (this.incomingIds.has(meta.fileId)) throw new Error("Duplicate file ID");
       result = receiver.begin(meta);
+      this.incomingIds.add(meta.fileId);
     } catch (error) {
       this.notice(error);
       return;
@@ -755,6 +765,7 @@ export class OmniSession {
     this.receiver = null;
     this.revokeUrls();
     this.progress.clear();
+    this.incomingIds.clear();
     if (this.statsTimer) clearInterval(this.statsTimer);
     this.statsTimer = null;
     if (this.meter) {

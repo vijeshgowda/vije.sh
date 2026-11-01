@@ -3,7 +3,14 @@ import { OmniEvents } from "./core/events";
 import { encrypt, sha256 } from "./core/crypto";
 import { CHUNK_SIZE, encodeFileFrame, type FileMetadata } from "./core/protocol";
 import { SignalingClient, type SignalingSocket } from "./core/signaling";
-import { OmniSession, alertForError, type PeerLike, type SessionDeps } from "./session";
+import { MAX_INCOMING } from "./core/receiver";
+import {
+  OmniSession,
+  SEND_CONCURRENCY,
+  alertForError,
+  type PeerLike,
+  type SessionDeps,
+} from "./session";
 import type { OmniAction } from "./state";
 
 class Socket extends EventTarget implements SignalingSocket {
@@ -662,6 +669,36 @@ describe("OmniSession", () => {
     expect(env.last("system").message).toEqual({ key: "sys.sent", params: { name: "big.bin" } });
   });
 
+  it("sends at most SEND_CONCURRENCY files at once so the receiver never refuses one", async () => {
+    const env = setup();
+    const { peer } = await secureCall(env);
+    const done: (() => void)[] = [];
+    peer.sendFile.mockImplementation(
+      () => new Promise<undefined>((resolve) => done.push(() => resolve(undefined))),
+    );
+    const files = Array.from({ length: 20 }, (_, i) => new File(["x"], `f${i}.txt`));
+    env.session.sendFiles(files);
+    expect(env.all("transfer-start")).toHaveLength(20);
+    expect(peer.sendFile).toHaveBeenCalledTimes(SEND_CONCURRENCY);
+    expect(SEND_CONCURRENCY).toBeLessThan(MAX_INCOMING);
+    done[0]!();
+    await vi.advanceTimersByTimeAsync(0);
+    expect(peer.sendFile).toHaveBeenCalledTimes(SEND_CONCURRENCY + 1);
+    expect(peer.sendFile.mock.calls.at(-1)![0].name).toBe(`f${SEND_CONCURRENCY}.txt`);
+    for (let i = 1; i < 20; i++) {
+      await vi.waitFor(() => expect(done[i]).toBeDefined());
+      done[i]!();
+    }
+    await vi.waitFor(() => expect(env.all("transfer-done")).toHaveLength(20));
+
+    peer.sendFile.mockClear();
+    env.session.sendFiles(files.slice(0, 6));
+    env.session.hangup();
+    done.at(-1)!();
+    await vi.advanceTimersByTimeAsync(0);
+    expect(peer.sendFile).toHaveBeenCalledTimes(SEND_CONCURRENCY);
+  });
+
   it("refuses to send files before the channel is secure", async () => {
     const env = setup();
     const { peer } = await intoCall(env);
@@ -699,6 +736,11 @@ describe("OmniSession", () => {
     });
     const blob = env.objectUrls.createObjectURL.mock.calls[0]![0];
     expect(blob.type).toBe("application/octet-stream");
+
+    const starts = env.all("transfer-start").length;
+    peer.fire("data", file.meta);
+    expect(env.all("transfer-start")).toHaveLength(starts);
+    expect(env.last("notice").text).toBe("Duplicate file ID");
 
     env.session.clearChat();
     expect(env.objectUrls.revokeObjectURL).toHaveBeenCalledWith("blob:test/1");

@@ -72,6 +72,10 @@ export type OmniState = {
   mic: boolean;
   cam: boolean;
   facing: "user" | "environment";
+  /** The shared screen while screen sharing; it replaces the camera on the wire and in the self-view. */
+  screen: MediaStream | null;
+  /** A local recording is running. */
+  recording: boolean;
   call: CallState | null;
 };
 
@@ -91,6 +95,8 @@ export type OmniAction =
   | { type: "mic"; on: boolean }
   | { type: "cam"; on: boolean }
   | { type: "local-tracks"; facing: "user" | "environment" }
+  | { type: "screen"; stream: MediaStream | null }
+  | { type: "recording"; on: boolean }
   | { type: "nudge"; on: boolean }
   | { type: "ending"; key: TranslationKey }
   | { type: "chat"; from: "me" | "peer"; text: string; at: number }
@@ -127,6 +133,8 @@ export const initialState: OmniState = {
   mic: true,
   cam: true,
   facing: "user",
+  screen: null,
+  recording: false,
   call: null,
 };
 
@@ -237,6 +245,10 @@ export function omniReducer(state: OmniState, action: OmniAction): OmniState {
       return { ...state, cam: action.on };
     case "local-tracks":
       return { ...state, facing: action.facing, localVersion: state.localVersion + 1 };
+    case "screen":
+      return { ...state, screen: action.stream };
+    case "recording":
+      return { ...state, recording: action.on };
     case "nudge":
       return withCall(state, { nudge: action.on });
     case "ending":

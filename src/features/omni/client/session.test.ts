@@ -34,7 +34,14 @@ class Track {
   enabled = true;
   stop = vi.fn();
   clones: Track[] = [];
+  private ended: (() => void)[] = [];
   constructor(readonly kind: "audio" | "video") {}
+  addEventListener = (type: string, listener: () => void) => {
+    if (type === "ended") this.ended.push(listener);
+  };
+  end() {
+    this.ended.forEach((listener) => listener());
+  }
   clone = () => {
     const copy = new Track(this.kind);
     this.clones.push(copy);
@@ -788,5 +795,252 @@ describe("OmniSession", () => {
     expect(socket.close).toHaveBeenCalled();
     expect(stream.tracks.every((track) => track.stop.mock.calls.length > 0)).toBe(true);
     expect(env.sounds.dispose).toHaveBeenCalled();
+  });
+});
+
+describe("OmniSession screen sharing", () => {
+  function withDisplay(display = vi.fn(async () => new Stream([new Track("video")]))) {
+    const getUserMedia = vi.fn(
+      async (constraints: MediaStreamConstraints) =>
+        new Stream(
+          constraints.video ? [new Track("audio"), new Track("video")] : [new Track("audio")],
+        ) as unknown as MediaStream,
+    );
+    const env = setup({
+      mediaDevices: {
+        getUserMedia,
+        getDisplayMedia: display as unknown as MediaDevices["getDisplayMedia"],
+      },
+    });
+    return { env, display, getUserMedia };
+  }
+
+  it("sends the screen instead of the camera, and switches back on stop", async () => {
+    const { env, display, getUserMedia } = withDisplay();
+    const { peer } = await secureCall(env);
+    const camera = (env.last("media-ready").stream as unknown as Stream).getVideoTracks()[0]!;
+    await env.session.toggleScreen();
+    expect(display).toHaveBeenCalledWith({ video: true, audio: false });
+    const shared = env.last("screen").stream as unknown as Stream;
+    const screenTrack = shared.getVideoTracks()[0]!;
+    expect(peer.replaceVideoTrack).toHaveBeenLastCalledWith(screenTrack);
+
+    // No flipping while sharing (as in the original).
+    await env.session.flip();
+    expect(getUserMedia).toHaveBeenCalledTimes(1);
+
+    await env.session.toggleScreen();
+    expect(screenTrack.stop).toHaveBeenCalled();
+    expect(env.last("screen").stream).toBeNull();
+    expect(peer.replaceVideoTrack).toHaveBeenLastCalledWith(camera);
+    expect(camera.stop).not.toHaveBeenCalled();
+  });
+
+  it("switches back when the browser's own Stop sharing ends the track", async () => {
+    const { env } = withDisplay();
+    const { peer } = await secureCall(env);
+    await env.session.toggleScreen();
+    const track = (env.last("screen").stream as unknown as Stream).getVideoTracks()[0]!;
+    track.end();
+    await vi.advanceTimersByTimeAsync(0);
+    expect(env.last("screen").stream).toBeNull();
+    expect(peer.replaceVideoTrack).toHaveBeenCalledTimes(2);
+  });
+
+  it("stays on the camera when the picker is cancelled or the call ends meanwhile", async () => {
+    const cancel = vi.fn(async () => {
+      throw new DOMException("cancelled", "NotAllowedError");
+    });
+    const { env } = withDisplay(cancel as never);
+    const { peer } = await secureCall(env);
+    await env.session.toggleScreen();
+    expect(env.all("screen")).toHaveLength(0);
+    expect(peer.replaceVideoTrack).not.toHaveBeenCalled();
+
+    let resolve!: (stream: MediaStream) => void;
+    const slow = vi.fn(() => new Promise<MediaStream>((r) => (resolve = r)));
+    const second = withDisplay(slow as never);
+    await secureCall(second.env);
+    const pending = second.env.session.toggleScreen();
+    // A second click while the picker is open is ignored.
+    await second.env.session.toggleScreen();
+    expect(slow).toHaveBeenCalledTimes(1);
+    second.env.session.hangup();
+    const display = new Stream([new Track("video")]);
+    resolve(display as unknown as MediaStream);
+    await pending;
+    expect(display.tracks[0]!.stop).toHaveBeenCalled();
+    expect(second.env.all("screen")).toHaveLength(0);
+  });
+
+  it("reports unsupported browsers and does nothing outside a call", async () => {
+    const env = setup();
+    await env.session.toggleScreen();
+    expect(env.systemKeys()).toEqual([]);
+    await secureCall(env);
+    await env.session.toggleScreen();
+    expect(env.systemKeys()).toContain("sys.screen_unsupported");
+  });
+
+  it("stops the shared screen when the call ends", async () => {
+    const { env } = withDisplay();
+    await secureCall(env);
+    await env.session.toggleScreen();
+    const track = (env.last("screen").stream as unknown as Stream).getVideoTracks()[0]!;
+    env.session.hangup();
+    expect(track.stop).toHaveBeenCalled();
+  });
+
+  it("shows a replace failure and releases the screen", async () => {
+    const { env } = withDisplay();
+    const { peer } = await secureCall(env);
+    peer.replaceVideoTrack.mockRejectedValueOnce(new Error("no sender"));
+    await env.session.toggleScreen();
+    expect(env.last("notice").text).toBe("no sender");
+    expect(env.all("screen")).toHaveLength(0);
+  });
+});
+
+describe("OmniSession recording", () => {
+  function recorderModule(options: { supported?: boolean; startError?: Error } = {}) {
+    const instances: {
+      start: ReturnType<typeof vi.fn>;
+      stop: ReturnType<typeof vi.fn>;
+      setLocal: ReturnType<typeof vi.fn>;
+    }[] = [];
+    const blob = new Blob(["webm"], { type: "video/webm" });
+    const mod = {
+      isRecordingSupported: vi.fn(() => options.supported ?? true),
+      recordingName: vi.fn((code: string) => `omni-${code}.webm`),
+      saveRecording: vi.fn(async () => "saved" as const),
+      CallRecorder: class {
+        start = vi.fn(() => {
+          if (options.startError) throw options.startError;
+        });
+        stop = vi.fn(async (): Promise<Blob | null> => blob);
+        setLocal = vi.fn();
+        constructor() {
+          instances.push(this);
+        }
+      },
+    };
+    return { mod, instances, blob };
+  }
+
+  it("records locally, then stops and saves the file with the room code", async () => {
+    const { mod, instances, blob } = recorderModule();
+    const env = setup({ loadRecorder: async () => mod as never });
+    const { peer } = await secureCall(env);
+    const remote = new Stream([new Track("video"), new Track("audio")]);
+    peer.fire("remote-stream", { stream: remote });
+    await env.session.toggleRecording();
+    const local = env.last("media-ready").stream;
+    expect(instances[0]!.start).toHaveBeenCalledWith({ remote, local, audio: [local, remote] });
+    expect(env.last("recording").on).toBe(true);
+    expect(env.systemKeys()).toContain("sys.record_started");
+
+    await env.session.toggleRecording();
+    expect(env.last("recording").on).toBe(false);
+    expect(mod.saveRecording).toHaveBeenCalledWith(blob, "omni-K7Q2M9.webm");
+    expect(env.last("system").message).toEqual({
+      key: "sys.record_saved",
+      params: { size: "4 B" },
+    });
+    // Nothing about the recording is sent to the peer.
+    expect(peer.send).not.toHaveBeenCalledWith(expect.objectContaining({ type: "recording" }));
+  });
+
+  it("follows the screen share in the corner picture", async () => {
+    const { mod, instances } = recorderModule();
+    const display = new Stream([new Track("video")]);
+    const env = setup({
+      loadRecorder: async () => mod as never,
+      mediaDevices: {
+        getUserMedia: async () =>
+          new Stream([new Track("audio"), new Track("video")]) as unknown as MediaStream,
+        getDisplayMedia: async () => display as unknown as MediaStream,
+      },
+    });
+    await secureCall(env);
+    await env.session.toggleRecording();
+    await env.session.toggleScreen();
+    expect(instances[0]!.setLocal).toHaveBeenLastCalledWith(display);
+    await env.session.toggleScreen();
+    expect(instances[0]!.setLocal).toHaveBeenLastCalledWith(env.last("media-ready").stream);
+  });
+
+  it("saves the recording when the call ends", async () => {
+    const { mod, instances } = recorderModule();
+    const env = setup({ loadRecorder: async () => mod as never });
+    await secureCall(env);
+    await env.session.toggleRecording();
+    env.session.hangup();
+    expect(instances[0]!.stop).toHaveBeenCalled();
+    await vi.advanceTimersByTimeAsync(0);
+    expect(mod.saveRecording).toHaveBeenCalledTimes(1);
+    expect(env.systemKeys()).not.toContain("sys.record_saved");
+  });
+
+  it("reports unsupported browsers, start errors, load errors and empty recordings", async () => {
+    const unsupported = recorderModule({ supported: false });
+    const env = setup({ loadRecorder: async () => unsupported.mod as never });
+    await env.session.toggleRecording();
+    expect(unsupported.mod.isRecordingSupported).not.toHaveBeenCalled();
+    await secureCall(env);
+    await env.session.toggleRecording();
+    expect(env.systemKeys()).toContain("sys.record_unsupported");
+
+    const failing = recorderModule({ startError: new Error("no codec") });
+    const env2 = setup({ loadRecorder: async () => failing.mod as never });
+    await secureCall(env2);
+    await env2.session.toggleRecording();
+    expect(env2.last("system").message).toEqual({
+      key: "sys.record_error",
+      params: { error: "no codec" },
+    });
+    expect(env2.all("recording")).toHaveLength(0);
+
+    const env3 = setup({
+      loadRecorder: async () => {
+        throw new Error("chunk failed");
+      },
+    });
+    await secureCall(env3);
+    await env3.session.toggleRecording();
+    expect(env3.last("system").message.params).toEqual({ error: "chunk failed" });
+
+    const empty = recorderModule();
+    const env4 = setup({ loadRecorder: async () => empty.mod as never });
+    await secureCall(env4);
+    await env4.session.toggleRecording();
+    empty.instances[0]!.stop.mockResolvedValueOnce(null);
+    await env4.session.toggleRecording();
+    expect(env4.systemKeys()).toContain("sys.record_nodata");
+    expect(empty.mod.saveRecording).not.toHaveBeenCalled();
+  });
+
+  it("shows a save failure, and stays quiet when the save picker is cancelled", async () => {
+    const { mod } = recorderModule();
+    const env = setup({ loadRecorder: async () => mod as never });
+    await secureCall(env);
+    await env.session.toggleRecording();
+    mod.saveRecording.mockResolvedValueOnce("cancelled" as never);
+    await env.session.toggleRecording();
+    expect(env.systemKeys()).not.toContain("sys.record_saved");
+    await env.session.toggleRecording();
+    mod.saveRecording.mockRejectedValueOnce(new Error("disk full"));
+    await env.session.toggleRecording();
+    expect(env.last("notice").text).toBe("disk full");
+  });
+});
+
+describe("OmniSession announce", () => {
+  it("adds browser-feature messages to the log only during a call", async () => {
+    const env = setup();
+    env.session.announce({ key: "sys.pip_unsupported" });
+    expect(env.systemKeys()).toEqual([]);
+    await secureCall(env);
+    env.session.announce({ key: "sys.pip_unsupported" });
+    expect(env.systemKeys()).toContain("sys.pip_unsupported");
   });
 });

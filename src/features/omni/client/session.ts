@@ -14,6 +14,15 @@ import { CHUNK_SIZE, type FileMetadata, type Signal } from "./core/protocol";
 import { formatBytes } from "./format";
 import { MAX_CHAT, type Alert, type Message, type Mode, type OmniAction } from "./state";
 
+export type RecorderModule = Pick<
+  typeof import("./core/recorder"),
+  "CallRecorder" | "isRecordingSupported" | "recordingName" | "saveRecording"
+>;
+type RecorderLike = Pick<
+  InstanceType<RecorderModule["CallRecorder"]>,
+  "start" | "stop" | "setLocal"
+>;
+
 export type PeerLike = Pick<
   PeerConnection,
   | "on"
@@ -37,7 +46,8 @@ export type SessionDeps = {
   signalingUrl: string;
   iceServers: RTCIceServer[];
   dispatch: (action: OmniAction) => void;
-  mediaDevices?: Pick<MediaDevices, "getUserMedia">;
+  mediaDevices?: Pick<MediaDevices, "getUserMedia"> &
+    Partial<Pick<MediaDevices, "getDisplayMedia">>;
   createSignaling?: (url: string) => SignalingClient;
   createPeer?: (
     signaling: SignalingClient,
@@ -50,6 +60,8 @@ export type SessionDeps = {
   /** Mic meter; null in environments without Web Audio (tests). */
   createAudioContext?: (() => AudioContext) | null;
   objectUrls?: Pick<typeof URL, "createObjectURL" | "revokeObjectURL">;
+  /** The recorder is its own chunk, downloaded on the first Record. */
+  loadRecorder?: () => Promise<RecorderModule>;
 };
 
 export type StartOptions = { mode: Mode; code: string; password: string };
@@ -111,6 +123,11 @@ export class OmniSession {
   private incomingIds = new Set<number>();
   private typingSent = false;
   private typingTimer: ReturnType<typeof setTimeout> | null = null;
+  private remote: MediaStream | null = null;
+  private screen: MediaStream | null = null;
+  private screenPending = false;
+  private recorder: { rec: RecorderLike; mod: RecorderModule; code: string } | null = null;
+  private recorderPending = false;
 
   constructor(private readonly deps: SessionDeps) {
     this.dispatch = deps.dispatch;
@@ -199,7 +216,8 @@ export class OmniSession {
     const stream = this.stream;
     const media = this.deps.mediaDevices ?? globalThis.navigator?.mediaDevices;
     const old = stream?.getVideoTracks()[0];
-    if (!stream || !old || !media) return;
+    // As in the original: the camera can't flip while the screen is shared.
+    if (!stream || !old || !media || this.screen) return;
     const run = this.run;
     const facing = this.facing === "user" ? "environment" : "user";
     let track: MediaStreamTrack | undefined;
@@ -219,8 +237,138 @@ export class OmniSession {
     stream.removeTrack(old);
     stream.addTrack(track);
     this.facing = facing;
-    await this.peer?.replaceVideoTrack(track).catch(() => undefined);
+    if (!this.screen) await this.peer?.replaceVideoTrack(track).catch(() => undefined);
     this.dispatch({ type: "local-tracks", facing });
+  }
+
+  /**
+   * Shares the screen in place of the camera (same video sender, so no renegotiation), or stops
+   * sharing. Ending it from the browser's own "Stop sharing" bar also switches back.
+   */
+  async toggleScreen() {
+    if (this.screen) {
+      await this.stopScreen();
+      return;
+    }
+    const peer = this.peer;
+    const media = this.deps.mediaDevices ?? globalThis.navigator?.mediaDevices;
+    if (!peer || this.stage !== "call" || this.screenPending) return;
+    if (typeof media?.getDisplayMedia !== "function") {
+      this.system({ key: "sys.screen_unsupported" });
+      return;
+    }
+    const run = this.run;
+    this.screenPending = true;
+    let display: MediaStream;
+    try {
+      display = await media.getDisplayMedia({ video: true, audio: false });
+    } catch {
+      // The picker was cancelled or sharing was refused: stay on the camera.
+      return;
+    } finally {
+      this.screenPending = false;
+    }
+    const track = display.getVideoTracks()[0];
+    if (run !== this.run || this.peer !== peer || !track) {
+      display.getTracks().forEach((t) => t.stop());
+      return;
+    }
+    try {
+      await peer.replaceVideoTrack(track);
+    } catch (error) {
+      display.getTracks().forEach((t) => t.stop());
+      this.notice(error);
+      return;
+    }
+    if (run !== this.run || this.peer !== peer) {
+      display.getTracks().forEach((t) => t.stop());
+      return;
+    }
+    this.screen = display;
+    track.addEventListener("ended", () => {
+      if (this.screen === display) void this.stopScreen();
+    });
+    this.recorder?.rec.setLocal(display);
+    this.dispatch({ type: "screen", stream: display });
+  }
+
+  private async stopScreen() {
+    const display = this.screen;
+    if (!display) return;
+    this.screen = null;
+    display.getTracks().forEach((track) => track.stop());
+    this.dispatch({ type: "screen", stream: null });
+    this.recorder?.rec.setLocal(this.stream);
+    const camera = this.stream?.getVideoTracks()[0];
+    if (camera) await this.peer?.replaceVideoTrack(camera).catch(() => undefined);
+  }
+
+  /** Starts a local recording, or stops it and saves the file. Nothing is sent to the peer. */
+  async toggleRecording() {
+    if (this.recorder) {
+      await this.stopRecording();
+      return;
+    }
+    if (this.stage !== "call" || this.recorderPending) return;
+    const run = this.run;
+    this.recorderPending = true;
+    let mod: RecorderModule;
+    try {
+      mod = await (this.deps.loadRecorder ?? (() => import("./core/recorder")))();
+    } catch (error) {
+      if (run === this.run)
+        this.system({ key: "sys.record_error", params: { error: message(error) } });
+      return;
+    } finally {
+      this.recorderPending = false;
+    }
+    if (run !== this.run || this.stage !== "call") return;
+    if (!mod.isRecordingSupported()) {
+      this.system({ key: "sys.record_unsupported" });
+      return;
+    }
+    const rec = new mod.CallRecorder();
+    try {
+      rec.start({
+        remote: this.remote,
+        local: this.screen ?? this.stream,
+        audio: [this.stream, this.remote],
+      });
+    } catch (error) {
+      this.system({ key: "sys.record_error", params: { error: message(error) } });
+      return;
+    }
+    this.recorder = { rec, mod, code: this.signaling?.roomCode ?? "" };
+    this.dispatch({ type: "recording", on: true });
+    this.system({ key: "sys.record_started" });
+  }
+
+  /** Stops the recording and saves it; also runs when the call ends, so a recording isn't lost. */
+  private async stopRecording() {
+    const recording = this.recorder;
+    if (!recording) return;
+    this.recorder = null;
+    this.dispatch({ type: "recording", on: false });
+    const run = this.run;
+    const blob = await recording.rec.stop();
+    const inCall = run === this.run;
+    if (!blob) {
+      if (inCall) this.system({ key: "sys.record_nodata" });
+      return;
+    }
+    const name = recording.mod.recordingName(recording.code, new Date(this.now()));
+    try {
+      const result = await recording.mod.saveRecording(blob, name);
+      if (result === "saved" && run === this.run)
+        this.system({ key: "sys.record_saved", params: { size: formatBytes(blob.size) } });
+    } catch (error) {
+      if (run === this.run) this.notice(error);
+    }
+  }
+
+  /** Adds a system line to the chat log (used by the island for browser-only features like PiP). */
+  announce(item: Message) {
+    if (this.stage === "call") this.system(item);
   }
 
   /** Sends a chat message; resolves false when it couldn't be sent (the log says why). */
@@ -435,9 +583,10 @@ export class OmniSession {
     this.receiver = receiver;
     if (!stream.getVideoTracks().length) this.system({ key: "sys.audio_only" });
     this.unsubscribe.push(
-      peer.on("remote-stream", ({ stream: remote }) =>
-        this.dispatch({ type: "remote", stream: remote }),
-      ),
+      peer.on("remote-stream", ({ stream: remote }) => {
+        this.remote = remote;
+        this.dispatch({ type: "remote", stream: remote });
+      }),
       peer.on("secure-channel-ready", ({ safety }) => {
         this.dispatch({ type: "secure", safety, at: this.now() });
         this.system({ key: "sys.channel_ready" });
@@ -752,6 +901,8 @@ export class OmniSession {
   }
 
   private teardown() {
+    // Started before run++ so it still knows the room code; the file is saved after the call ends.
+    void this.stopRecording();
     this.run++;
     this.stage = "idle";
     this.ending = false;
@@ -779,9 +930,17 @@ export class OmniSession {
     this.peer = null;
     this.signaling?.disconnect();
     this.signaling = null;
+    this.screen?.getTracks().forEach((track) => track.stop());
+    this.screen = null;
+    this.screenPending = false;
+    this.remote = null;
     this.stream?.getTracks().forEach((track) => track.stop());
     this.stream = null;
     this.pending = [];
     this.nudgedAt = -Infinity;
   }
+}
+
+function message(error: unknown): string {
+  return error instanceof Error ? error.message : String(error);
 }

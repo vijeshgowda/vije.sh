@@ -1,7 +1,16 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { OmniEvents } from "./core/events";
+import { encrypt, sha256 } from "./core/crypto";
+import { CHUNK_SIZE, encodeFileFrame, type FileMetadata } from "./core/protocol";
 import { SignalingClient, type SignalingSocket } from "./core/signaling";
-import { OmniSession, alertForError, type PeerLike, type SessionDeps } from "./session";
+import { MAX_INCOMING } from "./core/receiver";
+import {
+  OmniSession,
+  SEND_CONCURRENCY,
+  alertForError,
+  type PeerLike,
+  type SessionDeps,
+} from "./session";
 import type { OmniAction } from "./state";
 
 class Socket extends EventTarget implements SignalingSocket {
@@ -44,11 +53,13 @@ class Stream {
 
 class Peer extends OmniEvents<Record<string, unknown>> {
   pc: { getStats: ReturnType<typeof vi.fn> } | null = null;
+  sharedKey: CryptoKey | null = null;
+  sendFile = vi.fn(async (_file: File, _options: { fileId: number }) => undefined);
   initialize = vi.fn(async () => {
     this.pc = { getStats: vi.fn(async () => this.stats) };
   });
   handleSignal = vi.fn(async () => undefined);
-  send = vi.fn(async () => undefined);
+  send = vi.fn(async (_message: unknown) => undefined);
   hangup = vi.fn();
   replaceVideoTrack = vi.fn(async () => undefined);
   setSendQuality = vi.fn(async () => undefined);
@@ -74,8 +85,14 @@ function setup(overrides: Partial<SessionDeps> = {}) {
   const sounds = {
     ensureAudioContext: vi.fn(async () => undefined),
     playJoinTone: vi.fn(async () => undefined),
+    playMessageTone: vi.fn(async () => undefined),
     playHangupTone: vi.fn(async () => undefined),
     dispose: vi.fn(async () => undefined),
+  };
+  let urlCount = 0;
+  const objectUrls = {
+    createObjectURL: vi.fn((_blob: Blob) => `blob:test/${++urlCount}`),
+    revokeObjectURL: vi.fn(),
   };
   const session = new OmniSession({
     signalingUrl: "ws://localhost:4444",
@@ -97,13 +114,30 @@ function setup(overrides: Partial<SessionDeps> = {}) {
     sounds,
     now: () => Date.now(),
     createAudioContext: null,
+    objectUrls,
     ...overrides,
   });
   sessions.push(session);
   const types = () => actions.map((action) => action.type);
   const last = <T extends OmniAction["type"]>(type: T) =>
     actions.filter((action) => action.type === type).at(-1) as Extract<OmniAction, { type: T }>;
-  return { session, sockets, peers, peerArgs, actions, types, last, getUserMedia, sounds };
+  const all = <T extends OmniAction["type"]>(type: T) =>
+    actions.filter((action) => action.type === type) as Extract<OmniAction, { type: T }>[];
+  const systemKeys = () => all("system").map((action) => action.message.key);
+  return {
+    session,
+    sockets,
+    peers,
+    peerArgs,
+    actions,
+    types,
+    last,
+    all,
+    systemKeys,
+    getUserMedia,
+    sounds,
+    objectUrls,
+  };
 }
 
 async function connect(env: ReturnType<typeof setup>, mode: "create" | "join", password = "") {
@@ -124,6 +158,34 @@ async function intoCall(env: ReturnType<typeof setup>, password = "") {
   socket.message({ type: "peer-joined" });
   await vi.advanceTimersByTimeAsync(0);
   return { socket, peer: env.peers[0]! };
+}
+
+async function secureCall(env: ReturnType<typeof setup>) {
+  const call = await intoCall(env);
+  call.peer.sharedKey = await crypto.subtle.generateKey({ name: "AES-GCM", length: 256 }, false, [
+    "encrypt",
+    "decrypt",
+  ]);
+  call.peer.fire("secure-channel-ready", { safety: { emoji: "", code: "" } });
+  return call;
+}
+
+async function incoming(key: CryptoKey, data: Uint8Array, fileId = 9, name = "cat.png") {
+  const meta: FileMetadata = {
+    type: "file-meta",
+    fileId,
+    name,
+    size: data.byteLength,
+    mimeType: "image/png",
+    hash: await sha256(data),
+    chunks: Math.ceil(data.byteLength / CHUNK_SIZE),
+  };
+  const frames: ArrayBuffer[] = [];
+  for (let index = 0; index * CHUNK_SIZE < data.byteLength; index++) {
+    const chunk = data.subarray(index * CHUNK_SIZE, (index + 1) * CHUNK_SIZE);
+    frames.push(encodeFileFrame(fileId, index, await encrypt(key, chunk)));
+  }
+  return { meta, frames };
 }
 
 beforeEach(() => vi.useFakeTimers());
@@ -502,6 +564,219 @@ describe("OmniSession", () => {
     await intoCall(env);
     expect(env.last("notice").text).toBe("no RTCPeerConnection");
     expect(env.last("reset").alert?.key).toBe("err.connect_failed");
+  });
+
+  it("sends and receives chat once the channel is secure", async () => {
+    const env = setup();
+    const { peer } = await intoCall(env);
+    expect(await env.session.sendChat("too early")).toBe(false);
+    expect(env.systemKeys()).toContain("sys.send_failed_notready");
+    expect(peer.send).not.toHaveBeenCalledWith({ type: "chat", text: "too early" });
+
+    peer.sharedKey = {} as CryptoKey;
+    peer.fire("secure-channel-ready", { safety: { emoji: "", code: "" } });
+    expect(env.systemKeys()).toContain("sys.channel_ready");
+    expect(await env.session.sendChat("   ")).toBe(false);
+    expect(await env.session.sendChat(`  hi ${"x".repeat(5_000)}`)).toBe(true);
+    const sent = peer.send.mock.calls.at(-1)![0] as unknown as { text: string };
+    expect(sent.text).toHaveLength(4_000);
+    expect(env.last("chat")).toMatchObject({ from: "me", text: sent.text });
+
+    peer.fire("data", { type: "chat", text: "y".repeat(4_500) });
+    expect(env.last("chat")).toMatchObject({ from: "peer", text: "y".repeat(4_000) });
+    expect(env.sounds.playMessageTone).toHaveBeenCalledTimes(1);
+
+    peer.send.mockRejectedValueOnce(new Error("closed"));
+    expect(await env.session.sendChat("lost")).toBe(false);
+    expect(env.all("chat")).toHaveLength(2);
+  });
+
+  it("throttles outgoing typing and hides the peer's indicator after 3 s", async () => {
+    const env = setup();
+    const { peer } = await intoCall(env);
+    env.session.typing();
+    expect(peer.send).not.toHaveBeenCalledWith({ type: "typing" });
+    peer.sharedKey = {} as CryptoKey;
+    env.session.typing();
+    env.session.typing();
+    const typingSends = () =>
+      peer.send.mock.calls.filter((call) => JSON.stringify(call) === '[{"type":"typing"}]').length;
+    expect(typingSends()).toBe(1);
+    await vi.advanceTimersByTimeAsync(2_000);
+    env.session.typing();
+    expect(typingSends()).toBe(2);
+
+    peer.fire("data", { type: "typing" });
+    expect(env.last("typing").on).toBe(true);
+    await vi.advanceTimersByTimeAsync(2_000);
+    peer.fire("data", { type: "typing" });
+    await vi.advanceTimersByTimeAsync(2_000);
+    expect(env.last("typing").on).toBe(true);
+    await vi.advanceTimersByTimeAsync(1_000);
+    expect(env.last("typing").on).toBe(false);
+
+    peer.fire("data", { type: "typing" });
+    peer.fire("data", { type: "chat", text: "done" });
+    await vi.advanceTimersByTimeAsync(5_000);
+    expect(env.all("typing").filter((action) => !action.on)).toHaveLength(1);
+  });
+
+  it("sends files concurrently with progress, and reports failures", async () => {
+    const env = setup();
+    const { peer } = await secureCall(env);
+    let finish!: () => void;
+    peer.sendFile.mockImplementationOnce(
+      (file: File, { fileId }: { fileId: number }) =>
+        new Promise<undefined>((resolve) => {
+          peer.fire("file-send-progress", { fileId, name: file.name, sent: 1, total: 3 });
+          peer.fire("file-send-progress", { fileId, name: file.name, sent: 1, total: 3 });
+          finish = () => resolve(undefined);
+        }),
+    );
+    peer.sendFile.mockRejectedValueOnce(new Error("channel closed"));
+    const big = new File([new Uint8Array(CHUNK_SIZE * 2 + 1)], "big.bin");
+    env.session.sendFiles([big, new File(["x"], "small.txt")]);
+
+    const starts = env.all("transfer-start");
+    expect(starts.map((action) => action.transfer)).toMatchObject([
+      { direction: "out", name: "big.bin", total: 3 },
+      { direction: "out", name: "small.txt", total: 1 },
+    ]);
+    expect(
+      env
+        .all("system")
+        .slice(-2)
+        .map((action) => action.message),
+    ).toEqual([
+      { key: "sys.sending", params: { name: "big.bin", size: "128.0 KB" } },
+      { key: "sys.sending", params: { name: "small.txt", size: "1 B" } },
+    ]);
+    const [bigId, smallId] = peer.sendFile.mock.calls.map(([, options]) => options.fileId);
+    expect(bigId).not.toBe(smallId);
+    expect(starts[0]!.transfer.key).toBe(`out:${bigId}`);
+    expect(env.all("transfer-progress")).toEqual([
+      { type: "transfer-progress", key: `out:${bigId}`, done: 1 },
+    ]);
+    await vi.advanceTimersByTimeAsync(0);
+    expect(env.last("transfer-failed").key).toBe(`out:${smallId}`);
+    expect(env.last("system").message).toEqual({
+      key: "sys.send_failed",
+      params: { error: "channel closed" },
+    });
+    finish();
+    await vi.advanceTimersByTimeAsync(0);
+    expect(env.last("transfer-done")).toMatchObject({ key: `out:${bigId}`, url: null });
+    expect(env.last("system").message).toEqual({ key: "sys.sent", params: { name: "big.bin" } });
+  });
+
+  it("sends at most SEND_CONCURRENCY files at once so the receiver never refuses one", async () => {
+    const env = setup();
+    const { peer } = await secureCall(env);
+    const done: (() => void)[] = [];
+    peer.sendFile.mockImplementation(
+      () => new Promise<undefined>((resolve) => done.push(() => resolve(undefined))),
+    );
+    const files = Array.from({ length: 20 }, (_, i) => new File(["x"], `f${i}.txt`));
+    env.session.sendFiles(files);
+    expect(env.all("transfer-start")).toHaveLength(20);
+    expect(peer.sendFile).toHaveBeenCalledTimes(SEND_CONCURRENCY);
+    expect(SEND_CONCURRENCY).toBeLessThan(MAX_INCOMING);
+    done[0]!();
+    await vi.advanceTimersByTimeAsync(0);
+    expect(peer.sendFile).toHaveBeenCalledTimes(SEND_CONCURRENCY + 1);
+    expect(peer.sendFile.mock.calls.at(-1)![0].name).toBe(`f${SEND_CONCURRENCY}.txt`);
+    for (let i = 1; i < 20; i++) {
+      await vi.waitFor(() => expect(done[i]).toBeDefined());
+      done[i]!();
+    }
+    await vi.waitFor(() => expect(env.all("transfer-done")).toHaveLength(20));
+
+    peer.sendFile.mockClear();
+    env.session.sendFiles(files.slice(0, 6));
+    env.session.hangup();
+    done.at(-1)!();
+    await vi.advanceTimersByTimeAsync(0);
+    expect(peer.sendFile).toHaveBeenCalledTimes(SEND_CONCURRENCY);
+  });
+
+  it("refuses to send files before the channel is secure", async () => {
+    const env = setup();
+    const { peer } = await intoCall(env);
+    env.session.sendFiles([new File(["x"], "a.txt")]);
+    env.session.sendFiles([]);
+    expect(peer.sendFile).not.toHaveBeenCalled();
+    expect(env.systemKeys().filter((key) => key === "sys.send_failed_notready")).toHaveLength(1);
+  });
+
+  it("receives a verified file into an object URL, revoked on clear and hang-up", async () => {
+    const env = setup();
+    const { peer } = await secureCall(env);
+    const data = new Uint8Array(CHUNK_SIZE + 5).fill(3);
+    const file = await incoming(peer.sharedKey!, data, 9, "../cat.png");
+    peer.fire("data", file.meta);
+    expect(env.last("transfer-start").transfer).toEqual({
+      key: "in:9",
+      direction: "in",
+      name: "cat.png",
+      size: data.byteLength,
+      total: 2,
+    });
+    expect(env.last("system").message.key).toBe("sys.rx_receiving");
+    for (const frame of file.frames) peer.fire("file-chunk", { data: frame });
+    await vi.waitFor(() => expect(env.last("transfer-done")).toBeDefined());
+    expect(env.last("transfer-progress")).toEqual({
+      type: "transfer-progress",
+      key: "in:9",
+      done: 1,
+    });
+    expect(env.last("transfer-done")).toMatchObject({
+      key: "in:9",
+      url: "blob:test/1",
+      preview: "image",
+    });
+    const blob = env.objectUrls.createObjectURL.mock.calls[0]![0];
+    expect(blob.type).toBe("application/octet-stream");
+
+    const starts = env.all("transfer-start").length;
+    peer.fire("data", file.meta);
+    expect(env.all("transfer-start")).toHaveLength(starts);
+    expect(env.last("notice").text).toBe("Duplicate file ID");
+
+    env.session.clearChat();
+    expect(env.objectUrls.revokeObjectURL).toHaveBeenCalledWith("blob:test/1");
+    expect(env.last("chat-clear")).toBeDefined();
+
+    const second = await incoming(peer.sharedKey!, new Uint8Array([1, 2, 3]), 10, "b.png");
+    peer.fire("data", second.meta);
+    peer.fire("file-chunk", { data: second.frames[0]! });
+    await vi.waitFor(() => expect(env.objectUrls.createObjectURL).toHaveBeenCalledTimes(2));
+    env.session.hangup();
+    expect(env.objectUrls.revokeObjectURL).toHaveBeenCalledWith("blob:test/2");
+  });
+
+  it("reports integrity failures, oversized files and refused transfers", async () => {
+    const env = setup();
+    const { peer } = await secureCall(env);
+    const file = await incoming(peer.sharedKey!, new Uint8Array([1, 2, 3]), 4);
+    peer.fire("data", { ...file.meta, hash: "0".repeat(64) });
+    peer.fire("file-chunk", { data: file.frames[0]! });
+    await vi.waitFor(() => expect(env.last("transfer-failed")).toBeDefined());
+    expect(env.last("transfer-failed").key).toBe("in:4");
+    expect(env.last("system").message).toEqual({
+      key: "sys.integrity_fail",
+      params: { name: "cat.png" },
+    });
+    expect(env.objectUrls.createObjectURL).not.toHaveBeenCalled();
+
+    peer.fire("data", { ...file.meta, fileId: 5, size: 600 * 1024 * 1024, chunks: 19_200 });
+    expect(env.last("system").message).toMatchObject({
+      key: "sys.rx_large",
+      params: { size: "600.0 MB" },
+    });
+    const starts = env.all("transfer-start").length;
+    peer.fire("data", { ...file.meta, fileId: 5 });
+    expect(env.all("transfer-start")).toHaveLength(starts);
+    expect(env.last("notice").text).toMatch(/./);
   });
 
   it("hangs up and disposes: tracks stop, socket closes, sounds released", async () => {

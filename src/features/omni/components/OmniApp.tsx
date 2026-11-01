@@ -141,6 +141,10 @@ export function OmniApp({ signalingUrl }: { signalingUrl: string }) {
           onSasMatch={() => session.current?.confirmSas()}
           onSasReject={() => session.current?.rejectSas()}
           onLevel={onLevel}
+          onSend={async (text) => (await session.current?.sendChat(text)) ?? false}
+          onTyping={() => session.current?.typing()}
+          onFiles={(files) => session.current?.sendFiles(files)}
+          onClear={() => session.current?.clearChat()}
         />
       )}
     </div>

@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { initialState, omniReducer, type OmniAction, type OmniState } from "./state";
+import { MAX_MESSAGES, initialState, omniReducer, type OmniAction, type OmniState } from "./state";
 
 const stream = {} as MediaStream;
 const run = (actions: OmniAction[], from: OmniState = initialState) =>
@@ -145,5 +145,90 @@ describe("omniReducer", () => {
     expect(state.call!.noticeId).toBe(first + 1);
     state = omniReducer(state, { type: "notice", text: null });
     expect(state.call!.noticeId).toBe(first + 1);
+  });
+
+  it("logs chat and system items with increasing IDs; peer chat stops typing", () => {
+    let state = run(
+      [
+        { type: "typing", on: true },
+        { type: "chat", from: "me", text: "hi", at: 1 },
+      ],
+      inCall(),
+    );
+    expect(state.call?.typing).toBe(true);
+    state = run(
+      [
+        { type: "chat", from: "peer", text: "hey", at: 2 },
+        { type: "system", message: { key: "sys.channel_ready" }, at: 3 },
+      ],
+      state,
+    );
+    expect(state.call?.typing).toBe(false);
+    expect(state.call?.messages).toEqual([
+      { id: 1, kind: "chat", from: "me", text: "hi", at: 1 },
+      { id: 2, kind: "chat", from: "peer", text: "hey", at: 2 },
+      { id: 3, kind: "system", message: { key: "sys.channel_ready" }, at: 3 },
+    ]);
+    expect(run([{ type: "chat", from: "me", text: "x", at: 1 }])).toBe(initialState);
+  });
+
+  it("keeps only the newest messages", () => {
+    const actions: OmniAction[] = Array.from({ length: MAX_MESSAGES + 5 }, (_, at) => ({
+      type: "chat",
+      from: "me",
+      text: String(at),
+      at,
+    }));
+    const messages = run(actions, inCall()).call!.messages;
+    expect(messages).toHaveLength(MAX_MESSAGES);
+    expect(messages[0]).toMatchObject({ id: 6, text: "5" });
+  });
+
+  it("tracks transfers; received files join the chat log, sent ones don't", () => {
+    const start = (key: string, direction: "in" | "out"): OmniAction => ({
+      type: "transfer-start",
+      transfer: { key, direction, name: `${key}.png`, size: 10, total: 4 },
+    });
+    let state = run(
+      [
+        start("in:1", "in"),
+        start("out:1", "out"),
+        start("in:2", "in"),
+        { type: "transfer-progress", key: "in:1", done: 2 },
+        { type: "transfer-progress", key: "nope", done: 2 },
+      ],
+      inCall(),
+    );
+    expect(state.call?.transfers.map((t) => [t.key, t.done, t.status])).toEqual([
+      ["in:1", 2, "active"],
+      ["out:1", 0, "active"],
+      ["in:2", 0, "active"],
+    ]);
+    state = run(
+      [
+        { type: "transfer-done", key: "in:1", url: "blob:x", preview: "image", at: 5 },
+        { type: "transfer-done", key: "out:1", url: null, preview: null, at: 6 },
+        { type: "transfer-done", key: "missing", url: "blob:y", preview: null, at: 7 },
+      ],
+      state,
+    );
+    expect(state.call?.transfers[0]).toMatchObject({
+      status: "done",
+      done: 4,
+      url: "blob:x",
+      preview: "image",
+    });
+    expect(state.call?.transfers[1]).toMatchObject({ status: "done", url: null });
+    expect(state.call?.messages).toEqual([{ id: 1, kind: "file", transfer: "in:1", at: 5 }]);
+
+    state = run([start("in:3", "in"), { type: "transfer-failed", key: "in:3" }], state);
+    expect(state.call?.transfers.at(-1)).toMatchObject({ key: "in:3", status: "failed" });
+
+    state = omniReducer(state, { type: "chat-clear", at: 9 });
+    expect(state.call?.transfers.map((t) => t.key)).toEqual(["in:2"]);
+    expect(state.call?.messages).toEqual([
+      { id: 2, kind: "system", message: { key: "sys.chat_cleared" }, at: 9 },
+    ]);
+    expect(run([start("in:1", "in"), { type: "chat-clear", at: 1 }])).toBe(initialState);
   });
 });

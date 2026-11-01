@@ -16,6 +16,10 @@ type FakeSession = {
   confirmSas: ReturnType<typeof vi.fn>;
   rejectSas: ReturnType<typeof vi.fn>;
   setLevelListener: ReturnType<typeof vi.fn>;
+  sendChat: ReturnType<typeof vi.fn>;
+  typing: ReturnType<typeof vi.fn>;
+  sendFiles: ReturnType<typeof vi.fn>;
+  clearChat: ReturnType<typeof vi.fn>;
   dispose: ReturnType<typeof vi.fn>;
 };
 
@@ -30,6 +34,10 @@ vi.mock("../client/session", () => ({
     confirmSas = vi.fn();
     rejectSas = vi.fn();
     setLevelListener = vi.fn();
+    sendChat = vi.fn(async () => true);
+    typing = vi.fn();
+    sendFiles = vi.fn();
+    clearChat = vi.fn();
     dispose = vi.fn();
     constructor(public deps: FakeSession["deps"]) {
       sessions.push(this as unknown as FakeSession);
@@ -300,14 +308,18 @@ describe("Omni call", () => {
     expect(more).toHaveAttribute("aria-expanded", "true");
     const menu = screen.getByRole("menu");
     const items = within(menu).getAllByRole("menuitem");
-    expect(items.map((item) => item.textContent)).toEqual(["Flip camera ↻", "Move my preview ↘"]);
+    expect(items.map((item) => item.textContent)).toEqual([
+      "Flip camera ↻",
+      "Send a file ↑",
+      "Move my preview ↘",
+    ]);
     expect(items[0]).toHaveFocus();
     await user.keyboard("{ArrowDown}");
     expect(items[1]).toHaveFocus();
-    await user.keyboard("{ArrowDown}");
-    expect(items[0]).toHaveFocus();
     await user.keyboard("{End}");
-    expect(items[1]).toHaveFocus();
+    expect(items[2]).toHaveFocus();
+    await user.keyboard("{ArrowDown}");
+    expect(items[0]).toHaveFocus();
     await user.keyboard("{Escape}");
     expect(screen.queryByRole("menu")).not.toBeInTheDocument();
     expect(more).toHaveFocus();
@@ -402,5 +414,158 @@ describe("Omni call", () => {
     const { view, session } = await startCall();
     view.unmount();
     expect(session.dispose).toHaveBeenCalled();
+  });
+});
+
+describe("Omni chat and files", () => {
+  const secure = () =>
+    dispatch(
+      { type: "connection", state: "connected", at: Date.now() },
+      { type: "secure", safety: { emoji: "", code: "" }, at: Date.now() },
+      { type: "sas-close" },
+    );
+
+  beforeEach(() => {
+    Element.prototype.scrollIntoView = vi.fn();
+  });
+
+  it("sends messages, signals typing and renders the log as text", async () => {
+    const { user, session } = await startCall();
+    const sheet = screen.getByRole("region", { name: "Chat and files" });
+    const input = within(sheet).getByRole("textbox", { name: "Message" });
+    const send = within(sheet).getByRole("button", { name: "Send message" });
+    expect(send).toBeDisabled();
+    expect(sheet).toHaveTextContent("chat will be available once encrypted channel is ready");
+    secure();
+    expect(send).toBeEnabled();
+    expect(sheet).toHaveTextContent("Paste or drop a file to send it, encrypted.");
+
+    await user.type(input, "hi");
+    expect(session.typing).toHaveBeenCalled();
+    await user.keyboard("{Enter}");
+    expect(session.sendChat).toHaveBeenCalledWith("hi");
+    await waitFor(() => expect(input).toHaveValue(""));
+
+    session.sendChat.mockResolvedValueOnce(false);
+    await user.type(input, "kept{Enter}");
+    expect(input).toHaveValue("kept");
+
+    dispatch(
+      { type: "chat", from: "me", text: "hi", at: Date.now() },
+      { type: "chat", from: "peer", text: "<b>yo</b>", at: Date.now() },
+      { type: "system", message: { key: "sys.sent", params: { name: "a.txt" } }, at: Date.now() },
+    );
+    const log = within(sheet).getByRole("log", { name: "Message" });
+    const items = within(log).getAllByRole("listitem");
+    expect(items[0]).toHaveTextContent(/You.*hi/);
+    expect(items[1]).toHaveTextContent("Peer");
+    expect(items[1]).toHaveTextContent("<b>yo</b>");
+    expect(log.querySelector("b b")).toBeNull();
+    expect(items[2]).toHaveTextContent("✓ Sent “a.txt”.");
+
+    await user.click(within(sheet).getByRole("button", { name: "Clear" }));
+    expect(session.clearChat).toHaveBeenCalled();
+  });
+
+  it("counts unread peer messages, shows a banner and goes to the chat", async () => {
+    const { user } = await startCall();
+    secure();
+    dispatch({ type: "chat", from: "peer", text: "look at this", at: Date.now() });
+    const chat = screen.getByRole("button", { name: /^Chat/ });
+    expect(chat).toHaveAccessibleName("Chat 1 unread");
+    const banner = screen.getByRole("button", { name: /New message/ });
+    expect(banner).toHaveTextContent("look at this");
+    await user.click(banner);
+    expect(Element.prototype.scrollIntoView).toHaveBeenCalled();
+    expect(screen.getByRole("textbox", { name: "Message" })).toHaveFocus();
+
+    dispatch({ type: "typing", on: true });
+    expect(screen.getByTestId("omni-call")).toHaveTextContent("Peer is typing");
+    await user.click(screen.getByRole("button", { name: /Scroll for chat/ }));
+    expect(Element.prototype.scrollIntoView).toHaveBeenCalledTimes(2);
+    await user.click(screen.getByRole("button", { name: /Video/ }));
+    expect(chat).toHaveFocus();
+  });
+
+  it("switches tabs with arrow keys and lists transfers with safe Save links", async () => {
+    const { user } = await startCall();
+    secure();
+    dispatch(
+      {
+        type: "transfer-start",
+        transfer: { key: "out:1", direction: "out", name: "deck.pdf", size: 2048, total: 4 },
+      },
+      { type: "transfer-progress", key: "out:1", done: 1 },
+      {
+        type: "transfer-start",
+        transfer: { key: "in:2", direction: "in", name: "cat.png", size: 10, total: 1 },
+      },
+      { type: "transfer-done", key: "in:2", url: "blob:cat", preview: "image", at: Date.now() },
+    );
+    const log = screen.getByRole("log", { name: "Message" });
+    const preview = within(log).getByRole("img", { name: "cat.png" });
+    expect(preview).toHaveAttribute("src", "blob:cat");
+    expect(within(log).getByText(/cat\.png · 10 B · SHA-256 ok/)).toBeInTheDocument();
+    const save = within(log).getByRole("link", { name: "Save" });
+    expect(save).toHaveAttribute("download", "cat.png");
+    expect(save).not.toHaveAttribute("target");
+
+    const chatTab = screen.getByRole("tab", { name: "Chat" });
+    expect(chatTab).toHaveAttribute("aria-selected", "true");
+    chatTab.focus();
+    await user.keyboard("{ArrowRight}");
+    const filesTab = screen.getByRole("tab", { name: "Files 2" });
+    expect(filesTab).toHaveFocus();
+    expect(filesTab).toHaveAttribute("aria-selected", "true");
+    const panel = screen.getByRole("tabpanel", { name: "Files 2" });
+    const rows = within(panel).getAllByRole("listitem");
+    expect(rows[0]).toHaveTextContent("Sending deck.pdf: 25%");
+    expect(rows[1]).toHaveTextContent("Received · SHA-256 ok");
+    expect(within(rows[1]!).getByRole("link", { name: "Save" })).toHaveAttribute(
+      "download",
+      "cat.png",
+    );
+    await user.keyboard("{Home}");
+    expect(chatTab).toHaveFocus();
+  });
+
+  it("sends picked, pasted and dropped files; pasted text stays text", async () => {
+    const { user, session } = await startCall();
+    secure();
+    const file = new File(["x"], "a.txt", { type: "text/plain" });
+    await user.upload(screen.getByTestId("omni-file-input"), file);
+    expect(session.sendFiles).toHaveBeenLastCalledWith([file]);
+    expect(screen.getByRole("tab", { name: "Files" })).toHaveAttribute("aria-selected", "true");
+
+    const dialog = screen.getByTestId("omni-call");
+    const paste = (types: string[], files: File[]) => {
+      const event = new Event("paste", { bubbles: true, cancelable: true });
+      Object.assign(event, { clipboardData: { types, files } });
+      act(() => void dialog.dispatchEvent(event));
+      return event;
+    };
+    expect(paste(["Files"], [file]).defaultPrevented).toBe(true);
+    expect(session.sendFiles).toHaveBeenCalledTimes(2);
+    expect(paste(["text/plain", "Files"], [file]).defaultPrevented).toBe(false);
+    expect(session.sendFiles).toHaveBeenCalledTimes(2);
+
+    const drag = (type: string, files: File[] = []) => {
+      const event = new Event(type, { bubbles: true, cancelable: true });
+      Object.assign(event, { dataTransfer: { types: ["Files"], files } });
+      act(() => void dialog.dispatchEvent(event));
+    };
+    drag("dragenter");
+    expect(dialog).toHaveTextContent("Drop files to send");
+    drag("dragleave");
+    expect(dialog).not.toHaveTextContent("Drop files to send");
+    drag("dragenter");
+    drag("drop", [file]);
+    expect(dialog).not.toHaveTextContent("Drop files to send");
+    expect(session.sendFiles).toHaveBeenCalledTimes(3);
+
+    const click = vi.spyOn(HTMLInputElement.prototype, "click");
+    await user.click(screen.getByRole("button", { name: "More" }));
+    await user.click(screen.getByRole("menuitem", { name: /Send a file/ }));
+    expect(click).toHaveBeenCalled();
   });
 });

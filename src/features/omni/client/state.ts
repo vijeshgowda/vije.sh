@@ -1,4 +1,5 @@
 import type { SafetyString } from "./core/crypto";
+import type { PreviewKind } from "./core/files";
 import type { QualityLevel } from "./core/quality";
 import type { TranslationKey } from "../i18n";
 
@@ -9,6 +10,30 @@ export type Message = { key: TranslationKey; params?: Params };
 export type Alert = Message & { tone: "error" | "info"; text?: string; retry?: boolean };
 export type Connection = "connecting" | "connected" | "reconnecting" | "failed";
 export type LinkType = "direct" | "relayed" | "unknown";
+
+/** Oldest chat items are dropped past this, so a long call can't grow the log without bound. */
+export const MAX_MESSAGES = 500;
+/** As in the original: a chat message is cut to 4000 characters, on both ends. */
+export const MAX_CHAT = 4_000;
+
+export type ChatItem =
+  | { id: number; kind: "chat"; from: "me" | "peer"; text: string; at: number }
+  | { id: number; kind: "system"; message: Message; at: number }
+  | { id: number; kind: "file"; transfer: string; at: number };
+
+export type Transfer = {
+  /** `in:<fileId>` or `out:<fileId>`; the two directions have separate ID spaces. */
+  key: string;
+  direction: "in" | "out";
+  name: string;
+  size: number;
+  done: number;
+  total: number;
+  status: "active" | "done" | "failed";
+  /** Object URL of a received, verified file; owned (and revoked) by the session. */
+  url: string | null;
+  preview: PreviewKind | null;
+};
 
 export type CallState = {
   code: string;
@@ -25,6 +50,10 @@ export type CallState = {
   notice: string | null;
   /** Bumped on every notice, so a repeated message shows again. */
   noticeId: number;
+  messages: ChatItem[];
+  nextId: number;
+  transfers: Transfer[];
+  typing: boolean;
 };
 
 export type OmniState = {
@@ -64,6 +93,23 @@ export type OmniAction =
   | { type: "local-tracks"; facing: "user" | "environment" }
   | { type: "nudge"; on: boolean }
   | { type: "ending"; key: TranslationKey }
+  | { type: "chat"; from: "me" | "peer"; text: string; at: number }
+  | { type: "system"; message: Message; at: number }
+  | { type: "typing"; on: boolean }
+  | {
+      type: "transfer-start";
+      transfer: Pick<Transfer, "key" | "direction" | "name" | "size" | "total">;
+    }
+  | { type: "transfer-progress"; key: string; done: number }
+  | {
+      type: "transfer-done";
+      key: string;
+      url: string | null;
+      preview: PreviewKind | null;
+      at: number;
+    }
+  | { type: "transfer-failed"; key: string }
+  | { type: "chat-clear"; at: number }
   | { type: "reset"; alert?: Alert | null }
   | { type: "dismiss-alert" };
 
@@ -97,10 +143,30 @@ const newCall: Omit<CallState, "code"> = {
   nudge: false,
   notice: null,
   noticeId: 0,
+  messages: [],
+  nextId: 1,
+  transfers: [],
+  typing: false,
 };
 
 function withCall(state: OmniState, patch: Partial<CallState>): OmniState {
   return state.call ? { ...state, call: { ...state.call, ...patch } } : state;
+}
+
+type NewItem =
+  | Omit<Extract<ChatItem, { kind: "chat" }>, "id">
+  | Omit<Extract<ChatItem, { kind: "system" }>, "id">
+  | Omit<Extract<ChatItem, { kind: "file" }>, "id">;
+
+function addItem(call: CallState, item: NewItem): Partial<CallState> {
+  const messages = [...call.messages, { ...item, id: call.nextId } as ChatItem];
+  return { messages: messages.slice(-MAX_MESSAGES), nextId: call.nextId + 1 };
+}
+
+function patchTransfer(call: CallState, key: string, patch: Partial<Transfer>): Transfer[] {
+  return call.transfers.map((transfer) =>
+    transfer.key === key ? { ...transfer, ...patch } : transfer,
+  );
 }
 
 export function omniReducer(state: OmniState, action: OmniAction): OmniState {
@@ -175,6 +241,78 @@ export function omniReducer(state: OmniState, action: OmniAction): OmniState {
       return withCall(state, { nudge: action.on });
     case "ending":
       return withCall(state, { ending: action.key, sasOpen: false });
+    case "chat": {
+      const call = state.call;
+      if (!call) return state;
+      const item = { kind: "chat", from: action.from, text: action.text, at: action.at } as const;
+      return withCall(state, {
+        ...addItem(call, item),
+        typing: action.from === "peer" ? false : call.typing,
+      });
+    }
+    case "system":
+      return state.call
+        ? withCall(
+            state,
+            addItem(state.call, { kind: "system", message: action.message, at: action.at }),
+          )
+        : state;
+    case "typing":
+      return withCall(state, { typing: action.on });
+    case "transfer-start": {
+      const call = state.call;
+      if (!call) return state;
+      const transfer: Transfer = {
+        ...action.transfer,
+        done: 0,
+        status: "active",
+        url: null,
+        preview: null,
+      };
+      return withCall(state, {
+        transfers: [...call.transfers.filter((t) => t.key !== transfer.key), transfer],
+      });
+    }
+    case "transfer-progress":
+      return state.call
+        ? withCall(state, {
+            transfers: patchTransfer(state.call, action.key, { done: action.done }),
+          })
+        : state;
+    case "transfer-done": {
+      const call = state.call;
+      const transfer = call?.transfers.find((t) => t.key === action.key);
+      if (!call || !transfer) return state;
+      const transfers = patchTransfer(call, action.key, {
+        status: "done",
+        done: transfer.total,
+        url: action.url,
+        preview: action.preview,
+      });
+      // A received file also shows in the chat log, with its preview and Save link.
+      const item = action.url
+        ? addItem(call, { kind: "file", transfer: action.key, at: action.at })
+        : {};
+      return withCall(state, { transfers, ...item });
+    }
+    case "transfer-failed":
+      return state.call
+        ? withCall(state, {
+            transfers: patchTransfer(state.call, action.key, { status: "failed", url: null }),
+          })
+        : state;
+    case "chat-clear": {
+      const call = state.call;
+      if (!call) return state;
+      return withCall(state, {
+        messages: [],
+        transfers: call.transfers.filter((transfer) => transfer.status === "active"),
+        ...addItem(
+          { ...call, messages: [] },
+          { kind: "system", message: { key: "sys.chat_cleared" }, at: action.at },
+        ),
+      });
+    }
     case "reset":
       return { ...initialState, attempt: state.attempt, alert: action.alert ?? null };
     case "dismiss-alert":

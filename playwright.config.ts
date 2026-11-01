@@ -1,7 +1,7 @@
 import { existsSync } from "node:fs";
 import { defineConfig, devices } from "@playwright/test";
-import { env } from "./src/lib/env";
 import BLOG_POSTS from "./tests/e2e/blog-posts.json";
+import { OMNI_SIGNALING_PORT, OMNI_SIGNALING_URL } from "./tests/e2e/omni-signaling";
 
 const PORT = 3200;
 const CONTENT_SPECS = /notes\.spec\.ts$/;
@@ -41,28 +41,40 @@ export default defineConfig({
       workers: 1,
     },
   ],
-  webServer: {
-    // production build; feeds serve offline results so tests never depend on third-party APIs.
-    // BLOG_ONLY pins the git posts to tests/e2e/blog-posts.json, so new posts don't change counts.
-    // CI builds once in an earlier step (with the same variables) and sets E2E_SKIP_BUILD.
-    command: `${process.env.E2E_SKIP_BUILD ? "" : "npm run build && "}npx next start -p ${PORT}`,
-    url: `http://localhost:${PORT}`,
-    reuseExistingServer: !CI,
-    timeout: 240_000,
-    env: {
-      FEEDS_OFFLINE: "1",
-      NEXT_PUBLIC_OMNI_SIGNALING_URL: env("omni").NEXT_PUBLIC_OMNI_SIGNALING_URL,
-      BLOG_ONLY: BLOG_POSTS.join(","),
-      NEXT_TELEMETRY_DISABLED: "1",
-      DATABASE_URL: TEST_DATABASE_URL,
-      DATABASE_CA_CERT: "",
-      AUTH_MODE: "test",
-      TEST_AUTH_SECRET: process.env.TEST_AUTH_SECRET,
-      NEXT_PUBLIC_SUPABASE_URL: "",
-      NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY: "",
-      SUPABASE_SECRET_KEY: "",
-      NEXT_PUBLIC_TURNSTILE_SITE_KEY: "1x00000000000000000000AA",
-      TURNSTILE_SECRET_KEY: "1x0000000000000000000000000000000AA",
+  webServer: [
+    {
+      // The vendored Omni signalling server, installed and started with Render's own commands, so
+      // e2e runs the production server code. It accepts only this app's origin.
+      command:
+        "npm ci --omit=dev --no-audit --no-fund --prefix services/omni-signaling && npm start --prefix services/omni-signaling",
+      url: `http://localhost:${OMNI_SIGNALING_PORT}/health`,
+      reuseExistingServer: !CI,
+      timeout: 60_000,
+      env: { PORT: String(OMNI_SIGNALING_PORT), ALLOWED_ORIGINS: `http://localhost:${PORT}` },
     },
-  },
+    {
+      // production build; feeds serve offline results so tests never depend on third-party APIs.
+      // BLOG_ONLY pins the git posts to tests/e2e/blog-posts.json, so new posts don't change counts.
+      // CI builds once in an earlier step (with the same variables) and sets E2E_SKIP_BUILD.
+      command: `${process.env.E2E_SKIP_BUILD ? "" : "npm run build && "}npx next start -p ${PORT}`,
+      url: `http://localhost:${PORT}`,
+      reuseExistingServer: !CI,
+      timeout: 240_000,
+      env: {
+        FEEDS_OFFLINE: "1",
+        NEXT_PUBLIC_OMNI_SIGNALING_URL: OMNI_SIGNALING_URL,
+        BLOG_ONLY: BLOG_POSTS.join(","),
+        NEXT_TELEMETRY_DISABLED: "1",
+        DATABASE_URL: TEST_DATABASE_URL,
+        DATABASE_CA_CERT: "",
+        AUTH_MODE: "test",
+        TEST_AUTH_SECRET: process.env.TEST_AUTH_SECRET,
+        NEXT_PUBLIC_SUPABASE_URL: "",
+        NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY: "",
+        SUPABASE_SECRET_KEY: "",
+        NEXT_PUBLIC_TURNSTILE_SITE_KEY: "1x00000000000000000000AA",
+        TURNSTILE_SECRET_KEY: "1x0000000000000000000000000000000AA",
+      },
+    },
+  ],
 });

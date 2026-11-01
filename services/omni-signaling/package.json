@@ -1,0 +1,19 @@
+{
+  "name": "omni-signaling",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Omni signalling server (WebSocket relay for /lab/omni). Render deploys this folder.",
+  "type": "module",
+  "main": "index.js",
+  "scripts": {
+    "start": "node index.js",
+    "dev": "ALLOWED_ORIGINS=http://localhost:3000 PORT=8080 node --watch index.js",
+    "test": "node --test test/*.test.js"
+  },
+  "dependencies": {
+    "ws": "^8.18.0"
+  },
+  "engines": {
+    "node": ">=18"
+  }
+}

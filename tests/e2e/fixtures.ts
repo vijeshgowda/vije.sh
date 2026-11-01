@@ -1,5 +1,5 @@
 import { randomBytes } from "node:crypto";
-import { test as base, expect, type BrowserContext } from "@playwright/test";
+import { test as base, expect, type BrowserContext, type Page } from "@playwright/test";
 import AxeBuilder from "@axe-core/playwright";
 import { signTestSession, TEST_SESSION_COOKIE } from "../../src/features/auth/test-session";
 import { testClient } from "../helpers/db";
@@ -134,8 +134,30 @@ const signedIn =
   };
 
 /**
- * Shared fixture: blocks every third-party request (tests must not depend on live APIs) and fails
- * the test on any page error or console error. The `as*` fixtures create a user in the test
+ * Blocks every third-party request on `page` (tests must not depend on live APIs) and collects its
+ * page errors and console errors; the caller asserts the returned list is empty.
+ */
+export async function guardPage(page: Page, baseURL: string): Promise<string[]> {
+  const errors: string[] = [];
+  await page.route("**/*", (route) =>
+    route.request().url().startsWith(baseURL) ? route.continue() : route.abort("blockedbyclient"),
+  );
+  page.on("pageerror", (e) => errors.push(e.message));
+  page.on("console", (m) => {
+    // aborted third-party fetches log as network errors; those are expected here
+    if (
+      m.type() === "error" &&
+      !/net::ERR_BLOCKED_BY_CLIENT|Failed to load resource/.test(m.text())
+    ) {
+      errors.push(m.text());
+    }
+  });
+  return errors;
+}
+
+/**
+ * Shared fixture: guardPage() on the test's page, failing the test on any page error or console
+ * error. The `as*` fixtures create a user in the test
  * database, sign the browser in as them and delete them afterwards; `asOwner` signs in as the one
  * owner (ensureOwner), which is kept.
  */
@@ -153,22 +175,7 @@ export const test = base.extend<Fixtures>({
   },
   errors: [
     async ({ page, baseURL }, use) => {
-      const errors: string[] = [];
-      await page.route("**/*", (route) =>
-        route.request().url().startsWith(baseURL!)
-          ? route.continue()
-          : route.abort("blockedbyclient"),
-      );
-      page.on("pageerror", (e) => errors.push(e.message));
-      page.on("console", (m) => {
-        // aborted third-party fetches log as network errors; those are expected here
-        if (
-          m.type() === "error" &&
-          !/net::ERR_BLOCKED_BY_CLIENT|Failed to load resource/.test(m.text())
-        ) {
-          errors.push(m.text());
-        }
-      });
+      const errors = await guardPage(page, baseURL!);
       await use(errors);
       expect(errors, "console or page errors").toEqual([]);
     },

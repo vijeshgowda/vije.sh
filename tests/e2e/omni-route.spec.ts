@@ -1,7 +1,7 @@
-import { env } from "../../src/lib/env";
 import { expect, expectAccessible, test } from "./fixtures";
+import { OMNI_SIGNALING_URL } from "./omni-signaling";
 
-const signaling = new URL(env("omni").NEXT_PUBLIC_OMNI_SIGNALING_URL);
+const signaling = new URL(OMNI_SIGNALING_URL);
 
 test.use({
   launchOptions: {

@@ -35,3 +35,6 @@ jobs:
           fi
       - name: Audit locked runtime dependencies
         run: npm audit --package-lock-only --omit=dev --audit-level=moderate
+      - name: Audit the Omni signalling server (deployed to Render)
+        run: npm audit --package-lock-only --omit=dev --audit-level=moderate
+        working-directory: services/omni-signaling

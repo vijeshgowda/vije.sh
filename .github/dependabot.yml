@@ -17,3 +17,16 @@ updates:
     commit-message:
       prefix: build
       include: scope
+  # The Omni signalling server Render deploys (its own package.json and lockfile)
+  - package-ecosystem: npm
+    directory: /services/omni-signaling
+    schedule:
+      interval: cron
+      cronjob: "0 9 * * *"
+    ignore:
+      - dependency-name: "*"
+        update-types:
+          - version-update:semver-major
+    commit-message:
+      prefix: build
+      include: scope

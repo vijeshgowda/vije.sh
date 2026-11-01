@@ -19,6 +19,7 @@
     "test:int": "vitest run --project integration",
     "test:coverage": "vitest run --coverage",
     "test:e2e": "playwright test",
+    "test:signaling": "npm ci --no-audit --no-fund --prefix services/omni-signaling && npm test --prefix services/omni-signaling",
     "db:migrate": "npx --yes supabase db push",
     "db:test:setup": "tsx scripts/db-test-setup.ts",
     "check": "npm run blog:assets && npm run lint && npm run typecheck && npm run format:check && npm test"

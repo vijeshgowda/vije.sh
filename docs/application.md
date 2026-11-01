@@ -264,9 +264,13 @@ src/features/forum/
 ### Omni (Lab RTC)
 
 `src/features/omni/client/core/` contains framework-free browser modules. Importing them does not
-open a socket, request media, or create an audio context. The `/lab/omni` route shell is static;
-the later island will load the core on Create/Join, with recorder and QR as separate lazy chunks.
-There is no service worker. The route links a standalone web manifest, and the signalling endpoint
+open a socket, request media, or create an audio context. The `/lab/omni` route shell is static
+and renders one client island, `components/OmniApp.tsx`. Its state lives in a plain reducer
+(`client/state.ts`). The island loads `client/session.ts` (`OmniSession`, which owns signalling,
+media, the peer, stats and the mic meter) with a dynamic import on Create/Join, prefetched on
+pointer enter or focus. Recorder and QR will be separate lazy chunks. ICE servers (Google STUN and
+the Metered TURN relay from the original `config.js`) are in `config.ts`. Those TURN credentials
+are public by design; short-lived Metered credentials are a follow-up. There is no service worker. The route links a standalone web manifest, and the signalling endpoint
 is configured by `NEXT_PUBLIC_OMNI_SIGNALING_URL` (default
 `wss://omni-8t2t.onrender.com`) in `src/lib/env.ts`.
 
@@ -277,12 +281,17 @@ media; every other page keeps camera and microphone disabled and has no signalli
 Nothing contacts the signalling server before Create/Join: as in the original Omni, that click's
 WebSocket connect wakes the Render instance, with the "cold start may take ~30s" message and a
 30-second progress bar while it does. Playwright blocks third-party requests; tests never depend on
-Render being reachable.
+Render being reachable. `tests/e2e/omni-call.spec.ts` replaces the signalling server with an in-test
+relay (`page.routeWebSocket`) and runs a real two-page call on fake media.
 
 - `SignalingClient` accepts a WebSocket URL; `PeerConnection` accepts signalling, ICE servers and
   the optional room password. Both expose typed `.on(event, detail => ...)` subscriptions,
   returning an unsubscribe function. Handle `error` events and rejected async operations in the
   island; errors are not silently swallowed.
+- The island never renders time while prerendering (`useNow()`), and keeps per-second timers
+  outside its `role="status"` regions. The call is a modal `<dialog data-theme="dark">` filling the
+  viewport: Esc closes the menu or safety check, never the call, and unmounting (End, palette, Back)
+  disposes the session. Controls hide 4 s after a tap and come back on a tap, mouse move or focus.
 - On leaving the island, call `PeerConnection.hangup()`, `SignalingClient.disconnect()` and
   `NotificationSounds.dispose()`, and unsubscribe listeners. These stop owned tracks, close
   connections/audio, cancel pending retries and reject waiting transfers.
@@ -294,7 +303,9 @@ Render being reachable.
 - Received blobs always use `application/octet-stream` and sanitised download names. Preview only
   the allow-listed image/video formats, never SVG/HTML or a new-tab blob link. `makeQrPath()` returns
   SVG geometry for React elements rather than an HTML string; the Nayuki MIT notice is retained.
-- Translation keys and all six dictionaries are ported unchanged. Language is passed explicitly
+- Translation keys and all six dictionaries are ported unchanged. Strings added for vije.sh (the
+  lobby steps, call states and error alerts) are in `i18n/additions.json`, in the same six languages;
+  a test keeps them in parity and stops them from overriding an original key. Language is passed explicitly
   to `t()`, not written to the site's document. `languagePreference` uses the shared stored-value
   helper with `vj:omni-lang` and an English server snapshot.
 

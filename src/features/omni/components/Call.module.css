@@ -1,0 +1,608 @@
+/* The call: a full-screen modal <dialog> with data-theme="dark", so tokens resolve to dark values. */
+
+.call {
+  position: fixed;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  max-width: none;
+  max-height: none;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  background: var(--bg);
+  color: var(--ink);
+  overflow: hidden;
+  font-size: 16px;
+}
+.call:focus {
+  outline: none;
+}
+
+.stage {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  background: var(--bg);
+  isolation: isolate;
+  touch-action: manipulation;
+  user-select: none;
+  -webkit-user-select: none;
+}
+.stage.idle {
+  cursor: none;
+}
+
+.tile {
+  position: absolute;
+  display: grid;
+  place-items: center;
+  overflow: hidden;
+  background: radial-gradient(60% 60% at 50% 45%, var(--chip), var(--bg));
+}
+.tile::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(transparent 50%, color-mix(in srgb, var(--ink) 2.2%, transparent) 50%)
+    0 0 / 100% 4px;
+  pointer-events: none;
+}
+.tile video {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+.mirror video {
+  transform: scaleX(-1);
+}
+.feed {
+  inset: 0;
+  z-index: 0;
+}
+.off {
+  font: 500 0.62rem var(--font-mono);
+  letter-spacing: 0.1em;
+  color: var(--pin);
+  text-transform: uppercase;
+  position: relative;
+}
+.feed .off {
+  font-size: 0.8rem;
+}
+.avatar {
+  width: clamp(5rem, 16vmin, 9rem);
+  aspect-ratio: 1;
+  display: grid;
+  place-items: center;
+  border: 1px solid var(--line2);
+  background: var(--card);
+  font: 700 clamp(2rem, 6vmin, 3.6rem) var(--font-mono);
+  box-shadow:
+    0 0 0 0.5rem color-mix(in srgb, var(--ink) 3%, transparent),
+    0 0 0 1.1rem color-mix(in srgb, var(--ink) 1.5%, transparent);
+  position: relative;
+}
+.tag {
+  position: absolute;
+  left: 0.4rem;
+  bottom: 0.35rem;
+  font: 500 0.58rem var(--font-mono);
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--mute);
+  z-index: 1;
+}
+.feed .tag {
+  display: none;
+}
+
+/* self-view: snaps to a corner, clear of the top bar and the dock */
+.pip {
+  z-index: 3;
+  width: clamp(7rem, 20vw, 15rem);
+  aspect-ratio: 16 / 10;
+  border: 1px solid color-mix(in srgb, var(--ink) 28%, transparent);
+  box-shadow: var(--sh3);
+  cursor: grab;
+  touch-action: none;
+}
+.pip .avatar {
+  width: 42%;
+  font-size: 1.2rem;
+  box-shadow: none;
+}
+.pip:focus-visible {
+  outline: 2px solid var(--red);
+  outline-offset: 2px;
+}
+.dragging {
+  cursor: grabbing;
+  border-color: var(--red);
+  z-index: 6;
+}
+.tl,
+.tr {
+  top: calc(env(safe-area-inset-top) + 4.6rem);
+}
+.bl,
+.br {
+  bottom: calc(env(safe-area-inset-bottom) + 8.5rem);
+}
+.tl,
+.bl {
+  left: clamp(0.8rem, 3vw, 1.6rem);
+}
+.tr,
+.br {
+  right: clamp(0.8rem, 3vw, 1.6rem);
+}
+
+.top {
+  position: absolute;
+  inset: 0 0 auto;
+  z-index: 4;
+  display: flex;
+  align-items: flex-start;
+  gap: 0.75rem;
+  padding: calc(env(safe-area-inset-top) + 0.8rem) clamp(0.8rem, 3vw, 1.6rem) 3rem;
+  background: linear-gradient(color-mix(in srgb, var(--bg) 78%, transparent), transparent);
+  pointer-events: none;
+}
+.top > * {
+  pointer-events: auto;
+}
+.id {
+  display: grid;
+  gap: 0.2rem;
+  min-width: 0;
+}
+.id b {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font: 500 0.74rem var(--font-mono);
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+.id span {
+  font: 400 0.64rem var(--font-mono);
+  color: var(--mute);
+  letter-spacing: 0.06em;
+}
+.spacer {
+  flex: 1;
+}
+.badges {
+  display: flex;
+  gap: 0.35rem;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+}
+.badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  font: 500 0.64rem var(--font-mono);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  font-variant-numeric: tabular-nums;
+  padding: 0.32rem 0.5rem;
+  background: color-mix(in srgb, var(--bg) 60%, transparent);
+  border: 1px solid color-mix(in srgb, var(--ink) 14%, transparent);
+  color: var(--ink);
+  backdrop-filter: blur(8px);
+}
+.led {
+  display: inline-block;
+  width: 0.5rem;
+  height: 0.5rem;
+  border-radius: 50%;
+  background: var(--line2);
+  flex: none;
+}
+.ledOn {
+  background: var(--ok);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--ok) 20%, transparent);
+}
+.ledWarn,
+.securing .led {
+  background: var(--warn);
+}
+@media (prefers-reduced-motion: no-preference) {
+  .securing .led {
+    animation: hb 1.2s infinite;
+  }
+}
+.bars {
+  display: inline-flex;
+  gap: 2px;
+  align-items: flex-end;
+  height: 0.7rem;
+}
+.bars i {
+  width: 3px;
+  background: var(--line2);
+}
+.bars i:nth-child(1) {
+  height: 30%;
+}
+.bars i:nth-child(2) {
+  height: 55%;
+}
+.bars i:nth-child(3) {
+  height: 80%;
+}
+.bars i:nth-child(4) {
+  height: 100%;
+}
+.bars[data-l="good"] i {
+  background: var(--ok);
+}
+.bars[data-l="fair"] i:nth-child(-n + 3) {
+  background: var(--warn);
+}
+.bars[data-l="poor"] i:nth-child(-n + 2) {
+  background: var(--red);
+}
+
+.dock {
+  position: absolute;
+  inset: auto 0 0;
+  z-index: 4;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.55rem;
+  padding: 3rem 0.75rem calc(env(safe-area-inset-bottom) + 1.4rem);
+  background: linear-gradient(transparent, color-mix(in srgb, var(--bg) 82%, transparent));
+  pointer-events: none;
+}
+.dock > * {
+  pointer-events: auto;
+}
+/* the bar, not the More button, anchors the menu, so it stays on screen at 320 px */
+.bar {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+.ctl {
+  position: relative;
+  display: inline-flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.2rem;
+  width: 3.6rem;
+  height: 3.6rem;
+  border: 1px solid color-mix(in srgb, var(--ink) 22%, transparent);
+  background: color-mix(in srgb, var(--card) 70%, transparent);
+  color: var(--ink);
+  font: 500 0.56rem var(--font-mono);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  cursor: var(--cur-hand, pointer);
+  backdrop-filter: blur(10px);
+}
+.ctl svg {
+  width: 1.2rem;
+  height: 1.2rem;
+}
+.ctl:hover {
+  border-color: var(--ink);
+}
+.ctl:focus-visible {
+  outline: 2px solid var(--red);
+  outline-offset: 2px;
+}
+.toggle[aria-pressed="false"] {
+  background: var(--ink);
+  color: var(--bg);
+  border-color: var(--ink);
+}
+.strike {
+  display: none;
+}
+.toggle[aria-pressed="false"] .strike {
+  display: block;
+}
+.ctl[aria-disabled="true"] {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+.end {
+  width: auto;
+  padding: 0 1.2rem;
+  border: 0;
+  background: linear-gradient(225deg, transparent 7px, var(--red) 7.5px) border-box;
+  color: var(--chip-t);
+  font-size: 0.66rem;
+  flex-direction: row;
+  gap: 0.5rem;
+  filter: drop-shadow(0 6px 12px color-mix(in srgb, var(--red) 35%, transparent));
+}
+.end:hover {
+  filter: drop-shadow(0 8px 16px color-mix(in srgb, var(--red) 50%, transparent));
+}
+.sep {
+  width: 1px;
+  align-self: stretch;
+  margin: 0.4rem 0.15rem;
+  background: color-mix(in srgb, var(--ink) 18%, transparent);
+}
+.meter {
+  display: grid;
+  grid-template-columns: repeat(12, 1fr);
+  gap: 2px;
+  width: 100%;
+  height: 0.28rem;
+  position: absolute;
+  left: 0;
+  bottom: -0.55rem;
+}
+.meter i {
+  background: color-mix(in srgb, var(--ink) 14%, transparent);
+}
+.meter i.on {
+  background: var(--ink);
+}
+.meter i.on:nth-child(n + 10) {
+  background: var(--red);
+}
+.nudge,
+.notice {
+  font: 500 0.7rem var(--font-mono);
+  padding: 0.4rem 0.7rem;
+  margin: 0;
+}
+.nudge,
+.notice {
+  max-width: min(30rem, 100%);
+  background: color-mix(in srgb, var(--card) 88%, transparent);
+  border: 1px solid color-mix(in srgb, var(--ink) 18%, transparent);
+  border-left: 3px solid var(--warn);
+  color: var(--ink);
+}
+.nudge {
+  border-left-color: var(--red);
+}
+
+.menu {
+  position: absolute;
+  bottom: calc(100% + 0.6rem);
+  right: 0;
+  min-width: min(14.5rem, calc(100vw - 1.5rem));
+  background: var(--card);
+  color: var(--ink);
+  border: 1px solid var(--ink);
+  box-shadow: var(--sh3);
+  padding: 0.3rem;
+  z-index: 6;
+  display: flex;
+  flex-direction: column;
+}
+.menu button {
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+  align-items: center;
+  min-height: 2.75rem;
+  padding: 0 0.75rem;
+  border: 0;
+  background: none;
+  color: var(--ink);
+  font: 500 0.74rem var(--font-mono);
+  text-align: left;
+  cursor: var(--cur-hand, pointer);
+}
+.menu button:hover,
+.menu button:focus-visible {
+  background: var(--faint);
+  outline: none;
+}
+.menu button:focus-visible {
+  box-shadow: inset 2px 0 0 var(--red);
+}
+.menu small {
+  color: var(--mute);
+  font-size: 0.62rem;
+}
+.menu .narrow {
+  display: none;
+}
+
+.sas {
+  position: absolute;
+  left: 50%;
+  top: calc(env(safe-area-inset-top) + 4.6rem);
+  transform: translateX(-50%);
+  z-index: 5;
+  width: min(25rem, calc(100% - 1.5rem));
+  background: var(--card);
+  color: var(--ink);
+  border: 1px solid var(--ink);
+  box-shadow: var(--sh3);
+  padding: 1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.55rem;
+}
+.sas header {
+  display: flex;
+  justify-content: space-between;
+  font: 500 0.66rem var(--font-mono);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--mute);
+}
+.sas header span:first-child {
+  color: var(--red-t);
+}
+.emoji {
+  font-size: 1.9rem;
+  letter-spacing: 0.3rem;
+  line-height: 1;
+}
+.sas code {
+  font: 700 1rem var(--font-mono);
+  letter-spacing: 0.2em;
+}
+.sas p {
+  margin: 0;
+  font-size: 0.85rem;
+  color: var(--mute);
+}
+.row {
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.recon,
+.over {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+}
+.recon {
+  z-index: 7;
+  font: 500 0.8rem var(--font-mono);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--ink);
+  background: color-mix(in srgb, var(--bg) 55%, transparent);
+  pointer-events: none;
+}
+.recon span::after {
+  content: "_";
+  color: var(--red);
+}
+@media (prefers-reduced-motion: no-preference) {
+  .recon span::after {
+    animation: blink 1s steps(1) infinite;
+  }
+}
+.over {
+  z-index: 8;
+  background: color-mix(in srgb, var(--bg) 72%, transparent);
+  backdrop-filter: blur(6px);
+}
+.over > div {
+  width: min(24rem, calc(100% - 2rem));
+  border: 1px solid var(--ink);
+  border-left: 4px solid var(--red);
+  background: var(--card);
+  box-shadow: var(--sh3);
+  padding: 1rem;
+  display: grid;
+  gap: 0.4rem;
+}
+.over small {
+  font: 500 0.64rem var(--font-mono);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--red-t);
+}
+.over p {
+  margin: 0;
+}
+
+/* tap the video to show or hide the controls */
+@media (prefers-reduced-motion: no-preference) {
+  .top,
+  .dock {
+    transition:
+      opacity 0.3s,
+      transform 0.3s;
+  }
+  .pip:not(.dragging) {
+    transition:
+      top 0.35s cubic-bezier(0.2, 0.8, 0.2, 1),
+      bottom 0.35s cubic-bezier(0.2, 0.8, 0.2, 1),
+      left 0.35s cubic-bezier(0.2, 0.8, 0.2, 1),
+      right 0.35s cubic-bezier(0.2, 0.8, 0.2, 1);
+  }
+  .ctl {
+    transition:
+      background-color 0.15s,
+      color 0.15s,
+      border-color 0.15s;
+  }
+}
+.idle .top {
+  opacity: 0;
+  transform: translateY(-0.6rem);
+  pointer-events: none;
+}
+.idle .dock {
+  opacity: 0;
+  transform: translateY(0.8rem);
+}
+.idle .dock > *,
+.idle .top > * {
+  pointer-events: none;
+}
+
+@keyframes hb {
+  0%,
+  45%,
+  100% {
+    opacity: 1;
+  }
+  22% {
+    opacity: 0.25;
+  }
+}
+@keyframes blink {
+  50% {
+    opacity: 0;
+  }
+}
+
+@media (max-width: 44rem) {
+  .pip {
+    width: clamp(6rem, 30vw, 9rem);
+    aspect-ratio: 3 / 4;
+  }
+  .dock {
+    --s: clamp(2.6rem, calc((100vw - 3.5rem) / 6), 3.25rem);
+  }
+  .bar {
+    gap: 0.4rem;
+  }
+  .ctl {
+    width: var(--s);
+    height: var(--s);
+    font-size: 0.5rem;
+  }
+  .wide,
+  .sep {
+    display: none;
+  }
+  .end {
+    width: var(--s);
+    padding: 0;
+  }
+  /* visually hidden, so "End" stays the button's accessible name */
+  .endText {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+    white-space: nowrap;
+  }
+}
+@media (max-width: 24rem) {
+  .flip {
+    display: none;
+  }
+  .menu .narrow {
+    display: flex;
+  }
+}

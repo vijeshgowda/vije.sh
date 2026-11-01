@@ -340,6 +340,18 @@ describe("negotiation, media and teardown", () => {
     expect(remote).toHaveBeenCalledWith({ stream });
     expect(state).toHaveBeenCalledWith({ state: "new" });
   });
+  it("lets only the initiator make the first offer, then the joiner may renegotiate", async () => {
+    const { rtc, signaling } = await setup(false);
+    await rtc.onnegotiationneeded?.();
+    expect(rtc.setLocalDescription).not.toHaveBeenCalled();
+    expect(signaling.sendSignal).not.toHaveBeenCalled();
+    rtc.remoteDescription = { type: "answer", sdp: "v=0" };
+    await rtc.onnegotiationneeded?.();
+    expect(signaling.sendSignal).toHaveBeenCalledWith({
+      type: "description",
+      sdp: { type: "offer", sdp: "v=0" },
+    });
+  });
   it("only the initiator restarts ICE and suppresses concurrent restarts", async () => {
     for (const initiator of [true, false]) {
       const { peer, rtc } = await setup(initiator);

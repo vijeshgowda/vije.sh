@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { isLanguage, LANGUAGES, t } from "./index";
 import dictionaries from "./dictionaries.json";
+import additions from "./additions.json";
 
 describe("original Omni dictionaries", () => {
   it("offers all six native names, with Kannada second", () => {
@@ -47,5 +48,21 @@ describe("original Omni dictionaries", () => {
       "Connection lost. Reconnecting… (attempt 2/5)",
     );
     expect(t("en", "file.sending")).toBe("Sending {name}: {pct}%");
+  });
+
+  it.each(LANGUAGES)("adds the same vije.sh strings and placeholders in $code", ({ code }) => {
+    const english = Object.keys(additions.en).sort();
+    expect(Object.keys(additions[code]).sort()).toEqual(english);
+    for (const key of english) {
+      expect(Object.keys(dictionaries.en)).not.toContain(key);
+      const source = additions.en[key as keyof typeof additions.en];
+      const translated = additions[code][key as keyof typeof additions.en];
+      expect(translated.trim()).not.toBe("");
+      expect(translated.match(/\{[a-z]+\}/gi) ?? []).toEqual(source.match(/\{[a-z]+\}/gi) ?? []);
+    }
+  });
+  it("translates the additions through t()", () => {
+    expect(t("en", "lobby.code_sr", { code: "K 7 Q" })).toBe("Room code K 7 Q");
+    expect(t("kn", "ctrl.mic")).toBe(additions.kn["ctrl.mic"]);
   });
 });

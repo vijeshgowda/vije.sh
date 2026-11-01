@@ -31,6 +31,7 @@ npm run check          # blog:assets + lint + typecheck + format check + unit/co
 npm run test:e2e       # Playwright on a production build (FEEDS_OFFLINE=1, third-party requests blocked)
 npm run db:test:setup  # rebuild the local test database (needs TEST_DATABASE_URL, see .env.test.example)
 npm run test:int       # integration tests against that database
+npm run test:signaling # Omni signalling server tests (services/omni-signaling)
 npm run format         # Prettier
 ```
 

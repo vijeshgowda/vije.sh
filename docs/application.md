@@ -282,9 +282,19 @@ media; every other page keeps camera and microphone disabled and has no signalli
 Nothing contacts the signalling server before Create/Join: as in the original Omni, that click's
 WebSocket connect wakes the Render instance, with the "cold start may take ~30s" message and a
 30-second progress bar while it does. Playwright blocks third-party requests; tests never depend on
-Render being reachable. `tests/e2e/omni-call.spec.ts` replaces the signalling server with an in-test
-relay (`page.routeWebSocket`) and runs a real two-page call on fake media, including chat and
-an encrypted file transfer that is saved and compared byte for byte.
+Render being reachable.
+
+The signalling server itself lives in `services/omni-signaling/` (its own `package.json` with
+`ws`, vendored from the pinned commit below with the protocol unchanged). That folder is Render's
+deployment root; its README lists the Render settings. Origins are checked by the server:
+`origins.js` commits the production list (exactly `https://vije.sh`), `ALLOWED_ORIGINS` is an
+optional exact-match override, an empty value never allows every origin, and a mismatch gets 403.
+Playwright starts that folder with Render's commands (`npm ci --omit=dev`, `npm start`) on port
+3201, allowing only the e2e app's origin, and builds the app with
+`NEXT_PUBLIC_OMNI_SIGNALING_URL=ws://localhost:3201` (`tests/e2e/omni-signaling.ts`).
+`tests/e2e/omni-call.spec.ts` runs real calls through it, each person in their own browser
+context on fake media: the safety check, chat, an encrypted file transfer saved and compared byte
+for byte, screen share, recording, and the server's code-in-use and room-full errors.
 
 - `SignalingClient` accepts a WebSocket URL; `PeerConnection` accepts signalling, ICE servers and
   the optional room password. Both expose typed `.on(event, detail => ...)` subscriptions,
@@ -344,8 +354,9 @@ npx vitest run --project unit --project component src/features/omni
 Upstream crypto, SAS/password, file-frame, QR, quality and dictionary checks are covered at the unit
 layer. The older upstream filequeue suite simulates a sequential queue; the current `app.js` starts
 transfers concurrently, which the port tests instead. Original DOM translation tests do not apply
-to React; shared-store component tests cover persistence. Server/integration/two-browser checks
-belong to the later signalling-server and UI PRs.
+to React; shared-store component tests cover persistence. The upstream server suite is ported to
+`services/omni-signaling/test/` (`node:test`, run by `npm run test:signaling`), with origin
+allow-list tests added.
 
 ---
 
@@ -816,7 +827,8 @@ A Postgres service container runs alongside the job (section 13.2).
 1. `npm ci`
 2. `npm run lint && npm run typecheck`
 3. `npm run db:test:setup` (also proves every migration applies to an empty database)
-4. `npm run test:coverage` (fails if coverage drops below the limits in 13.5)
+4. `npm run test:coverage` (fails if coverage drops below the limits in 13.5), then
+   `npm run test:signaling` (the Omni signalling server's own tests)
 5. `npm run build` (includes the frontmatter validation and slug checks)
 6. `npm run test:e2e` against the local production build and the test database
 7. Upload the coverage report (lcov + HTML) and the Playwright report as artifacts; write a
@@ -1085,6 +1097,7 @@ npm test                # vitest: unit + component (fast, no database)
 npm run test:int        # vitest: integration project (needs TEST_DATABASE_URL)
 npm run test:coverage   # all vitest projects with coverage and limits
 npm run test:e2e        # playwright: builds, starts the app on the test database, runs the specs
+npm run test:signaling  # node:test: installs and tests services/omni-signaling
 npm run db:test:setup   # bootstrap + migrations + seed on the test database
 ```
 

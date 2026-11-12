@@ -11,7 +11,7 @@
     "test": "node --test test/*.test.js"
   },
   "dependencies": {
-    "ws": "^8.18.0"
+    "ws": "^8.22.2"
   },
   "engines": {
     "node": ">=18"

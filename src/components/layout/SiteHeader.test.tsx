@@ -1,4 +1,4 @@
-import { act, render, screen } from "@testing-library/react";
+import { act, render, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
@@ -24,12 +24,36 @@ beforeEach(() => {
 });
 
 describe("SiteHeader", () => {
-  it("marks the current page and lists all seven", () => {
+  it("marks the current page and lists the datasheet pages and Omni", () => {
     render(<SiteHeader />);
-    const links = screen.getAllByRole("link").filter((a) => a.closest("nav"));
-    expect(links).toHaveLength(7);
+    const main = screen.getByRole("navigation", { name: "Main" });
+    expect(within(main).getAllByRole("link")).toHaveLength(8);
     expect(screen.getByRole("link", { name: /P7\s*Live/ })).toHaveAttribute("aria-current", "page");
+    expect(within(main).getByRole("link", { name: /P8\s*Omni/ })).toHaveAttribute(
+      "href",
+      "/lab/omni",
+    );
     expect(screen.getByRole("banner")).toHaveAttribute("data-fit", "full");
+  });
+
+  it("marks Omni instead of Lab as current and updates the compact menu", () => {
+    setNavOverflow(true);
+    nav.pathname = "/lab/omni";
+    const { rerender } = render(<SiteHeader />);
+    const main = screen.getByRole("navigation", { name: "Main" });
+    const omni = within(main).getByRole("link", { name: /P8\s*Omni/ });
+    const lab = within(main).getByRole("link", { name: /P3\s*Lab/ });
+    expect(omni).toHaveAttribute("aria-current", "page");
+    expect(lab).not.toHaveAttribute("aria-current");
+    expect(screen.getByRole("button", { name: "Menu, current page: Omni" })).toHaveTextContent(
+      /P8\s*Omni/,
+    );
+
+    nav.pathname = "/lab";
+    rerender(<SiteHeader />);
+    expect(lab).toHaveAttribute("aria-current", "page");
+    expect(omni).not.toHaveAttribute("aria-current");
+    expect(screen.getByRole("button", { name: "Menu, current page: Lab" })).toBeInTheDocument();
   });
 
   it("switches to the menu button when links overflow, and the menu opens and closes", async () => {

@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
-import { PAGES, SITE, pageBySegment } from "@/config/site";
+import { NAV_PAGES, SITE, pageByPathname } from "@/config/site";
 import { ThemeToggle } from "@/components/theme/ThemeToggle";
 import { PaletteButton } from "@/features/palette/components/PaletteButton";
 import { UserMenu } from "@/features/auth/components/UserMenu";
@@ -18,8 +18,7 @@ type Fit = "full" | "dense" | "compact";
  */
 export function SiteHeader() {
   const pathname = usePathname();
-  const segment = pathname.split("/")[1] ?? "";
-  const current = pageBySegment(segment);
+  const current = pageByPathname(pathname);
 
   const [fit, setFit] = useState<Fit>("full");
   const [open, setOpen] = useState(false);
@@ -104,15 +103,18 @@ export function SiteHeader() {
           data-open={open || undefined}
         >
           <ul ref={navRef} className={styles.nav}>
-            {PAGES.map((p, n) => (
-              <li key={p.href} style={{ "--n": n } as React.CSSProperties}>
-                <Link href={p.href} aria-current={p === current ? "page" : undefined}>
-                  <i>{p.code}</i>
-                  {p.label}
-                  <span className={styles.nd}>{p.description}</span>
-                </Link>
-              </li>
-            ))}
+            {NAV_PAGES.map((p, n) => {
+              const NavLink = p.document ? "a" : Link;
+              return (
+                <li key={p.href} style={{ "--n": n } as React.CSSProperties}>
+                  <NavLink href={p.href} aria-current={p === current ? "page" : undefined}>
+                    <i>{p.code}</i>
+                    {p.label}
+                    <span className={styles.nd}>{p.description}</span>
+                  </NavLink>
+                </li>
+              );
+            })}
           </ul>
         </nav>
         <PaletteButton variant="header" className={styles.jump} />

@@ -13,16 +13,18 @@ export const SITE = {
 } as const;
 
 export interface SitePage {
-  /** Top-level route segment ("" for the overview). Also used as the active-link key. */
+  /** Route path without the leading slash ("" for the overview). */
   segment: string;
   href: Route;
   code: string;
   label: string;
   /** One line shown in the compact menu */
   description: string;
+  /** Load the document to apply route-specific response policies. */
+  document?: true;
 }
 
-/** The seven datasheet pages. Order defines the nav, the footer site map and the P1..P7 codes. */
+/** The seven datasheet pages. Order defines the footer site map and the P1..P7 codes. */
 export const PAGES: readonly SitePage[] = [
   {
     segment: "",
@@ -75,6 +77,28 @@ export const PAGES: readonly SitePage[] = [
   },
 ];
 
-export function pageBySegment(segment: string | null): SitePage | undefined {
-  return PAGES.find((p) => p.segment === (segment ?? ""));
+/** The header also links to Omni, which is not a datasheet page. */
+export const NAV_PAGES: readonly SitePage[] = [
+  ...PAGES,
+  {
+    segment: "lab/omni",
+    href: "/lab/omni",
+    code: "P8",
+    label: "Omni",
+    description: "Encrypted calls, chat and file transfer",
+    document: true,
+  },
+];
+
+export function pageByPathname(pathname: string): SitePage | undefined {
+  let current: SitePage | undefined;
+  for (const page of NAV_PAGES) {
+    if (
+      (pathname === page.href || (page.href !== "/" && pathname.startsWith(`${page.href}/`))) &&
+      (!current || page.href.length > current.href.length)
+    ) {
+      current = page;
+    }
+  }
+  return current;
 }

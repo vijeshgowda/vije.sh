@@ -29,7 +29,7 @@ self-hosted by `next/font`. Light is the default and ignores the OS; dark is opt
 
 | Piece (prototype function) | Where | Status |
 | --- | --- | --- |
-| Header: self-fitting nav, menu button, theme switch (`fitNav`) | `src/components/layout/SiteHeader.tsx` | Done |
+| Header: self-fitting nav, menu button, theme switch (`fitNav`) | `src/components/layout/SiteHeader.tsx` | Done; P8 links directly to Omni with a document load for its media and security policies (#113) |
 | Footer site map | `src/components/layout/SiteFooter.tsx` | Done |
 | Running head/foot, page intro, numbered sections | `src/components/ui/Datasheet.tsx` | Done |
 | Buttons (cut-corner red), cards, shadows, cursors | `src/components/ui/*`, `src/styles/*` | Done. The hand cursor is a slimmer red-outline redraw (#83); components that set their own cursor use `var(--cur-hand)`, never `pointer` |

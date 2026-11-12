@@ -62,7 +62,7 @@
     "@types/pg": "^8.23.1",
     "@types/react": "^19",
     "@types/react-dom": "^19",
-    "@vitejs/plugin-react": "^6.2.1",
+    "@vitejs/plugin-react": "^6.3.0",
     "@vitest/coverage-v8": "^5.1.0",
     "@vitest/eslint-plugin": "^1.6.28",
     "eslint": "^9",

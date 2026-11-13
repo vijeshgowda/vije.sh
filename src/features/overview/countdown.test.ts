@@ -1,29 +1,57 @@
 import { describe, expect, it } from "vitest";
-import { GTA6_RELEASE, countdown } from "./countdown";
+import { countdown, localRelease, midnightIn, zoneCountry } from "./countdown";
 
-describe("GTA6_RELEASE", () => {
-  it("is midnight UK time on 19 November 2026", () => {
-    const parts = new Intl.DateTimeFormat("en-GB", {
-      timeZone: "Europe/London",
-      weekday: "long",
-      day: "numeric",
-      month: "long",
-      year: "numeric",
-      hour: "2-digit",
-      minute: "2-digit",
-      hourCycle: "h23",
-      timeZoneName: "short",
-    }).formatToParts(GTA6_RELEASE);
-    const uk = Object.fromEntries(parts.map((p) => [p.type, p.value]));
-    expect(uk).toMatchObject({
-      weekday: "Thursday",
-      day: "19",
-      month: "November",
-      year: "2026",
-      hour: "00",
-      minute: "00",
-      timeZoneName: "GMT",
+describe("midnightIn", () => {
+  it("is midnight UK time in London (after BST ends)", () => {
+    expect(midnightIn("Europe/London", 2026, 10, 19)).toBe(Date.UTC(2026, 10, 19));
+  });
+
+  it("is midnight local time in zones ahead of and behind UTC", () => {
+    expect(midnightIn("Asia/Kolkata", 2026, 10, 19)).toBe(Date.UTC(2026, 10, 18, 18, 30));
+    expect(midnightIn("America/New_York", 2026, 10, 19)).toBe(Date.UTC(2026, 10, 19, 5));
+    expect(midnightIn("Pacific/Kiritimati", 2026, 10, 19)).toBe(Date.UTC(2026, 10, 18, 10));
+  });
+
+  it("uses the offset in force at midnight, not at UTC midnight, across a DST change", () => {
+    // New York leaves EDT at 02:00 on 1 Nov 2026; midnight that day is still EDT (UTC-4)
+    expect(midnightIn("America/New_York", 2026, 10, 1)).toBe(Date.UTC(2026, 10, 1, 4));
+    // Sydney enters AEDT on 4 Oct 2026; midnight on the 5th is UTC+11
+    expect(midnightIn("Australia/Sydney", 2026, 9, 5)).toBe(Date.UTC(2026, 9, 4, 13));
+  });
+});
+
+describe("zoneCountry", () => {
+  it("maps canonical zones and legacy aliases browsers still report", () => {
+    expect(zoneCountry("Asia/Kolkata")).toBe("IN");
+    expect(zoneCountry("Asia/Calcutta")).toBe("IN");
+    expect(zoneCountry("Europe/London")).toBe("GB");
+    expect(zoneCountry("US/Eastern")).toBe("US");
+    expect(zoneCountry("Europe/Oslo")).toBe("NO");
+  });
+
+  it("has no country for UTC, Etc zones or abbreviations", () => {
+    expect(zoneCountry("UTC")).toBeNull();
+    expect(zoneCountry("Etc/GMT+5")).toBeNull();
+    expect(zoneCountry("EST")).toBeNull();
+  });
+});
+
+describe("localRelease", () => {
+  it("names the visitor's country and offset", () => {
+    expect(localRelease("Asia/Kolkata")).toEqual({
+      at: Date.UTC(2026, 10, 18, 18, 30),
+      timeZone: "Asia/Kolkata",
+      country: "India",
+      offset: "GMT+5:30",
     });
+    expect(localRelease("Europe/London")).toMatchObject({
+      country: "United Kingdom",
+      offset: "GMT",
+    });
+  });
+
+  it("falls back to no country when the zone doesn't name one", () => {
+    expect(localRelease("UTC")).toMatchObject({ at: Date.UTC(2026, 10, 19), country: null });
   });
 });
 

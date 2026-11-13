@@ -1,51 +1,41 @@
-import { ZONES_BY_COUNTRY } from "./timezone-countries";
-
 /** Release day, 19 Nov 2026. It launches at midnight local time, so each visitor gets their own. */
 export const GTA6_RELEASE_DAY = { year: 2026, month: 10, day: 19 } as const;
 
-/** Milliseconds `timeZone` is ahead of UTC at instant `t`. */
-function offsetAt(timeZone: string, t: number): number {
-  const parts = new Intl.DateTimeFormat("en-US", {
-    timeZone,
-    year: "numeric",
-    month: "numeric",
-    day: "numeric",
-    hour: "numeric",
-    minute: "numeric",
-    second: "numeric",
-    hourCycle: "h23",
-  }).formatToParts(t);
-  const n = (type: string) => Number(parts.find((p) => p.type === type)?.value);
-  const wall = Date.UTC(n("year"), n("month") - 1, n("day"), n("hour"), n("minute"), n("second"));
-  return wall - Math.floor(t / 1000) * 1000;
+const offsetFormat = (timeZone: string) =>
+  new Intl.DateTimeFormat("en-US", { timeZone, timeZoneName: "longOffset" });
+
+/** Milliseconds ahead of UTC from a `longOffset` label: "GMT+05:30", "GMT-03:00", or "GMT" for 0. */
+export function parseOffset(label: string): number {
+  const m = /([+-])(\d\d):(\d\d)/.exec(label);
+  return m ? (m[1] === "-" ? -1 : 1) * (Number(m[2]) * 60 + Number(m[3])) * 60_000 : 0;
+}
+
+const offsetAt = (f: Intl.DateTimeFormat, t: number) =>
+  parseOffset(f.formatToParts(t).find((p) => p.type === "timeZoneName")?.value ?? "");
+
+function midnight(f: Intl.DateTimeFormat, year: number, month: number, day: number): number {
+  const wall = Date.UTC(year, month, day);
+  // a second pass corrects for an offset change between the guess and midnight
+  return wall - offsetAt(f, wall - offsetAt(f, wall));
 }
 
 /** The instant it is 00:00 on `year-month-day` (month 0-based) in `timeZone`. */
 export function midnightIn(timeZone: string, year: number, month: number, day: number): number {
-  const wall = Date.UTC(year, month, day);
-  const guess = wall - offsetAt(timeZone, wall);
-  // a second pass corrects for an offset change between the guess and midnight
-  return wall - offsetAt(timeZone, guess);
+  return midnight(offsetFormat(timeZone), year, month, day);
 }
 
-let countryByZone: Map<string, string> | undefined;
-
-/** ISO country code for an IANA time zone, or null for zones without one (UTC, Etc/GMT+5). */
-export function zoneCountry(timeZone: string): string | null {
-  countryByZone ??= new Map(
-    Object.entries(ZONES_BY_COUNTRY).flatMap(([cc, zones]) =>
-      zones.split(" ").map((z) => [z, cc] as const),
-    ),
-  );
-  return countryByZone.get(timeZone) ?? null;
+/** "GMT", "GMT-5", "GMT+5:30": the same short label as Intl's `shortOffset`. */
+function offsetLabel(ms: number): string {
+  const min = Math.abs(ms) / 60_000;
+  const h = Math.floor(min / 60);
+  const m = min % 60;
+  return ms ? `GMT${ms < 0 ? "-" : "+"}${h}${m ? `:${String(m).padStart(2, "0")}` : ""}` : "GMT";
 }
 
 export interface LocalRelease {
   /** Midnight on release day in the visitor's time zone. */
   at: number;
   timeZone: string;
-  /** Country name in English, or null when the time zone doesn't name one. */
-  country: string | null;
   /** Short offset label, e.g. "GMT+5:30". */
   offset: string;
 }
@@ -55,19 +45,27 @@ export function localRelease(
   timeZone = Intl.DateTimeFormat().resolvedOptions().timeZone || "UTC",
 ): LocalRelease {
   const { year, month, day } = GTA6_RELEASE_DAY;
-  const at = midnightIn(timeZone, year, month, day);
-  const cc = zoneCountry(timeZone);
-  const offset = (
-    new Intl.DateTimeFormat("en", { timeZone, timeZoneName: "shortOffset" })
-      .formatToParts(at)
-      .find((p) => p.type === "timeZoneName")?.value ?? "local"
-  ).replace(/^GMT[+-]0(?::00)?$/, "GMT");
-  return {
-    at,
-    timeZone,
-    country: cc ? (new Intl.DisplayNames("en", { type: "region" }).of(cc) ?? cc) : null,
-    offset,
-  };
+  const f = offsetFormat(timeZone);
+  const at = midnight(f, year, month, day);
+  return { at, timeZone, offset: offsetLabel(offsetAt(f, at)) };
+}
+
+/**
+ * ISO country code for an IANA time zone, or null for zones without one (UTC, Etc/GMT+5). The
+ * table is loaded on demand, so it stays out of the page's initial JavaScript.
+ */
+export async function zoneCountry(timeZone: string): Promise<string | null> {
+  const { ZONES_BY_COUNTRY } = await import("./timezone-countries");
+  const hit = Object.entries(ZONES_BY_COUNTRY).find(([, zones]) =>
+    zones.split(" ").includes(timeZone),
+  );
+  return hit?.[0] ?? null;
+}
+
+/** English name of the country `timeZone` is in, or null when the zone doesn't name one. */
+export async function zoneCountryName(timeZone: string): Promise<string | null> {
+  const cc = await zoneCountry(timeZone);
+  return cc ? (new Intl.DisplayNames("en", { type: "region" }).of(cc) ?? cc) : null;
 }
 
 export interface Countdown {

@@ -1,9 +1,10 @@
 "use client";
 
 import Image from "next/image";
+import { useEffect, useState } from "react";
 import { Card } from "@/components/ui/Card";
 import { useNow } from "@/features/live/client/use-now";
-import { countdown, localRelease, type LocalRelease } from "../countdown";
+import { countdown, localRelease, zoneCountryName, type LocalRelease } from "../countdown";
 import s from "./Overview.module.css";
 
 const p2 = (n: number) => String(n).padStart(2, "0");
@@ -19,7 +20,20 @@ export function GtaCountdown() {
   // null until hydrated, so prerendered HTML never depends on the server's time zone
   const r = now === null ? null : (release ??= localRelease());
   const c = r && now !== null ? countdown(r.at, now) : null;
-  const where = r?.country ?? "your time zone";
+  // undefined while the country table loads in its own chunk, so no placeholder text flashes
+  const [country, setCountry] = useState<string | null>();
+  const timeZone = r?.timeZone;
+  useEffect(() => {
+    if (!timeZone) return;
+    let live = true;
+    void zoneCountryName(timeZone)
+      .catch(() => null)
+      .then((name) => live && setCountry(name));
+    return () => {
+      live = false;
+    };
+  }, [timeZone]);
+  const where = country === null ? "your time zone" : country;
   const cells: [string, string][] = [
     ["DAYS", c ? String(c.d) : "--"],
     ["HRS", c ? p2(c.h) : "--"],
@@ -55,19 +69,26 @@ export function GtaCountdown() {
       <p className="vh">
         {c?.done
           ? "Grand Theft Auto VI is out."
-          : c
+          : c && where
             ? `${c.d} days, ${c.h} hours and ${c.m} minutes to go until midnight in ${where}.`
             : null}
       </p>
       <p>
         {c?.done ? (
           <>
-            Fired at midnight your local time in <strong>{where}</strong>. It&rsquo;s out.
+            Fired at midnight your local time
+            {where && (
+              <>
+                {" "}
+                in <strong>{where}</strong>
+              </>
+            )}
+            . It&rsquo;s out.
           </>
         ) : (
           <>
             Armed after two delays; fires at midnight your local time on release day
-            {r && (
+            {where && (
               <>
                 {" "}
                 in <strong>{where}</strong>

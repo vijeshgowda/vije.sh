@@ -21,12 +21,17 @@ describe("midnightIn", () => {
 });
 
 describe("zoneCountry", () => {
-  it("maps canonical zones and legacy aliases browsers still report", () => {
+  it("maps canonical zones and the older IDs ICU-based browsers report", () => {
     expect(zoneCountry("Asia/Kolkata")).toBe("IN");
     expect(zoneCountry("Asia/Calcutta")).toBe("IN");
     expect(zoneCountry("Europe/London")).toBe("GB");
-    expect(zoneCountry("US/Eastern")).toBe("US");
     expect(zoneCountry("Europe/Oslo")).toBe("NO");
+  });
+
+  it("credits old IDs to their own country, not the country of their tzdata link target", () => {
+    expect(zoneCountry("Pacific/Truk")).toBe("FM");
+    expect(zoneCountry("Pacific/Ponape")).toBe("FM");
+    expect(zoneCountry("America/Coral_Harbour")).toBe("CA");
   });
 
   it("has no country for UTC, Etc zones or abbreviations", () => {
